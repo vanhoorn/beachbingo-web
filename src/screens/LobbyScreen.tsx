@@ -119,6 +119,15 @@ export default function LobbyScreen() {
 
   return (
     <div className="screen">
+      {/* Zurück */}
+      <button
+        className="btn btn-outline btn-sm"
+        style={{ alignSelf: "flex-start" }}
+        onClick={() => navigate("/home")}
+      >
+        ‹ Spielauswahl
+      </button>
+
       {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, var(--primary-dark) 0%, #0a1f3c 100%)",
