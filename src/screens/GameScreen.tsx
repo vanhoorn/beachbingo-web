@@ -411,6 +411,19 @@ export default function GameScreen() {
         </div>
       )}
 
+      {/* Header mit Zurück */}
+      <div className="flex items-center justify-between">
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby")}>
+          ‹ Lobby
+        </button>
+        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          {game.players.length} Spieler · {
+            game.gameMode === "AUTO_MARK" ? "🌊 Rookie" :
+            game.gameMode === "MANUAL_MARK" ? "🎯 Sniper" : "💪 Boss Level"
+          }
+        </span>
+      </div>
+
       {/* Aktuelle Zahl */}
       <div className="card text-center">
         {game.drawAnimationActive ? (

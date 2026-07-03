@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { signOut } from "firebase/auth";
 import { collection, doc, getDoc, onSnapshot, query, where, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
@@ -135,13 +134,26 @@ export default function LobbyScreen() {
             </div>
           </div>
         </div>
-        <button
-          className="btn btn-outline btn-sm"
-          style={{ color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.2)" }}
-          onClick={() => signOut(auth)}
-        >
-          Logout
-        </button>
+        <div className="flex" style={{ gap: 8 }}>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
+            onClick={() => navigate("/results")}
+            title="Ergebnisse"
+          >🏆</button>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
+            onClick={() => navigate("/settings")}
+            title="Einstellungen"
+          >⚙️</button>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
+            onClick={() => navigate("/profile")}
+            title="Profil"
+          >👤</button>
+        </div>
       </div>
 
       {/* Aktionen */}
