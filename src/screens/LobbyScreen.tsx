@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, onSnapshot, query, where, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, query, where, addDoc, updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { BingoGame, User } from "../types";
@@ -90,6 +90,12 @@ export default function LobbyScreen() {
     } finally {
       setCreating(false);
     }
+  }
+
+  async function deleteGame(e: React.MouseEvent, gameId: string) {
+    e.stopPropagation();
+    if (!confirm("Spiel wirklich löschen?")) return;
+    await deleteDoc(doc(db, "games", gameId));
   }
 
   async function joinGame() {
@@ -212,7 +218,22 @@ export default function LobbyScreen() {
                   {modeLabel(g.gameMode)}
                 </div>
               </div>
-              <span style={{ color: "var(--primary)", fontSize: 24, lineHeight: 1 }}>›</span>
+              <div className="flex items-center" style={{ gap: 8 }}>
+                {g.adminId === uid && (
+                  <button
+                    className="btn btn-sm"
+                    style={{
+                      background: "transparent",
+                      color: "var(--danger)",
+                      border: "1px solid rgba(239,68,68,0.3)",
+                      width: 34, height: 34, padding: 0, fontSize: 16,
+                    }}
+                    onClick={(e) => deleteGame(e, g.gameId)}
+                    title="Spiel löschen"
+                  >🗑️</button>
+                )}
+                <span style={{ color: "var(--primary)", fontSize: 24, lineHeight: 1 }}>›</span>
+              </div>
             </div>
           ))}
         </div>
