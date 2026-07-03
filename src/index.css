@@ -1,0 +1,210 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Beach-Farbpalette */
+  --bg:           #0a1628;
+  --surface:      #132035;
+  --surface2:     #1e3050;
+  --surface3:     #243760;
+
+  --primary:      #0ea5e9;   /* Ozean-Blau */
+  --primary-dark: #0284c7;
+  --primary-bg:   rgba(14, 165, 233, 0.12);
+
+  --accent:       #f59e0b;   /* Sand-Gold */
+  --accent-dark:  #d97706;
+  --accent-bg:    rgba(245, 158, 11, 0.12);
+
+  --coral:        #f97316;   /* Koralle */
+  --coral-bg:     rgba(249, 115, 22, 0.12);
+
+  --success:      #22c55e;
+  --danger:       #ef4444;
+  --danger-bg:    rgba(239, 68, 68, 0.12);
+
+  --text:         #e2e8f0;
+  --text-muted:   #64748b;
+  --text-sub:     #94a3b8;
+  --border:       #1e3050;
+
+  --radius:       14px;
+  --radius-sm:    8px;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Layout ──────────────────────────────────────────── */
+
+.screen {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.screen.justify-center {
+  justify-content: center;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+.btn:disabled       { opacity: 0.45; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: scale(0.98); opacity: 0.85; }
+
+.btn-primary  { background: var(--primary);  color: #fff; }
+.btn-accent   { background: var(--accent);   color: #000; }
+.btn-coral    { background: var(--coral);    color: #fff; }
+.btn-danger   { background: var(--danger);   color: #fff; }
+.btn-surface  { background: var(--surface2); color: var(--text); }
+.btn-outline  {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-sm {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+  width: auto;
+}
+
+/* ── Inputs ──────────────────────────────────────────── */
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus { border-color: var(--primary); }
+input::placeholder { color: var(--text-muted); }
+
+label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
+/* ── Utility ─────────────────────────────────────────── */
+
+.flex          { display: flex; }
+.flex-col      { flex-direction: column; }
+.gap-1         { gap: 4px; }
+.gap-2         { gap: 8px; }
+.gap-3         { gap: 12px; }
+.gap-4         { gap: 16px; }
+.items-center  { align-items: center; }
+.items-start   { align-items: flex-start; }
+.justify-center  { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.text-center   { text-align: center; }
+.mt-auto       { margin-top: auto; }
+.w-full        { width: 100%; }
+
+/* ── Typography helpers ──────────────────────────────── */
+
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 18px; font-weight: 600; }
+
+.text-muted { color: var(--text-muted); }
+.text-sub   { color: var(--text-sub);   font-size: 14px; }
+.text-sm    { font-size: 14px; }
+.text-xs    { font-size: 12px; }
+
+/* ── Hero (Login) ────────────────────────────────────── */
+
+.hero-block {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #0a1f3c 100%);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  border: 1px solid var(--primary-dark);
+}
+
+/* ── Badge / Chip ────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.badge-lobby    { background: var(--accent-bg);  color: var(--accent);  }
+.badge-running  { background: var(--primary-bg); color: var(--primary); }
+.badge-finished { background: var(--surface2);   color: var(--text-muted); }
+
+/* ── Divider ─────────────────────────────────────────── */
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ── Animations ──────────────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
