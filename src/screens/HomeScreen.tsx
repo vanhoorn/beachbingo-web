@@ -36,7 +36,7 @@ const GAMES: GameEntry[] = [
   {
     id: "vier",
     emoji: "🐻",
-    title: "Vier4Bear",
+    title: "Vier4Bier",
     description: "Vier in einer Reihe mit Beach-Twist.",
     color: "var(--accent)",
     available: false,
