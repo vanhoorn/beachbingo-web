@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
+import HomeScreen from "./screens/HomeScreen";
 import LobbyScreen from "./screens/LobbyScreen";
 import GameScreen from "./screens/GameScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -30,14 +31,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login"    element={loggedIn ? <Navigate to="/lobby" /> : <LoginScreen />} />
-        <Route path="/register" element={loggedIn ? <Navigate to="/lobby" /> : <RegisterScreen />} />
+        <Route path="/login"    element={loggedIn ? <Navigate to="/home" /> : <LoginScreen />} />
+        <Route path="/register" element={loggedIn ? <Navigate to="/home" /> : <RegisterScreen />} />
+        <Route path="/home"     element={loggedIn ? <HomeScreen />    : <Navigate to="/login" />} />
         <Route path="/lobby"    element={loggedIn ? <LobbyScreen />   : <Navigate to="/login" />} />
         <Route path="/game/:gameId" element={loggedIn ? <GameScreen /> : <Navigate to="/login" />} />
         <Route path="/profile"  element={loggedIn ? <ProfileScreen /> : <Navigate to="/login" />} />
         <Route path="/settings" element={loggedIn ? <SettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/results"  element={loggedIn ? <ResultsScreen /> : <Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to={loggedIn ? "/lobby" : "/login"} />} />
+        <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>
   );
