@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
@@ -31,6 +31,35 @@ function drawRandomNumber(drawn: number[]): number | null {
 
 function countMarked(player: BingoPlayer, drawnNumbers: number[]): number {
   return player.card.grid.filter((n) => n !== 0 && drawnNumbers.includes(n)).length;
+}
+
+function DrumAnimation() {
+  const [displayNum, setDisplayNum] = useState(() => Math.floor(Math.random() * 75) + 1);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const tick = useCallback(() => {
+    setDisplayNum(Math.floor(Math.random() * 75) + 1);
+  }, []);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(tick, 120);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [tick]);
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>🥁 Ziehe…</div>
+      <div className="drum-wrapper">
+        <div className="drum-outer">
+          <div className="drum-stripe" />
+        </div>
+        <div className="drum-inner-ring" />
+        <div className="drum-ball">
+          <span className="drum-ball-number">{displayNum}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Fireworks({ winner }: { winner: BingoPlayer }) {
@@ -427,15 +456,7 @@ export default function GameScreen() {
       {/* Aktuelle Zahl */}
       <div className="card text-center">
         {game.drawAnimationActive ? (
-          <>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>🥁 Ziehe Zahl…</div>
-            <div style={{
-              fontSize: 80, fontWeight: 800, color: "var(--accent)",
-              animation: "pulse 0.5s infinite", lineHeight: 1,
-            }}>
-              {Math.floor(Math.random() * 75) + 1}
-            </div>
-          </>
+          <DrumAnimation />
         ) : (
           <>
             <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>Aktuelle Zahl</div>
