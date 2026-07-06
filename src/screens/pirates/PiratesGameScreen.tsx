@@ -9,12 +9,12 @@ const CW = 400;
 const CH = 580;
 
 // ── Invader layout ────────────────────────────────────────────────────────────
-const INVADER_COLS  = 5;
-const INVADER_ROWS  = 3;
-const INVADER_W     = 52;
-const INVADER_H     = 44;
-const INVADER_PAD_X = 14;
-const INVADER_PAD_Y = 10;
+const INVADER_COLS  = 7;
+const INVADER_ROWS  = 4;
+const INVADER_W     = 40;
+const INVADER_H     = 36;
+const INVADER_PAD_X = 10;
+const INVADER_PAD_Y = 8;
 const INVADER_TOP   = 40;
 
 // ── Player ────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ const SHIELD_Y = CH - 140;
 const ERASE_R  = 2;
 
 // ── Emojis ────────────────────────────────────────────────────────────────────
-const EMOJIS_BY_ROW = ["🪼", "🐚", "🐟"];
+const EMOJIS_BY_ROW = ["🪼", "🐚", "🐟", "🦀"];
 const PLAYER_EMOJI  = "🐙";
 
 // ── Difficulty ────────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ function fireCooldownFrames(rate: number) {
   return Math.round(55 - rate * 5);
 }
 
-const POINTS_BY_ROW = [30, 20, 10];
+const POINTS_BY_ROW = [40, 30, 20, 10];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Invader { col: number; row: number; x: number; y: number; alive: boolean; }
@@ -423,7 +423,7 @@ export default function PiratesGameScreen() {
       if (!inv.alive) continue;
       drawEmoji(ctx, EMOJIS_BY_ROW[inv.row],
         gs.groupX + inv.col * (INVADER_W + INVADER_PAD_X) + INVADER_W / 2,
-        inv.y + INVADER_H / 2, 28);
+        inv.y + INVADER_H / 2, 22);
     }
 
     for (const sh of gs.shields) drawShield(ctx, sh);

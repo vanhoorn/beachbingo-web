@@ -18,6 +18,10 @@ import VierLobbyScreen from "./screens/vier/VierLobbyScreen";
 import VierGameScreen from "./screens/vier/VierGameScreen";
 import VierSettingsScreen from "./screens/vier/VierSettingsScreen";
 import VierResultsScreen from "./screens/vier/VierResultsScreen";
+import PiratesLobbyScreen from "./screens/pirates/PiratesLobbyScreen";
+import PiratesGameScreen from "./screens/pirates/PiratesGameScreen";
+import PiratesSettingsScreen from "./screens/pirates/PiratesSettingsScreen";
+import PiratesResultsScreen from "./screens/pirates/PiratesResultsScreen";
 import JoinScreen from "./screens/JoinScreen";
 
 function App() {
@@ -56,6 +60,10 @@ function App() {
         <Route path="/vier/game"     element={loggedIn ? <VierGameScreen />     : <Navigate to="/login" />} />
         <Route path="/vier/settings" element={loggedIn ? <VierSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/vier/results"  element={loggedIn ? <VierResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/pirates/lobby"    element={loggedIn ? <PiratesLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/pirates/game"     element={loggedIn ? <PiratesGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/pirates/settings" element={loggedIn ? <PiratesSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/pirates/results"  element={loggedIn ? <PiratesResultsScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
