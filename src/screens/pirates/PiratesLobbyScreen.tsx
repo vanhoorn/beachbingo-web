@@ -135,19 +135,19 @@ export default function PiratesLobbyScreen() {
           selected={difficulty === "ROOKIE"}
           onClick={() => setDifficulty("ROOKIE")}
           title="🌊 Rookie"
-          description="Speed 1/30, Schießen 3/30 — ideal zum Starten"
+          description="Speed 3/30, Schießen 3/30 — ideal zum Starten"
         />
         <DiffOption
           selected={difficulty === "SNIPER"}
           onClick={() => setDifficulty("SNIPER")}
           title="🎯 Sniper"
-          description="Speed 5/30, Schießen 5/30 — echte Herausforderung"
+          description="Speed 6/30, Schießen 6/30 — echte Herausforderung"
         />
         <DiffOption
           selected={difficulty === "BOSS_LEVEL"}
           onClick={() => setDifficulty("BOSS_LEVEL")}
           title="💪 Boss Level"
-          description="Speed 8/30, Schießen 8/30 — viel Spaß 😈"
+          description="Speed 10/30, Schießen 10/30 — viel Spaß 😈"
         />
       </div>
 

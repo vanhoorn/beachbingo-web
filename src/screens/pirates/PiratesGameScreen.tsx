@@ -49,8 +49,8 @@ interface DiffConfig {
 // Speed / firing on a 1–30 scale → physics values
 // interval(s) = 93 - s*3  |  stepSize(s) = 4 + s*0.4
 // shootChance(f) = 0.0001 + (f-1)*0.000165
-const BASE_SPEED:  Record<PiratesDifficulty, number> = { ROOKIE: 1, SNIPER: 5, BOSS_LEVEL: 8 };
-const BASE_FIRING: Record<PiratesDifficulty, number> = { ROOKIE: 3, SNIPER: 5, BOSS_LEVEL: 8 };
+const BASE_SPEED:  Record<PiratesDifficulty, number> = { ROOKIE: 3, SNIPER: 6, BOSS_LEVEL: 10 };
+const BASE_FIRING: Record<PiratesDifficulty, number> = { ROOKIE: 3, SNIPER: 6, BOSS_LEVEL: 10 };
 
 // Cumulative wave bonus: waves 2–5 add +1 each, waves 6+ add +2 each
 function waveBonus(wave: number): number {
