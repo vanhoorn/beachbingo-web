@@ -17,6 +17,12 @@ export interface User {
   // Vier4Bier preferences
   preferredVierDrinkId?: string;
   preferredVierDifficulty?: VierDifficulty;
+  // BeachPirates preferences
+  preferredPiratesDifficulty?: PiratesDifficulty;
+  preferredPiratesFireRate?: number;       // 1–10
+  preferredPiratesControlMode?: "BUTTONS" | "TOUCH";
+  piratesHighScore?: number;
+  piratesHighScores?: { ROOKIE?: number; SNIPER?: number; BOSS_LEVEL?: number };
 }
 
 export interface BingoCard {
@@ -103,6 +109,9 @@ export interface VierGame {
   isDraw: boolean;
   createdAt: number;
 }
+
+// BeachPirates
+export type PiratesDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
 
 // BeachVolley
 export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
