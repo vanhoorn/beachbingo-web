@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { VierDifficulty, VierGame } from "../../types";
 import { DrinkPiece, getDrink } from "./drinkIcons";
+import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
 
 const ROWS = 6;
 const COLS = 7;
@@ -359,6 +360,24 @@ export default function VierGameScreen() {
 
   const gameOver = winner !== null || draw;
 
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      const favs = snap.data()?.favoriteGames as string[] | undefined;
+      setIsFavorite(favs?.includes("vier") ?? false);
+    });
+  }, [uid]);
+
+  async function handleFavoriteToggle() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("vier") : arrayRemove("vier") });
+  }
+
   function handleDrop(col: number) {
     if (gameOver) return;
     if (isAiMode) handleDropAi(col);
@@ -551,6 +570,27 @@ export default function VierGameScreen() {
             </button>
           </div>
         </div>
+      )}
+
+      <GameHudBar
+        paused={false}
+        isFavorite={isFavorite}
+        onPauseToggle={() => {}}
+        onQuit={() => setShowQuitDialog(true)}
+        onFavoriteToggle={handleFavoriteToggle}
+        pauseDisabled={true}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+          {gameOver ? "Spiel beendet" : myTurn ? "Du bist dran" : "Gegner denkt..."}
+        </div>
+      </GameHudBar>
+
+      {showQuitDialog && (
+        <QuitConfirmDialog
+          message="Das laufende Spiel wird beendet."
+          onConfirm={() => navigate("/vier/lobby")}
+          onDismiss={() => setShowQuitDialog(false)}
+        />
       )}
 
       <style>{`

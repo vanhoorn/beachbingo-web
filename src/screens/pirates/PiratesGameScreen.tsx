@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { PiratesDifficulty } from "../../types";
+import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
 const CW = 400;
@@ -220,6 +221,22 @@ export default function PiratesGameScreen() {
   const [uiFiring, setUiFiring] = useState(BASE_FIRING[difficulty]);
   const [paused,  setPaused]            = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [isFavorite, setIsFavorite]     = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      const favs = snap.data()?.favoriteGames as string[] | undefined;
+      setIsFavorite(favs?.includes("pirates") ?? false);
+    });
+  }, [uid]);
+
+  async function handleFavoriteToggle() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("pirates") : arrayRemove("pirates") });
+  }
 
   // Keep pausedRef in sync (game loop reads ref, not state)
   function setPausedSync(val: boolean) {
@@ -540,79 +557,39 @@ export default function PiratesGameScreen() {
     }}>
 
       {/* HUD */}
-      <div style={{
-        width: "100%", maxWidth: CW,
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "6px 8px",
-        background: "rgba(255,255,255,0.05)", borderRadius: 10,
-      }}>
-        {/* Pause button */}
-        <button
-          onClick={handlePause}
-          disabled={uiPhase === "game_over"}
-          title="Pause (P)"
-          style={{
-            background: paused ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.07)",
-            border: `1.5px solid ${paused ? "#a855f7" : "rgba(255,255,255,0.15)"}`,
-            borderRadius: 8, width: 38, height: 38, fontSize: 18,
-            cursor: uiPhase === "game_over" ? "default" : "pointer",
-            color: paused ? "#a855f7" : "#94a3b8",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, transition: "all 0.15s",
-            opacity: uiPhase === "game_over" ? 0.4 : 1,
-          }}
-        >
-          {paused ? "▶" : "⏸"}
-        </button>
-
-        {/* Score / Welle / Leben */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "space-around", alignItems: "center" }}>
+      <GameHudBar
+        paused={paused}
+        isFavorite={isFavorite}
+        onPauseToggle={handlePause}
+        onQuit={handleQuitRequest}
+        onFavoriteToggle={handleFavoriteToggle}
+        pauseDisabled={uiPhase === "game_over"}
+      >
+        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flex: 1 }}>
           <div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Score</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#a855f7" }}>{uiScore}</div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Score</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#a855f7" }}>{uiScore}</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Welle</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--primary)" }}>{uiWave}</div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Welle</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--primary)" }}>{uiWave}</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Leben</div>
-            <div style={{ fontSize: 15 }}>{livesDisplay}</div>
+          <div>
+            <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Leben</div>
+            <div style={{ fontSize: 13 }}>{livesDisplay}</div>
           </div>
-        </div>
-
-        {/* Speed + Firing indicators */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-          {[
-            { label: "⚡ Speed", value: uiSpeed,  color: "#f59e0b" },
-            { label: "🔱 Feuer", value: uiFiring, color: "#a855f7" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap", width: 46 }}>{label}</span>
-              <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ width: `${(value / 30) * 100}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.4s ease" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {[{ label: "⚡", value: uiSpeed, color: "#f59e0b" }, { label: "🔱", value: uiFiring, color: "#a855f7" }].map(({ label, value, color }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: 10 }}>{label}</span>
+                <div style={{ width: 40, height: 5, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ width: `${(value / 30) * 100}%`, height: "100%", background: color, borderRadius: 3 }} />
+                </div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color, width: 24, textAlign: "right" }}>{value}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-
-        {/* Quit button */}
-        <button
-          onClick={handleQuitRequest}
-          title="Spiel beenden"
-          style={{
-            background: "rgba(239,68,68,0.1)",
-            border: "1.5px solid rgba(239,68,68,0.4)",
-            borderRadius: 8, width: 38, height: 38, fontSize: 18,
-            cursor: "pointer", color: "#ef4444",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, transition: "all 0.15s",
-          }}
-        >
-          ✕
-        </button>
-      </div>
+      </GameHudBar>
 
       {/* Canvas wrapper */}
       <div
@@ -664,64 +641,12 @@ export default function PiratesGameScreen() {
         </button>
       )}
 
-      {/* ── Quit confirmation dialog ──────────────────────────────────────── */}
       {showQuitDialog && (
-        <div style={{
-          position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.75)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 100,
-          padding: "0 24px",
-        }}>
-          <div style={{
-            background: "var(--surface)",
-            border: "1.5px solid rgba(239,68,68,0.4)",
-            borderRadius: "var(--radius)",
-            padding: "28px 24px",
-            width: "100%", maxWidth: 340,
-            display: "flex", flexDirection: "column", gap: 16,
-            textAlign: "center",
-          }}>
-            <div style={{ fontSize: 40 }}>🏳️</div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
-                Spiel wirklich beenden?
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                Dein aktueller Fortschritt (Score: <strong style={{ color: "#a855f7" }}>{uiScore}</strong>) geht verloren.
-                Du kommst zurück zur BeachPirates Seite.
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button
-                onClick={handleQuitConfirm}
-                style={{
-                  background: "rgba(239,68,68,0.15)",
-                  border: "1.5px solid #ef4444",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "12px",
-                  color: "#ef4444", fontWeight: 700, fontSize: 15,
-                  cursor: "pointer",
-                }}
-              >
-                Ja, Spiel beenden
-              </button>
-              <button
-                onClick={handleQuitCancel}
-                style={{
-                  background: "rgba(168,85,247,0.15)",
-                  border: "1.5px solid #a855f7",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "12px",
-                  color: "#a855f7", fontWeight: 700, fontSize: 15,
-                  cursor: "pointer",
-                }}
-              >
-                ▶ Weiterspielen
-              </button>
-            </div>
-          </div>
-        </div>
+        <QuitConfirmDialog
+          message={`Score: ${uiScore} — Fortschritt geht verloren.`}
+          onConfirm={handleQuitConfirm}
+          onDismiss={handleQuitCancel}
+        />
       )}
     </div>
   );

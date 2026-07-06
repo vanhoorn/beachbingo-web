@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db, auth } from "../../firebase";
+import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
 
 interface PongSettings {
@@ -265,6 +266,8 @@ export default function PongGameScreen() {
     function loop() {
       frameRef.current++;
       const g = gsRef.current;
+
+      if (manualPausedRef.current) { rafRef.current = requestAnimationFrame(loop); return; }
 
       const isPhysicsOwner = humanCount === 1 || isHost;
 
@@ -687,6 +690,33 @@ export default function PongGameScreen() {
     return null;
   }
 
+  // ── HUD state ────────────────────────────────────────────────────────────────
+  const manualPausedRef = useRef(false);
+  const [manualPaused, setManualPaused] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      const favs = snap.data()?.favoriteGames as string[] | undefined;
+      setIsFavorite(favs?.includes("pong") ?? false);
+    });
+  }, [uid]);
+
+  function handleManualPause() {
+    const next = !manualPausedRef.current;
+    manualPausedRef.current = next;
+    setManualPaused(next);
+  }
+
+  async function handleFavoriteToggle() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("pong") : arrayRemove("pong") });
+  }
+
   // ── Restart ──────────────────────────────────────────────────────────────────
   function handleRestart() {
     gsRef.current = initGS(totalPaddles);
@@ -750,6 +780,35 @@ export default function PongGameScreen() {
           }}
         />
       </div>
+
+      {/* HUD bar */}
+      <GameHudBar
+        paused={manualPaused}
+        isFavorite={isFavorite}
+        onPauseToggle={handleManualPause}
+        onQuit={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
+        onFavoriteToggle={handleFavoriteToggle}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, overflowX: "auto" }}>
+          {activeSidesList.map((side, i) => (
+            <div key={side} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {i > 0 && <span style={{ color: "#1e3050", fontWeight: 900, fontSize: 12 }}>·</span>}
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 8, color: SIDE_COLOR[side], fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{labelForSide(side)}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: scores[side] >= scoreLimit - 1 ? "var(--danger)" : "#e2e8f0", lineHeight: 1 }}>{scores[side]}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </GameHudBar>
+
+      {showQuitDialog && (
+        <QuitConfirmDialog
+          message="Das laufende Spiel wird beendet."
+          onConfirm={() => navigate("/pong/lobby")}
+          onDismiss={() => { setShowQuitDialog(false); setManualPaused(false); manualPausedRef.current = false; }}
+        />
+      )}
 
       {/* Touch hint */}
       <div style={{ position: "fixed", bottom: 16, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }}>

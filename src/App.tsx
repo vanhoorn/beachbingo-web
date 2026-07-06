@@ -23,6 +23,7 @@ import PiratesGameScreen from "./screens/pirates/PiratesGameScreen";
 import PiratesSettingsScreen from "./screens/pirates/PiratesSettingsScreen";
 import PiratesResultsScreen from "./screens/pirates/PiratesResultsScreen";
 import JoinScreen from "./screens/JoinScreen";
+import CategoryScreen from "./screens/CategoryScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -65,6 +66,7 @@ function App() {
         <Route path="/pirates/settings" element={loggedIn ? <PiratesSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/pirates/results"  element={loggedIn ? <PiratesResultsScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
+        <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection, getDoc } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../firebase";
 import type { BingoGame, BingoPlayer } from "../types";
 import { flatToGrid } from "./LobbyScreen";
+import { GameHudBar, QuitConfirmDialog } from "../components/GameHudBar";
 
 const WEB_BASE_URL = "https://thebeachbingo.netlify.app";
 
@@ -232,6 +233,23 @@ export default function GameScreen() {
   const uid = auth.currentUser?.uid;
   const drumRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elimRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      const favs = snap.data()?.favoriteGames as string[] | undefined;
+      setIsFavorite(favs?.includes("bingo") ?? false);
+    });
+  }, [uid]);
+
+  async function handleFavoriteToggle() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("bingo") : arrayRemove("bingo") });
+  }
 
   useEffect(() => {
     if (!gameId) return;
@@ -652,6 +670,30 @@ export default function GameScreen() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* HUD bar */}
+      {game.status === "RUNNING" && (
+        <GameHudBar
+          paused={false}
+          isFavorite={isFavorite}
+          onPauseToggle={() => {}}
+          onQuit={() => setShowQuitDialog(true)}
+          onFavoriteToggle={handleFavoriteToggle}
+          pauseDisabled={true}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+            {game.players.length} Spieler · {game.drawnNumbers.length} Zahlen
+          </div>
+        </GameHudBar>
+      )}
+
+      {showQuitDialog && (
+        <QuitConfirmDialog
+          message="Du verlässt das Spiel."
+          onConfirm={() => navigate("/lobby")}
+          onDismiss={() => setShowQuitDialog(false)}
+        />
       )}
 
     </div>
