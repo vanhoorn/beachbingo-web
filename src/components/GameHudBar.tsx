@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 interface GameHudBarProps {
   paused: boolean;
@@ -19,7 +19,7 @@ export function GameHudBar({
   pauseDisabled = false,
   children,
 }: GameHudBarProps) {
-  const btnBase: React.CSSProperties = {
+  const btnBase: CSSProperties = {
     borderRadius: 8, width: 36, height: 36, fontSize: 16,
     cursor: "pointer", display: "flex", alignItems: "center",
     justifyContent: "center", flexShrink: 0, border: "1px solid",

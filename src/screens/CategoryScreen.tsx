@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { ALL_GAMES, PLAYER_COUNT_INFO, type PlayerCountKey } from "../gameMetadata";
@@ -8,24 +8,27 @@ export default function CategoryScreen() {
   const { playerCount } = useParams<{ playerCount: string }>();
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
+  const [recentIds, setRecentIds] = useState<string[]>([]);
 
   const key = playerCount as PlayerCountKey;
   const info = PLAYER_COUNT_INFO[key];
   const games = ALL_GAMES.filter((g) => g.playerCounts.includes(key));
 
-  if (!info) {
-    navigate("/home");
-    return null;
-  }
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      setRecentIds(snap.data()?.recentGames ?? []);
+    });
+  }, [uid]);
+
+  if (!info) return <Navigate to="/home" replace />;
 
   function handleGameClick(gameId: string, path: string) {
     if (uid) {
-      getDoc(doc(db, "users", uid)).then((snap) => {
-        const current: string[] = snap.data()?.recentGames ?? [];
-        const filtered = current.filter((id: string) => id !== gameId);
-        const updated = [gameId, ...filtered].slice(0, 10);
-        updateDoc(doc(db, "users", uid), { recentGames: updated });
-      });
+      const filtered = recentIds.filter((id) => id !== gameId);
+      const updated = [gameId, ...filtered].slice(0, 10);
+      setRecentIds(updated);
+      updateDoc(doc(db, "users", uid), { recentGames: updated });
     }
     navigate(path);
   }
