@@ -34,15 +34,14 @@ export function flatToGrid(flat: number[]): number[][] {
 function modeLabel(mode: string) {
   if (mode === "AUTO_MARK") return "🌊 Rookie";
   if (mode === "MANUAL_MARK") return "🎯 Sniper";
+  if (mode === "MINI_BOSS_LEVEL") return "🔵 Mini Boss Level";
   return "💪 Boss Level";
 }
 
 export default function LobbyScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<BingoGame[]>([]);
-  const [joinCode, setJoinCode] = useState("");
   const [creating, setCreating] = useState(false);
-  const [joining, setJoining] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -57,7 +56,13 @@ export default function LobbyScreen() {
     if (!uid) return;
     const q = query(collection(db, "games"), where("playerIds", "array-contains", uid));
     return onSnapshot(q, (snap) => {
-      const gs = snap.docs.map((d) => ({ gameId: d.id, ...d.data() } as BingoGame));
+      const gs = snap.docs.map((d) => {
+        const data = d.data() as Record<string, unknown>;
+        if (data.players && !Array.isArray(data.players)) {
+          data.players = Object.values(data.players as Record<string, unknown>);
+        }
+        return { gameId: d.id, ...data } as BingoGame;
+      });
       setGames(gs.filter((g) => g.status !== "FINISHED").sort((a, b) => b.createdAt - a.createdAt));
     });
   }, [uid]);
@@ -72,7 +77,7 @@ export default function LobbyScreen() {
         status: "LOBBY",
         gameMode: user.preferredGameMode || "AUTO_MARK",
         drawStyle: user.preferredDrawStyle || "INSTANT",
-        players: [{ userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, card: { grid: card, markedNumbers: [] as number[] }, hasBingo: false }],
+        players: { [uid]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, card: { grid: card, markedNumbers: [] as number[] }, hasBingo: false } },
         playerIds: [uid],
         drawnNumbers: [],
         currentNumber: null,
@@ -98,24 +103,6 @@ export default function LobbyScreen() {
     await deleteDoc(doc(db, "games", gameId));
   }
 
-  async function joinGame() {
-    if (!user || !uid || !joinCode.trim()) return;
-    setJoining(true);
-    try {
-      const gameRef = doc(db, "games", joinCode.trim());
-      const snap = await getDoc(gameRef);
-      if (!snap.exists()) { alert("Spiel nicht gefunden!"); return; }
-      const game = snap.data() as BingoGame;
-      if (game.playerIds.includes(uid)) { navigate(`/game/${joinCode.trim()}`); return; }
-      const card = generateCard();
-      await updateDoc(gameRef, {
-        playerIds: arrayUnion(uid),
-        players: [...game.players, { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, card: { grid: card, markedNumbers: [] as number[] }, hasBingo: false }],
-      });
-      navigate(`/game/${joinCode.trim()}`);
-    } catch { alert("Beitreten fehlgeschlagen."); }
-    finally { setJoining(false); }
-  }
 
   return (
     <div className="screen">
@@ -162,12 +149,6 @@ export default function LobbyScreen() {
             onClick={() => navigate("/settings")}
             title="Einstellungen"
           >⚙️</button>
-          <button
-            className="btn btn-outline btn-sm"
-            style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
-            onClick={() => navigate("/profile")}
-            title="Profil"
-          >👤</button>
         </div>
       </div>
 
@@ -177,30 +158,6 @@ export default function LobbyScreen() {
         <button className="btn btn-accent" onClick={createGame} disabled={creating}>
           {creating ? "Erstelle Spiel…" : "🎲 Neues Spiel erstellen"}
         </button>
-
-        <div className="divider" />
-
-        <div className="flex flex-col gap-2">
-          <label>Spiel-Code eingeben</label>
-          <div className="flex" style={{ gap: 8 }}>
-            <input
-              type="text"
-              placeholder="Code einfügen…"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && joinGame()}
-              style={{ flex: 1 }}
-            />
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={joinGame}
-              disabled={joining || !joinCode.trim()}
-              style={{ whiteSpace: "nowrap" }}
-            >
-              {joining ? "…" : "Beitreten"}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Aktive Spiele */}

@@ -27,10 +27,10 @@ const GAMES: GameEntry[] = [
   {
     id: "pong",
     emoji: "🏓",
-    title: "BeachPong",
+    title: "BeachVolley",
     description: "Klassisches Tischtennis am Strand – wer gewinnt die Runde?",
     color: "var(--coral)",
-    available: false,
+    available: true,
     path: "/pong/lobby",
   },
   {
@@ -39,7 +39,7 @@ const GAMES: GameEntry[] = [
     title: "Vier4Bier",
     description: "Vier in einer Reihe mit Beach-Twist.",
     color: "var(--accent)",
-    available: false,
+    available: true,
     path: "/vier/lobby",
   },
 ];
@@ -109,10 +109,42 @@ export default function HomeScreen() {
       </div>
 
       {/* Game Cards */}
-      <div style={{ padding: "0 20px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ padding: "0 20px 0", display: "flex", flexDirection: "column", gap: 14 }}>
         {GAMES.map((game) => (
           <GameCard key={game.id} game={game} onSelect={() => navigate(game.path)} />
         ))}
+      </div>
+
+      {/* Join button */}
+      <div style={{ padding: "20px 20px 36px" }}>
+        <button
+          onClick={() => navigate("/join")}
+          style={{
+            width: "100%",
+            background: "var(--surface)",
+            border: "1.5px dashed var(--border)",
+            borderRadius: "var(--radius)",
+            padding: "18px 20px",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+            transition: "border-color 0.15s, background 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--primary)";
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--surface2)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--surface)";
+          }}
+        >
+          <span style={{ fontSize: 22 }}>🔗</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>Spiel beitreten</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>QR-Code scannen oder Code eingeben</div>
+          </div>
+          <span style={{ fontSize: 18, color: "var(--text-muted)", marginLeft: "auto" }}>›</span>
+        </button>
       </div>
     </div>
   );

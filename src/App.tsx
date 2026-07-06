@@ -10,6 +10,15 @@ import GameScreen from "./screens/GameScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import ResultsScreen from "./screens/ResultsScreen";
+import PongLobbyScreen from "./screens/pong/PongLobbyScreen";
+import PongGameScreen from "./screens/pong/PongGameScreen";
+import PongSettingsScreen from "./screens/pong/PongSettingsScreen";
+import PongResultsScreen from "./screens/pong/PongResultsScreen";
+import VierLobbyScreen from "./screens/vier/VierLobbyScreen";
+import VierGameScreen from "./screens/vier/VierGameScreen";
+import VierSettingsScreen from "./screens/vier/VierSettingsScreen";
+import VierResultsScreen from "./screens/vier/VierResultsScreen";
+import JoinScreen from "./screens/JoinScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -39,6 +48,15 @@ function App() {
         <Route path="/profile"  element={loggedIn ? <ProfileScreen /> : <Navigate to="/login" />} />
         <Route path="/settings" element={loggedIn ? <SettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/results"  element={loggedIn ? <ResultsScreen /> : <Navigate to="/login" />} />
+        <Route path="/pong/lobby"    element={loggedIn ? <PongLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/pong/game"     element={loggedIn ? <PongGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/pong/settings" element={loggedIn ? <PongSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/pong/results"  element={loggedIn ? <PongResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/vier/lobby"    element={loggedIn ? <VierLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/vier/game"     element={loggedIn ? <VierGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/vier/settings" element={loggedIn ? <VierSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/vier/results"  element={loggedIn ? <VierResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

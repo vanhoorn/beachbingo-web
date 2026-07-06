@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../firebase";
 import type { BingoGame, BingoPlayer } from "../types";
@@ -79,7 +79,7 @@ function Fireworks({ winner }: { winner: BingoPlayer }) {
   );
 }
 
-function EliminationOverlay({ name, avatar }: { name: string; avatar: string }) {
+function EliminationOverlay({ name, avatar, number }: { name: string; avatar: string; number: number }) {
   return (
     <div style={{
       position: "fixed", inset: 0,
@@ -88,11 +88,50 @@ function EliminationOverlay({ name, avatar }: { name: string; avatar: string }) 
       alignItems: "center", justifyContent: "center",
       zIndex: 100, gap: 16,
     }}>
-      <div style={{ fontSize: 72 }}>💀</div>
+      <div style={{ fontSize: 72 }}>😈</div>
       <div style={{ fontSize: 52 }}>{avatar}</div>
       <div style={{ fontSize: 28, fontWeight: 700, color: "#fff" }}>{name}</div>
       <div style={{ fontSize: 18, color: "var(--danger)", fontWeight: 600 }}>
-        ist raus! 😬
+        wirft die <strong style={{ fontSize: 24 }}>{number}</strong> zurück in die Lostrommel! 🎒
+      </div>
+    </div>
+  );
+}
+
+function EliminationDialog({ drawnNumbers, onEliminate }: { drawnNumbers: number[]; onEliminate: (n: number) => void }) {
+  const [selected, setSelected] = useState<number | null>(null);
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
+    }}>
+      <div style={{
+        background: "var(--surface)", borderRadius: "var(--radius)", padding: 24,
+        maxWidth: 360, width: "90%", display: "flex", flexDirection: "column", gap: 16,
+      }}>
+        <div style={{ textAlign: "center", fontSize: 40 }}>😈</div>
+        <div style={{ fontWeight: 700, color: "var(--danger)", textAlign: "center", fontSize: 18 }}>Du bist dran!</div>
+        <div style={{ fontSize: 14, color: "var(--text-sub)" }}>
+          Wähle eine Zahl, die zurück in die Lostrommel geworfen wird:
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {[...drawnNumbers].sort((a, b) => a - b).map(n => (
+            <button key={n} onClick={() => setSelected(n)} style={{
+              width: 44, height: 44, borderRadius: "50%", border: "none",
+              background: selected === n ? "var(--danger)" : "var(--surface2)",
+              color: selected === n ? "#fff" : "var(--text-sub)",
+              fontWeight: 700, fontSize: 14, cursor: "pointer",
+            }}>{n}</button>
+          ))}
+        </div>
+        <button
+          className="btn btn-primary"
+          style={{ background: "var(--danger)", border: "none" }}
+          disabled={selected === null}
+          onClick={() => selected !== null && onEliminate(selected)}
+        >
+          Zurückwerfen! 😈
+        </button>
       </div>
     </div>
   );
@@ -198,40 +237,27 @@ export default function GameScreen() {
     if (!gameId) return;
     return onSnapshot(doc(db, "games", gameId), (snap) => {
       if (!snap.exists()) { navigate("/lobby"); return; }
-      setGame({ gameId: snap.id, ...snap.data() } as BingoGame);
+      const data = snap.data() as Record<string, unknown>;
+      if (data.players && !Array.isArray(data.players)) {
+        data.players = Object.values(data.players as Record<string, unknown>);
+      }
+      setGame({ gameId: snap.id, ...data } as BingoGame);
     });
   }, [gameId, navigate]);
 
-  // Elimination abschließen nach Animation
+  // Elimination-Animation nach 3s ausblenden
   useEffect(() => {
     if (!game || !gameId) return;
-    if (!game.eliminationAnimationActive || !game.eliminationPendingPlayerId) return;
+    if (!game.eliminationAnimationActive) return;
 
     elimRef.current = setTimeout(async () => {
-      const eliminatedId = game.eliminationPendingPlayerId!;
-      const remaining = game.players.filter((p) => p.userId !== eliminatedId);
-
-      if (remaining.length === 1) {
-        const updatedPlayers = remaining.map((p) => ({ ...p, hasBingo: true }));
-        await updateDoc(doc(db, "games", gameId), {
-          players: updatedPlayers,
-          playerIds: arrayRemove(eliminatedId),
-          status: "FINISHED",
-          eliminationAnimationActive: false,
-          eliminationPendingPlayerId: null,
-        });
-      } else {
-        await updateDoc(doc(db, "games", gameId), {
-          players: remaining,
-          playerIds: arrayRemove(eliminatedId),
-          eliminationAnimationActive: false,
-          eliminationPendingPlayerId: null,
-        });
-      }
+      await updateDoc(doc(db, "games", gameId), {
+        eliminationAnimationActive: false,
+      });
     }, 3000);
 
     return () => { if (elimRef.current) clearTimeout(elimRef.current); };
-  }, [game?.eliminationAnimationActive, game?.eliminationPendingPlayerId, gameId]);
+  }, [game?.eliminationAnimationActive, gameId]);
 
   if (!game || !uid) return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
@@ -242,8 +268,9 @@ export default function GameScreen() {
   const me = game.players.find((p) => p.userId === uid);
   const isAdmin = game.adminId === uid;
   const winner = game.players.find((p) => p.hasBingo);
-  const isBossLevel = game.gameMode === "BOSS_LEVEL";
-  const isEliminated = isBossLevel && !game.players.find((p) => p.userId === uid);
+  const isBossLevel = game.gameMode === "BOSS_LEVEL" || game.gameMode === "MINI_BOSS_LEVEL";
+  const isMiniBossLevel = game.gameMode === "MINI_BOSS_LEVEL";
+  const isMyElimination = isBossLevel && game.eliminationPendingPlayerId === uid && !game.eliminationAnimationActive;
 
   async function startGame() {
     if (!gameId) return;
@@ -267,14 +294,8 @@ export default function GameScreen() {
 
       // Boss Level: Elimination prüfen
       if (isBossLevel && nextCount % game.eliminationInterval === 0 && game.players.length > 1) {
-        const loser = game.players.reduce((worst, p) =>
-          countMarked(p, newDrawn) < countMarked(worst, newDrawn) ? p : worst
-        );
-        updates.eliminationPendingPlayerId = loser.userId;
-        updates.eliminationAnimationActive = true;
-        updates.eliminationPlayerName = loser.displayName;
-        updates.eliminationPlayerAvatar = loser.avatarUrl;
-        updates.eliminationNumber = n;
+        const randomPlayer = game.players[Math.floor(Math.random() * game.players.length)];
+        updates.eliminationPendingPlayerId = randomPlayer.userId;
       }
 
       await updateDoc(doc(db, "games", gameId), updates);
@@ -301,12 +322,22 @@ export default function GameScreen() {
     if (me.card.markedNumbers.includes(n)) return;
     const newMarked = [...me.card.markedNumbers, n];
     const hasBingo = checkBingo(newMarked, me.card.grid);
-    const updatedPlayers = game.players.map((p) =>
-      p.userId === uid ? { ...p, card: { ...p.card, markedNumbers: newMarked }, hasBingo } : p
-    );
-    await updateDoc(doc(db, "games", gameId), { players: updatedPlayers });
+    await updateDoc(doc(db, "games", gameId), {
+      [`players.${uid}.card.markedNumbers`]: newMarked,
+      [`players.${uid}.hasBingo`]: hasBingo,
+    });
     if (hasBingo) {
       await updateDoc(doc(db, "games", gameId), { status: "FINISHED" });
+      await addDoc(collection(db, "gameResults"), {
+        winnerId: uid,
+        winnerName: me.displayName,
+        winnerAvatar: me.avatarUrl,
+        playerIds: game.playerIds,
+        playerNames: game.players.map((p) => p.displayName),
+        playerAvatars: game.players.map((p) => p.avatarUrl),
+        drawnNumbersCount: game.drawnNumbers.length,
+        finishedAt: Date.now(),
+      });
     }
   }
 
@@ -314,10 +345,44 @@ export default function GameScreen() {
     if (!gameId || !game || !me) return;
     const hasBingo = checkBingo(game.drawnNumbers, me.card.grid);
     if (!hasBingo) { alert("Noch kein Bingo! 😅"); return; }
-    const updatedPlayers = game.players.map((p) =>
-      p.userId === uid ? { ...p, hasBingo: true } : p
-    );
-    await updateDoc(doc(db, "games", gameId), { players: updatedPlayers, status: "FINISHED" });
+    await updateDoc(doc(db, "games", gameId), {
+      [`players.${uid}.hasBingo`]: true,
+      status: "FINISHED",
+    });
+    await addDoc(collection(db, "gameResults"), {
+      winnerId: uid,
+      winnerName: me.displayName,
+      winnerAvatar: me.avatarUrl,
+      playerIds: game.playerIds,
+      playerNames: game.players.map((p) => p.displayName),
+      playerAvatars: game.players.map((p) => p.avatarUrl),
+      drawnNumbersCount: game.drawnNumbers.length,
+      finishedAt: Date.now(),
+    });
+  }
+
+  async function eliminateNumber(number: number) {
+    if (!gameId || !game) return;
+    const pendingId = game.eliminationPendingPlayerId;
+    if (!pendingId) return;
+    const eliminator = game.players.find((p) => p.userId === pendingId);
+    const updates: Record<string, unknown> = {
+      drawnNumbers: arrayRemove(number),
+      currentNumber: game.currentNumber === number ? null : game.currentNumber,
+      eliminationPendingPlayerId: null,
+      eliminationAnimationActive: true,
+      eliminationPlayerName: eliminator?.displayName || "",
+      eliminationPlayerAvatar: eliminator?.avatarUrl || "",
+      eliminationNumber: number,
+    };
+    // Remove eliminated number from each player's markedNumbers via field path
+    // to preserve the Map structure Android relies on.
+    for (const p of game.players) {
+      if (p.card.markedNumbers.includes(number)) {
+        updates[`players.${p.userId}.card.markedNumbers`] = p.card.markedNumbers.filter((n) => n !== number);
+      }
+    }
+    await updateDoc(doc(db, "games", gameId), updates);
   }
 
   async function deleteGame() {
@@ -356,10 +421,17 @@ export default function GameScreen() {
         </div>
 
         <div className="card">
-          <div className="card-title">Einstellungen</div>
+          <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+            <div className="card-title" style={{ marginBottom: 0 }}>Einstellungen</div>
+            {!isAdmin && (
+              <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                👑 vom Spielleiter
+              </span>
+            )}
+          </div>
           <div className="flex" style={{ gap: 10, flexWrap: "wrap" }}>
             <span className="badge badge-lobby">
-              {game.gameMode === "AUTO_MARK" ? "🌊 Rookie" : game.gameMode === "MANUAL_MARK" ? "🎯 Sniper" : "💪 Boss Level"}
+              {game.gameMode === "AUTO_MARK" ? "🌊 Rookie" : game.gameMode === "MANUAL_MARK" ? "🎯 Sniper" : game.gameMode === "MINI_BOSS_LEVEL" ? "🔵 Mini Boss Level" : "💪 Boss Level"}
             </span>
             <span className="badge badge-lobby">
               {game.drawStyle === "DRUM" ? "🥁 Lostrommel" : "⚡ Sofort"}
@@ -406,6 +478,7 @@ export default function GameScreen() {
 
   // ── RUNNING ──────────────────────────────────────────
   const autoMark = game.gameMode === "AUTO_MARK";
+  const highlightDrawn = isMiniBossLevel || game.gameMode === "MANUAL_MARK";
   const displayedMarked = autoMark ? game.drawnNumbers : (me?.card.markedNumbers || []);
 
   // Nächste Elimination in X Zügen (Boss Level)
@@ -420,24 +493,14 @@ export default function GameScreen() {
         <EliminationOverlay
           name={game.eliminationPlayerName}
           avatar={game.eliminationPlayerAvatar || "👤"}
+          number={game.eliminationNumber || 0}
         />
       )}
-
-      {/* Eliminiert-Banner */}
-      {isEliminated && (
-        <div style={{
-          background: "var(--danger-bg)",
-          border: "1px solid var(--danger)",
-          borderRadius: "var(--radius)",
-          padding: "16px 20px",
-          textAlign: "center",
-        }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>💀</div>
-          <div style={{ fontWeight: 700, color: "var(--danger)" }}>Du wurdest eliminiert!</div>
-          <div style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 4 }}>
-            Du kannst das Spiel noch beobachten.
-          </div>
-        </div>
+      {isMyElimination && (
+        <EliminationDialog
+          drawnNumbers={game.drawnNumbers}
+          onEliminate={eliminateNumber}
+        />
       )}
 
       {/* Header mit Zurück */}
@@ -448,7 +511,8 @@ export default function GameScreen() {
         <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
           {game.players.length} Spieler · {
             game.gameMode === "AUTO_MARK" ? "🌊 Rookie" :
-            game.gameMode === "MANUAL_MARK" ? "🎯 Sniper" : "💪 Boss Level"
+            game.gameMode === "MANUAL_MARK" ? "🎯 Sniper" :
+            game.gameMode === "MINI_BOSS_LEVEL" ? "🔵 Mini Boss Level" : "💪 Boss Level"
           }
         </span>
       </div>
@@ -480,15 +544,39 @@ export default function GameScreen() {
             className="btn btn-primary"
             style={{ marginTop: 16, maxWidth: 240, margin: "16px auto 0" }}
             onClick={drawNumber}
-            disabled={game.drawAnimationActive || game.eliminationAnimationActive}
+            disabled={game.drawAnimationActive || game.eliminationAnimationActive || !!game.eliminationPendingPlayerId}
           >
             Zahl ziehen
           </button>
         )}
       </div>
 
+      {/* Gezogene Zahlen */}
+      <div className="card">
+        <div className="card-title">
+          Gezogene Zahlen ({game.drawnNumbers.length})
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {game.drawnNumbers.map((n) => (
+            <span
+              key={n}
+              style={{
+                background: n === game.currentNumber ? "var(--accent)" : "var(--surface2)",
+                color: n === game.currentNumber ? "#000" : "var(--text-sub)",
+                borderRadius: 8,
+                padding: "5px 10px",
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Bingo-Karte */}
-      {me && !isEliminated && (
+      {me && (
         <div className="card">
           <div className="card-title" style={{ marginBottom: 16 }}>Deine Karte</div>
 
@@ -516,15 +604,15 @@ export default function GameScreen() {
                     style={{
                       aspectRatio: "1",
                       borderRadius: 10,
-                      border: isDrawn && !isMarked && !isFree ? "2px solid var(--primary)" : "2px solid transparent",
+                      border: highlightDrawn && isDrawn && !isMarked && !isFree ? "2px solid var(--primary)" : "2px solid transparent",
                       background: isFree
                         ? "var(--accent)"
                         : isMarked ? "var(--primary)" : "var(--surface2)",
-                      color: isMarked || isFree ? "#fff" : isDrawn ? "var(--primary)" : "var(--text-sub)",
+                      color: isMarked || isFree ? "#fff" : (highlightDrawn && isDrawn) ? "var(--primary)" : "var(--text-sub)",
                       fontWeight: isMarked ? 800 : 500,
                       fontSize: 18,
                       cursor: isClickable ? "pointer" : "default",
-                      opacity: (!isDrawn && !isFree && !isMarked) ? 0.45 : 1,
+                      opacity: (highlightDrawn && !isDrawn && !isFree && !isMarked) ? 0.45 : 1,
                       transition: "background 0.15s",
                     }}
                   >
@@ -538,7 +626,7 @@ export default function GameScreen() {
       )}
 
       {/* BINGO-Button (AUTO_MARK) */}
-      {autoMark && !isEliminated && (
+      {autoMark && (
         <button
           className="btn btn-accent"
           style={{ fontSize: 20, padding: "20px", fontWeight: 800, letterSpacing: 1 }}
@@ -566,29 +654,6 @@ export default function GameScreen() {
         </div>
       )}
 
-      {/* Gezogene Zahlen */}
-      <div className="card">
-        <div className="card-title">
-          Gezogene Zahlen ({game.drawnNumbers.length})
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {game.drawnNumbers.map((n) => (
-            <span
-              key={n}
-              style={{
-                background: n === game.currentNumber ? "var(--accent)" : "var(--surface2)",
-                color: n === game.currentNumber ? "#000" : "var(--text-sub)",
-                borderRadius: 8,
-                padding: "5px 10px",
-                fontSize: 14,
-                fontWeight: 700,
-              }}
-            >
-              {n}
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

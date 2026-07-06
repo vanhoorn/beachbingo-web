@@ -1,4 +1,4 @@
-export type GameMode = "AUTO_MARK" | "MANUAL_MARK" | "BOSS_LEVEL";
+export type GameMode = "AUTO_MARK" | "MANUAL_MARK" | "MINI_BOSS_LEVEL" | "BOSS_LEVEL";
 export type DrawStyle = "INSTANT" | "DRUM";
 export type GameStatus = "LOBBY" | "RUNNING" | "FINISHED";
 
@@ -10,6 +10,13 @@ export interface User {
   preferredGameMode: GameMode;
   preferredDrawStyle: DrawStyle;
   bossLevelEliminationInterval: number;
+  // BeachVolley preferences
+  preferredPongDifficulty?: PongDifficulty;
+  preferredPongScoreLimit?: number;
+  preferredPongPaddles?: 2 | 3 | 4;
+  // Vier4Bier preferences
+  preferredVierDrinkId?: string;
+  preferredVierDifficulty?: VierDifficulty;
 }
 
 export interface BingoCard {
@@ -60,4 +67,71 @@ export interface GameResult {
   playerAvatars: string[];
 }
 
-export const BEACH_AVATARS = ["🏄", "🤿", "🦀", "🐚", "🌊", "🦞", "☀️", "🏖️", "🐠", "🦈", "🐡", "🦭", "🌴", "🍹", "⛵"];
+export const BEACH_AVATARS = ["🏄", "🤿", "🦀", "🐚", "🌊", "🦞", "☀️", "🏖️", "🐠", "🦈", "🐡", "🦭", "🌴", "⛵", "🐬"];
+
+export const COCKTAIL_AVATARS = ["🍸", "🥂", "🍾", "🥃", "🍷", "🧋", "🍺", "🍻", "🫗", "🧃", "🍵", "🥤", "🍋", "🫧", "🍑"];
+
+export const HOTPROMS_AVATARS = ["🦁👑", "🐍👑", "💜🎤", "🤠🎸", "🎸🔥", "🤡🃏", "💣🎤", "🌹💃", "🦆🎬", "💃🕺", "🎀🔮", "🌹🎸", "🎭✨", "⚡🌟", "☂️💄"];
+
+export const AVATAR_CATEGORIES = [
+  { key: "beach",    label: "Beach",     emoji: "🏖️", avatars: BEACH_AVATARS,    color: "var(--primary)",  selBg: "var(--primary-bg)" },
+  { key: "cocktail", label: "Cocktails", emoji: "🍸", avatars: COCKTAIL_AVATARS, color: "var(--coral)",    selBg: "var(--coral-bg)"   },
+  { key: "hotproms", label: "HotProms",  emoji: "⭐", avatars: HOTPROMS_AVATARS, color: "#a855f7",         selBg: "rgba(168,85,247,0.12)" },
+] as const;
+
+// Vier4Bier
+export type VierDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+export type VierStatus = "LOBBY" | "RUNNING" | "FINISHED";
+
+export interface VierPlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  drinkId: string;
+}
+
+export interface VierGame {
+  gameId: string;
+  adminId: string;
+  status: VierStatus;
+  humanCount: 1 | 2;
+  players: VierPlayer[];
+  playerIds: string[];
+  board: number[];      // flat 42 elements (6 rows × 7 cols), 0=empty 1=player1 2=player2
+  currentTurn: string;  // userId
+  winnerId: string | null;
+  isDraw: boolean;
+  createdAt: number;
+}
+
+// BeachVolley
+export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+export type PongStatus    = "LOBBY" | "RUNNING" | "FINISHED";
+export type PongSide      = "left" | "right" | "top" | "bottom";
+
+export interface PongPlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  side: PongSide;
+}
+
+export interface PongGame {
+  gameId: string;
+  adminId: string;
+  status: PongStatus;
+  totalPaddles: number;  // 2 | 3 | 4
+  humanCount: number;    // how many human players
+  difficulty: PongDifficulty;
+  scoreLimit: number;
+  players: PongPlayer[];
+  playerIds: string[];
+  wallSide: PongSide | null; // for 3-paddle mode: which side is a wall
+  // Synced physics (written by host ~15fps)
+  ballX: number; ballY: number; ballVX: number; ballVY: number; speed: number;
+  paddleLeft: number; paddleRight: number; paddleTop: number; paddleBottom: number;
+  scoreLeft: number; scoreRight: number; scoreTop: number; scoreBottom: number;
+  paused: boolean; pauseTimer: number;
+  winnerId: string | null;
+  createdAt: number;
+}

@@ -77,7 +77,7 @@ export default function SettingsScreen() {
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 12 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/home")}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>
           ‹ Zurück
         </button>
         <h2 style={{ fontSize: 20 }}>Einstellungen</h2>
@@ -103,15 +103,21 @@ export default function SettingsScreen() {
           description="Du tippst selbst auf deine Zahlen. Klassisches Bingo-Feeling."
         />
         <SettingsOption
+          selected={gameMode === "MINI_BOSS_LEVEL"}
+          onClick={() => setGameMode("MINI_BOSS_LEVEL")}
+          title="🔵 3. Mini Boss Level"
+          description="Wie Boss Level, aber gezogene Zahlen werden auf deiner Karte blau umrandet — du siehst sofort welche Zahlen du noch tippen kannst."
+        />
+        <SettingsOption
           selected={gameMode === "BOSS_LEVEL"}
           onClick={() => setGameMode("BOSS_LEVEL")}
-          title="💪 3. Boss Level"
-          description="Alle N Züge wirft ein Spieler eine Zahl zurück in die Lostrommel."
+          title="💪 4. Boss Level"
+          description="Alle N Züge wirft ein Spieler eine Zahl zurück in die Lostrommel. Kein visuelles Highlight — du musst selbst den Überblick behalten."
         />
       </div>
 
       {/* Elimination Interval */}
-      {gameMode === "BOSS_LEVEL" && (
+      {(gameMode === "BOSS_LEVEL" || gameMode === "MINI_BOSS_LEVEL") && (
         <div className="card">
           <div className="card-title">Züge bis Elimination</div>
           <div className="flex items-center justify-between">
