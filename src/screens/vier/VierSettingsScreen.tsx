@@ -44,9 +44,12 @@ export default function VierSettingsScreen() {
 
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
-      <div className="flex items-center" style={{ gap: 12 }}>
+      <div className="flex items-center" style={{ gap: 8 }}>
         <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
-        <h2 style={{ fontSize: 20 }}>Vier4Bier Einstellungen</h2>
+        <h2 style={{ flex: 1, fontSize: 20 }}>Vier4Bier Einstellungen</h2>
+        <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving} style={{ background: "#C2410C", borderColor: "#C2410C" }}>
+          {saving ? "…" : "Speichern"}
+        </button>
       </div>
 
       {/* Difficulty */}
@@ -119,14 +122,6 @@ export default function VierSettingsScreen() {
         </div>
       )}
 
-      <button
-        className="btn btn-primary"
-        onClick={handleSave}
-        disabled={saving}
-        style={{ background: "#C2410C", borderColor: "#C2410C" }}
-      >
-        {saving ? "Speichern…" : "Einstellungen speichern"}
-      </button>
     </div>
   );
 }

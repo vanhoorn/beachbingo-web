@@ -73,7 +73,7 @@ export interface GameResult {
   playerAvatars: string[];
 }
 
-export const BEACH_AVATARS = ["🏄", "🤿", "🦀", "🐚", "🌊", "🦞", "☀️", "🏖️", "🐠", "🦈", "🐡", "🦭", "🌴", "⛵", "🐬"];
+export const BEACH_AVATARS = ["🏄", "🤿", "🦀", "🐚", "🌊", "🦞", "🌞", "🌅", "🐠", "🦈", "🐡", "🦭", "🌴", "⛵", "🐬"];
 
 export const COCKTAIL_AVATARS = ["🍸", "🥂", "🍾", "🥃", "🍷", "🧋", "🍺", "🍻", "🫗", "🧃", "🍵", "🥤", "🍋", "🫧", "🍑"];
 

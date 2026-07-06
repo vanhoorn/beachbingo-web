@@ -77,11 +77,25 @@ export default function ProfileScreen() {
 
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
-      <div className="flex items-center" style={{ gap: 12 }}>
+      <div className="flex items-center" style={{ gap: 8 }}>
         <button className="btn btn-outline btn-sm" onClick={() => navigate("/home")}>
           ‹ Zurück
         </button>
-        <h2 style={{ fontSize: 20, color: "var(--text)" }}>Profil</h2>
+        <h2 style={{ flex: 1, fontSize: 20, color: "var(--text)" }}>Profil</h2>
+        <button
+          className="btn btn-outline btn-sm"
+          style={{ color: "var(--danger)", borderColor: "rgba(239,68,68,0.3)" }}
+          onClick={() => signOut(auth)}
+        >
+          Abmelden
+        </button>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={handleSave}
+          disabled={saving || !displayName.trim()}
+        >
+          {saving ? "…" : "Speichern"}
+        </button>
       </div>
 
       {/* Avatar preview */}
@@ -210,25 +224,6 @@ export default function ProfileScreen() {
           ✓ Profil gespeichert
         </div>
       )}
-
-      <button
-        className="btn btn-primary"
-        onClick={handleSave}
-        disabled={saving || !displayName.trim()}
-      >
-        {saving ? "Speichern…" : "Speichern"}
-      </button>
-
-      <div style={{ marginTop: "auto" }}>
-        <div className="divider" style={{ marginBottom: 16 }} />
-        <button
-          className="btn btn-outline"
-          style={{ color: "var(--danger)", borderColor: "rgba(239,68,68,0.3)" }}
-          onClick={() => signOut(auth)}
-        >
-          Abmelden
-        </button>
-      </div>
     </div>
   );
 }
