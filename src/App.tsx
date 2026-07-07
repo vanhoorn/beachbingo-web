@@ -22,6 +22,7 @@ import PiratesLobbyScreen from "./screens/pirates/PiratesLobbyScreen";
 import PiratesGameScreen from "./screens/pirates/PiratesGameScreen";
 import PiratesSettingsScreen from "./screens/pirates/PiratesSettingsScreen";
 import PiratesResultsScreen from "./screens/pirates/PiratesResultsScreen";
+import PiratesHighscoreScreen from "./screens/pirates/PiratesHighscoreScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 
@@ -64,7 +65,8 @@ function App() {
         <Route path="/pirates/lobby"    element={loggedIn ? <PiratesLobbyScreen />    : <Navigate to="/login" />} />
         <Route path="/pirates/game"     element={loggedIn ? <PiratesGameScreen />     : <Navigate to="/login" />} />
         <Route path="/pirates/settings" element={loggedIn ? <PiratesSettingsScreen /> : <Navigate to="/login" />} />
-        <Route path="/pirates/results"  element={loggedIn ? <PiratesResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/pirates/results"    element={loggedIn ? <PiratesResultsScreen />    : <Navigate to="/login" />} />
+        <Route path="/pirates/highscores" element={loggedIn ? <PiratesHighscoreScreen /> : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
