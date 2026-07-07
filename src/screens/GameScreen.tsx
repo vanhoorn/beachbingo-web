@@ -233,23 +233,7 @@ export default function GameScreen() {
   const uid = auth.currentUser?.uid;
   const drumRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elimRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
-
-  useEffect(() => {
-    if (!uid) return;
-    getDoc(doc(db, "users", uid)).then((snap) => {
-      const favs = snap.data()?.favoriteGames as string[] | undefined;
-      setIsFavorite(favs?.includes("bingo") ?? false);
-    });
-  }, [uid]);
-
-  async function handleFavoriteToggle() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("bingo") : arrayRemove("bingo") });
-  }
 
   useEffect(() => {
     if (!gameId) return;
@@ -676,10 +660,8 @@ export default function GameScreen() {
       {game.status === "RUNNING" && (
         <GameHudBar
           paused={false}
-          isFavorite={isFavorite}
           onPauseToggle={() => {}}
           onQuit={() => setShowQuitDialog(true)}
-          onFavoriteToggle={handleFavoriteToggle}
           pauseDisabled={true}
         >
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>

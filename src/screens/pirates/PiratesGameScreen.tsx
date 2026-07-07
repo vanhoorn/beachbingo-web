@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { PiratesDifficulty } from "../../types";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
@@ -221,22 +221,6 @@ export default function PiratesGameScreen() {
   const [uiFiring, setUiFiring] = useState(BASE_FIRING[difficulty]);
   const [paused,  setPaused]            = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
-  const [isFavorite, setIsFavorite]     = useState(false);
-
-  useEffect(() => {
-    if (!uid) return;
-    getDoc(doc(db, "users", uid)).then((snap) => {
-      const favs = snap.data()?.favoriteGames as string[] | undefined;
-      setIsFavorite(favs?.includes("pirates") ?? false);
-    });
-  }, [uid]);
-
-  async function handleFavoriteToggle() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("pirates") : arrayRemove("pirates") });
-  }
 
   // Keep pausedRef in sync (game loop reads ref, not state)
   function setPausedSync(val: boolean) {
@@ -559,10 +543,8 @@ export default function PiratesGameScreen() {
       {/* HUD */}
       <GameHudBar
         paused={paused}
-        isFavorite={isFavorite}
         onPauseToggle={handlePause}
         onQuit={handleQuitRequest}
-        onFavoriteToggle={handleFavoriteToggle}
         pauseDisabled={uiPhase === "game_over"}
       >
         <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flex: 1 }}>

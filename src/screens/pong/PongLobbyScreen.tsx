@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   collection, doc, getDoc, onSnapshot, addDoc, updateDoc,
-  arrayUnion, query, where, deleteDoc,
+  arrayUnion, arrayRemove, query, where, deleteDoc,
 } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -30,6 +30,7 @@ export default function PongLobbyScreen() {
   const [humanCount,   setHumanCount]   = useState(1);
   const [difficulty,   setDifficulty]   = useState<PongDifficulty>("ROOKIE");
   const [scoreLimit,   setScoreLimit]   = useState(7);
+  const [isFavorite,   setIsFavorite]   = useState(false);
 
   // Multi-player lobby
   const [activeGame, setActiveGame] = useState<PongGame | null>(null);
@@ -44,8 +45,18 @@ export default function PongLobbyScreen() {
     if (!uid) return;
     getDoc(doc(db, "users", uid)).then((snap) => {
       if (snap.exists()) setUser(snap.data() as User);
+      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("pong"));
     });
   }, [uid]);
+
+  async function toggleFavorite() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), {
+      favoriteGames: next ? arrayUnion("pong") : arrayRemove("pong"),
+    });
+  }
 
   // Listen for my open pong lobby games (multi-player)
   useEffect(() => {
@@ -135,6 +146,13 @@ export default function PongLobbyScreen() {
             onClick={() => navigate("/pong/results")}
             title="Ergebnisse"
           >🏆</button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={toggleFavorite}
+            style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : undefined, borderColor: isFavorite ? "var(--accent)" : undefined }}
+          >
+            {isFavorite ? "★" : "☆"}
+          </button>
           <button
             className="btn btn-outline btn-sm"
             style={{ width: 42, padding: 0, fontSize: 18 }}

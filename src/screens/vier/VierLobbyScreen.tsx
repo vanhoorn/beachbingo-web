@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -24,6 +24,7 @@ export default function VierLobbyScreen() {
   const [creating, setCreating] = useState(false);
   const [waitingGame, setWaitingGame] = useState<VierGame | null>(null);
   const [error, setError] = useState("");
+  const [isFavorite, setIsFavorite] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
   const unsubWaitRef = useRef<(() => void) | null>(null);
@@ -54,8 +55,18 @@ export default function VierLobbyScreen() {
         if (u.preferredVierDrinkId) setMyDrinkId(u.preferredVierDrinkId);
         if (u.preferredVierDifficulty) setAiDifficulty(u.preferredVierDifficulty);
       }
+      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("vier"));
     });
   }, [uid]);
+
+  async function toggleFavorite() {
+    if (!uid) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    await updateDoc(doc(db, "users", uid), {
+      favoriteGames: next ? arrayUnion("vier") : arrayRemove("vier"),
+    });
+  }
 
   // Handle ?join= deep-link (QR scan)
   useEffect(() => {
@@ -142,6 +153,13 @@ export default function VierLobbyScreen() {
             onClick={() => navigate("/vier/results")}
             title="Ergebnisse"
           >🏆</button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={toggleFavorite}
+            style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}
+          >
+            {isFavorite ? "★" : "☆"}
+          </button>
           <button
             className="btn btn-outline btn-sm"
             style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}

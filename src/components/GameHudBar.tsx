@@ -2,20 +2,16 @@ import type { CSSProperties, ReactNode } from "react";
 
 interface GameHudBarProps {
   paused: boolean;
-  isFavorite: boolean;
   onPauseToggle: () => void;
   onQuit: () => void;
-  onFavoriteToggle: () => void;
   pauseDisabled?: boolean;
   children?: ReactNode;
 }
 
 export function GameHudBar({
   paused,
-  isFavorite,
   onPauseToggle,
   onQuit,
-  onFavoriteToggle,
   pauseDisabled = false,
   children,
 }: GameHudBarProps) {
@@ -36,21 +32,6 @@ export function GameHudBar({
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
         {children}
       </div>
-
-      {/* Favorite star */}
-      <button
-        onClick={onFavoriteToggle}
-        title={isFavorite ? "Aus Favoriten entfernen" : "Als Favorit markieren"}
-        style={{
-          ...btnBase,
-          background: isFavorite ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.05)",
-          borderColor: isFavorite ? "var(--accent)" : "var(--border)",
-          color: isFavorite ? "var(--accent)" : "var(--text-muted)",
-          fontSize: 18,
-        }}
-      >
-        {isFavorite ? "★" : "☆"}
-      </button>
 
       {/* Pause / Play */}
       <button

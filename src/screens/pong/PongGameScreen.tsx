@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
 import { db, auth } from "../../firebase";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
@@ -694,27 +694,11 @@ export default function PongGameScreen() {
   const manualPausedRef = useRef(false);
   const [manualPaused, setManualPaused] = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  useEffect(() => {
-    if (!uid) return;
-    getDoc(doc(db, "users", uid)).then((snap) => {
-      const favs = snap.data()?.favoriteGames as string[] | undefined;
-      setIsFavorite(favs?.includes("pong") ?? false);
-    });
-  }, [uid]);
 
   function handleManualPause() {
     const next = !manualPausedRef.current;
     manualPausedRef.current = next;
     setManualPaused(next);
-  }
-
-  async function handleFavoriteToggle() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), { favoriteGames: next ? arrayUnion("pong") : arrayRemove("pong") });
   }
 
   // ── Restart ──────────────────────────────────────────────────────────────────
@@ -784,10 +768,8 @@ export default function PongGameScreen() {
       {/* HUD bar */}
       <GameHudBar
         paused={manualPaused}
-        isFavorite={isFavorite}
         onPauseToggle={handleManualPause}
         onQuit={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
-        onFavoriteToggle={handleFavoriteToggle}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, overflowX: "auto" }}>
           {activeSidesList.map((side, i) => (
