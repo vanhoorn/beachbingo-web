@@ -25,12 +25,6 @@ function avatarName(av: string): string {
   return HOTPROMS_NAMES[av] ?? COCKTAIL_NAMES[av] ?? "";
 }
 
-/** Returns only the first emoji code point of a (possibly two-emoji) avatar string. */
-function firstEmoji(s: string): string {
-  const arr = [...s]; // splits by Unicode code points, not UTF-16 code units
-  return arr[0] ?? s;
-}
-
 function categoryOf(av: string) {
   return AVATAR_CATEGORIES.find((c) => (c.avatars as readonly string[]).includes(av)) ?? AVATAR_CATEGORIES[0];
 }

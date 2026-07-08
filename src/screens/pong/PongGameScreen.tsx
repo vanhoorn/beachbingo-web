@@ -206,7 +206,7 @@ export default function PongGameScreen() {
       } else {
         // Host only reads guest paddles
         const g = gsRef.current;
-        data.players.forEach((p) => { if (p.userId !== uid) g.paddles[p.side] = (data as Record<string,number>)[`paddle${cap(p.side)}`] ?? g.paddles[p.side]; });
+        data.players.forEach((p) => { if (p.userId !== uid) g.paddles[p.side] = (data as unknown as Record<string,number>)[`paddle${cap(p.side)}`] ?? g.paddles[p.side]; });
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

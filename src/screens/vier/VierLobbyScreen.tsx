@@ -72,7 +72,7 @@ export default function VierLobbyScreen() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const j = p.get("join");
-    if (j) { setMode("online"); setStep("lobby"); setJoinCode(j.toUpperCase()); }
+    if (j) { setMode("online"); setStep("lobby"); setGameCode(j.toUpperCase()); }
   }, []);
 
   function pickAiDrink(myId: string): string {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../firebase";
 import type { BingoGame, BingoPlayer } from "../types";
@@ -286,7 +286,6 @@ export default function GameScreen() {
     const nextCount = game.totalDrawCount + 1;
 
     const doUpdate = async (n: number) => {
-      const newDrawn = [...game.drawnNumbers, n];
       const updates: Record<string, unknown> = {
         drawnNumbers: arrayUnion(n),
         currentNumber: n,

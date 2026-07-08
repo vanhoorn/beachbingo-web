@@ -191,7 +191,7 @@ function MiniCard({ game, onClick }: { game: { id: string; emoji: string; title:
 }
 
 function CategoryTile({
-  playerKey, emoji, label, gameCount, onClick,
+  playerKey: _playerKey, emoji, label, gameCount, onClick,
 }: {
   playerKey: PlayerCountKey;
   emoji: string;

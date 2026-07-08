@@ -8,7 +8,6 @@ import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
 import type { PongDifficulty, PongGame, PongPlayer, PongSide, User } from "../../types";
 
-const SIDES: PongSide[] = ["left", "right", "top", "bottom"];
 
 const DIFFICULTY_OPTIONS: { key: PongDifficulty; label: string; desc: string }[] = [
   { key: "ROOKIE",     label: "Rookie",     desc: "Langsam, macht Fehler" },
