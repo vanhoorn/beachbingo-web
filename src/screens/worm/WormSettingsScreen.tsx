@@ -96,19 +96,19 @@ export default function WormSettingsScreen() {
           selected={difficulty === "ROOKIE"}
           onClick={() => setDifficulty("ROOKIE")}
           title="🌊 Rookie"
-          description="150ms/Schritt · Wände töten · Ideal zum Starten"
+          description="Gemütliches Tempo · Wände töten · Ideal zum Starten"
         />
         <SettingsOption
           selected={difficulty === "SNIPER"}
           onClick={() => setDifficulty("SNIPER")}
           title="🎯 Sniper"
-          description="100ms/Schritt · Wände töten · Echte Herausforderung"
+          description="Flottes Tempo · Wände töten · Echte Herausforderung"
         />
         <SettingsOption
           selected={difficulty === "BOSS_LEVEL"}
           onClick={() => setDifficulty("BOSS_LEVEL")}
           title="💪 Boss Level"
-          description="65ms/Schritt · Wände = Teleport · Viel Spaß 😈"
+          description="Volles Tempo · Wände töten · Viel Spaß 😈"
         />
       </div>
 

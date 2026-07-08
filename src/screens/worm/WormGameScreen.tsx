@@ -28,16 +28,16 @@ const FOOD_TYPES = [
 
 // ── Difficulty ────────────────────────────────────────────────────────────────
 const STEP_MS: Record<WormDifficulty, number> = {
-  ROOKIE:     150,
-  SNIPER:     100,
-  BOSS_LEVEL:  65,
+  ROOKIE:     300,
+  SNIPER:     150,
+  BOSS_LEVEL:  75,
 };
 
-// BOSS_LEVEL: walls wrap-around; others: walls kill
+// all difficulties: walls kill
 const WALLS_WRAP: Record<WormDifficulty, boolean> = {
   ROOKIE:     false,
   SNIPER:     false,
-  BOSS_LEVEL: true,
+  BOSS_LEVEL: false,
 };
 
 interface Vec2  { x: number; y: number; }
@@ -114,6 +114,11 @@ export default function WormGameScreen() {
     for (let j = 0; j <= ROWS; j++) {
       ctx.beginPath(); ctx.moveTo(0, j * CELL); ctx.lineTo(CW, j * CELL); ctx.stroke();
     }
+
+    // Outer border – clearly marks the deadly wall
+    ctx.strokeStyle = "rgba(239,68,68,0.85)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, CW - 3, CH - 3);
 
     // Snake segments
     const snake = snakeRef.current;
