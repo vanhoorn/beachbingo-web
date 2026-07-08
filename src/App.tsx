@@ -23,6 +23,11 @@ import PiratesGameScreen from "./screens/pirates/PiratesGameScreen";
 import PiratesSettingsScreen from "./screens/pirates/PiratesSettingsScreen";
 import PiratesResultsScreen from "./screens/pirates/PiratesResultsScreen";
 import PiratesHighscoreScreen from "./screens/pirates/PiratesHighscoreScreen";
+import WormLobbyScreen from "./screens/worm/WormLobbyScreen";
+import WormGameScreen from "./screens/worm/WormGameScreen";
+import WormSettingsScreen from "./screens/worm/WormSettingsScreen";
+import WormResultsScreen from "./screens/worm/WormResultsScreen";
+import WormHighscoreScreen from "./screens/worm/WormHighscoreScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 
@@ -67,6 +72,11 @@ function App() {
         <Route path="/pirates/settings" element={loggedIn ? <PiratesSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/pirates/results"    element={loggedIn ? <PiratesResultsScreen />    : <Navigate to="/login" />} />
         <Route path="/pirates/highscores" element={loggedIn ? <PiratesHighscoreScreen /> : <Navigate to="/login" />} />
+        <Route path="/worm/lobby"      element={loggedIn ? <WormLobbyScreen />      : <Navigate to="/login" />} />
+        <Route path="/worm/game"       element={loggedIn ? <WormGameScreen />       : <Navigate to="/login" />} />
+        <Route path="/worm/settings"   element={loggedIn ? <WormSettingsScreen />   : <Navigate to="/login" />} />
+        <Route path="/worm/results"    element={loggedIn ? <WormResultsScreen />    : <Navigate to="/login" />} />
+        <Route path="/worm/highscores" element={loggedIn ? <WormHighscoreScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />

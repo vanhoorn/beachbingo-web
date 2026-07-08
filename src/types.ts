@@ -23,6 +23,10 @@ export interface User {
   preferredPiratesControlMode?: "BUTTONS" | "TOUCH";
   piratesHighScore?: number;
   piratesHighScores?: { ROOKIE?: number; SNIPER?: number; BOSS_LEVEL?: number };
+  // Wattwurm preferences
+  preferredWormDifficulty?: WormDifficulty;
+  preferredWormControlMode?: "BUTTONS" | "SWIPE";
+  wormHighScores?: { ROOKIE?: number; SNIPER?: number; BOSS_LEVEL?: number };
 }
 
 export interface BingoCard {
@@ -112,6 +116,9 @@ export interface VierGame {
 
 // BeachPirates
 export type PiratesDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+
+// Wattwurm
+export type WormDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
 
 // BeachVolley
 export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";

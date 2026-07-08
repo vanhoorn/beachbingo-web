@@ -66,6 +66,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE"],
     genres: ["ACTION"],
   },
+  {
+    id: "worm",
+    emoji: "🪱",
+    title: "Wattwurm",
+    description: "Frisst Krabben, Muscheln und Fische. Werde nie die Grenzen! 🌊",
+    color: "#22c55e",
+    path: "/worm/lobby",
+    playerCounts: ["ONE"],
+    genres: ["ACTION"],
+  },
 ];
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];
