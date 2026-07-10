@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
+import { audioManager } from "./audio/AudioManager";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -28,6 +30,11 @@ import WormGameScreen from "./screens/worm/WormGameScreen";
 import WormSettingsScreen from "./screens/worm/WormSettingsScreen";
 import WormResultsScreen from "./screens/worm/WormResultsScreen";
 import WormHighscoreScreen from "./screens/worm/WormHighscoreScreen";
+import StrandturmLobbyScreen from "./screens/strandturm/StrandturmLobbyScreen";
+import StrandturmGameScreen from "./screens/strandturm/StrandturmGameScreen";
+import StrandturmSettingsScreen from "./screens/strandturm/StrandturmSettingsScreen";
+import StrandturmResultsScreen from "./screens/strandturm/StrandturmResultsScreen";
+import StrandturmHighscoreScreen from "./screens/strandturm/StrandturmHighscoreScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 
@@ -37,6 +44,16 @@ function App() {
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
       setLoggedIn(!!user);
+      if (user) {
+        // Load audio preferences once on login
+        getDoc(doc(db, "users", user.uid)).then((snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            audioManager.setSound(data.soundEnabled !== false);
+            audioManager.setMusic(data.musicEnabled !== false);
+          }
+        });
+      }
     });
   }, []);
 
@@ -77,6 +94,11 @@ function App() {
         <Route path="/worm/settings"   element={loggedIn ? <WormSettingsScreen />   : <Navigate to="/login" />} />
         <Route path="/worm/results"    element={loggedIn ? <WormResultsScreen />    : <Navigate to="/login" />} />
         <Route path="/worm/highscores" element={loggedIn ? <WormHighscoreScreen />  : <Navigate to="/login" />} />
+        <Route path="/strandturm/lobby"      element={loggedIn ? <StrandturmLobbyScreen />      : <Navigate to="/login" />} />
+        <Route path="/strandturm/game"       element={loggedIn ? <StrandturmGameScreen />       : <Navigate to="/login" />} />
+        <Route path="/strandturm/settings"   element={loggedIn ? <StrandturmSettingsScreen />   : <Navigate to="/login" />} />
+        <Route path="/strandturm/results"    element={loggedIn ? <StrandturmResultsScreen />    : <Navigate to="/login" />} />
+        <Route path="/strandturm/highscores" element={loggedIn ? <StrandturmHighscoreScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />

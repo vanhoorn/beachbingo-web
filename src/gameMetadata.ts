@@ -76,6 +76,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE"],
     genres: ["ACTION"],
   },
+  {
+    id: "strandturm",
+    emoji: "🗼",
+    title: "Strandturm",
+    description: "Klettere den Pier hoch, weiche Kokosnüssen aus — bis zum Gipfel!",
+    color: "#dc2626",
+    path: "/strandturm/lobby",
+    playerCounts: ["ONE"],
+    genres: ["ACTION"],
+  },
 ];
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

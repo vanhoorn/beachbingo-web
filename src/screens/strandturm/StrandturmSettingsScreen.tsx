@@ -1,0 +1,133 @@
+import { useEffect, useState } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { auth, db } from "../../firebase";
+import type { User } from "../../types";
+
+const RED = "#dc2626";
+
+function ModeOption({ selected, onClick, title, description }: {
+  selected: boolean; onClick: () => void; title: string; description: string;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: selected ? "rgba(220,38,38,0.12)" : "var(--surface)",
+        border: `1.5px solid ${selected ? RED : "var(--border)"}`,
+        borderRadius: "var(--radius)",
+        padding: "14px 18px",
+        cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 12,
+        transition: "border-color 0.15s, background 0.15s",
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+        border: `2px solid ${selected ? RED : "var(--text-muted)"}`,
+        background: selected ? RED : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {selected && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
+      </div>
+      <div>
+        <div style={{ fontWeight: 600, fontSize: 15 }}>{title}</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{description}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function StrandturmSettingsScreen() {
+  const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH">("BUTTONS");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const navigate = useNavigate();
+  const uid = auth.currentUser?.uid;
+
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      if (snap.exists()) {
+        const u = snap.data() as User;
+        setControlMode(u.preferredStrandturmControlMode ?? "BUTTONS");
+      }
+    });
+  }, [uid]);
+
+  async function handleSave() {
+    if (!uid) return;
+    setSaving(true);
+    await updateDoc(doc(db, "users", uid), {
+      preferredStrandturmControlMode: controlMode,
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  return (
+    <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
+      <div className="flex items-center" style={{ gap: 8 }}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>STRANDTURM</div>
+          <h2 style={{ fontSize: 20 }}>⚙️ Einstellungen</h2>
+        </div>
+        <button
+          className="btn btn-sm"
+          style={{ background: RED, color: "#fff", border: "none" }}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "…" : "Speichern"}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="card-title" style={{ paddingLeft: 4 }}>Steuerung</div>
+        <ModeOption
+          selected={controlMode === "BUTTONS"}
+          onClick={() => setControlMode("BUTTONS")}
+          title="🔲 Buttons"
+          description="D-Pad unter dem Spielfeld: ◄ ▲ ► und ▼ zum Klettern"
+        />
+        <ModeOption
+          selected={controlMode === "TOUCH"}
+          onClick={() => setControlMode("TOUCH")}
+          title="👆 Touch-Zonen"
+          description="Linke Hälfte = Links · Rechte Hälfte = Rechts · Tap oben = Springen"
+        />
+      </div>
+
+      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7 }}>
+        <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>Steuerung im Detail</div>
+        <div><strong style={{ color: "var(--text)" }}>Laufen:</strong> ◄ / ► drücken</div>
+        <div><strong style={{ color: "var(--text)" }}>Springen:</strong> ▲ drücken (auf dem Boden)</div>
+        <div><strong style={{ color: "var(--text)" }}>Leiter hoch:</strong> ▲ an der Leiter halten</div>
+        <div><strong style={{ color: "var(--text)" }}>Leiter runter:</strong> ▼ auf der Plattform über Leiter</div>
+      </div>
+
+      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+        💡 Musik & Soundeffekte findest du in den{" "}
+        <span
+          style={{ color: RED, cursor: "pointer" }}
+          onClick={() => navigate("/settings")}
+        >
+          allgemeinen Einstellungen
+        </span>
+        .
+      </div>
+
+      {saved && (
+        <div style={{
+          background: "rgba(34,197,94,0.12)", border: "1px solid var(--success)",
+          borderRadius: "var(--radius-sm)", padding: "10px 16px",
+          color: "var(--success)", fontSize: 14, textAlign: "center",
+        }}>
+          ✓ Gespeichert
+        </div>
+      )}
+    </div>
+  );
+}

@@ -27,6 +27,13 @@ export interface User {
   preferredWormDifficulty?: WormDifficulty;
   preferredWormControlMode?: "BUTTONS" | "SWIPE";
   wormHighScores?: { ROOKIE?: number; SNIPER?: number; BOSS_LEVEL?: number };
+  // Strandturm preferences
+  preferredStrandturmControlMode?: "BUTTONS" | "TOUCH";
+  strandturmHighScore?: number;
+  strandturmBestLevel?: number;
+  // Global audio settings
+  soundEnabled?: boolean;
+  musicEnabled?: boolean;
 }
 
 export interface BingoCard {
