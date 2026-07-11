@@ -77,6 +77,34 @@ function spawnInterval(lvl: number) { return Math.max(80, 240 - (lvl - 1) * 20);
 // Roll/fall speed factor (increases with level, capped at level 5)
 function cocoSpeed(lvl: number) { return 1.0 + Math.min(4, lvl - 1) * 0.15; }
 
+// ── Level type & names ─────────────────────────────────────────────────────────
+// Cycles 1→2→3→4→1→2→… as levels increase
+function getLevelType(lvl: number): number { return ((lvl - 1) % 4) + 1; }
+
+const LEVEL_NAMES: Record<number, string> = {
+  1: "🏗️ Die Baustelle",
+  2: "🏭 Die Zementfabrik",
+  3: "🛗 Die Aufzüge",
+  4: "🔩 Die Nieten",
+};
+
+// ── Conveyor belts (Level 2 mechanic) ─────────────────────────────────────────
+interface ConveyorBelt { platIdx: number; x: number; w: number; vx: number; }
+
+const BELT_SPEED = 1.2;
+
+function getConveyorBelts(lvl: number): ConveyorBelt[] {
+  if (getLevelType(lvl) !== 2) return [];
+  // Right-going belts on P1/P3, left-going on P2/P4 (same direction as obstacles).
+  // Positioned away from main ladder entries so a safe zone exists near each ladder.
+  return [
+    { platIdx: 1, x: 150, w: 200, vx:  BELT_SPEED }, // P1 right half → right
+    { platIdx: 2, x:  20, w: 200, vx: -BELT_SPEED }, // P2 left half  → left
+    { platIdx: 3, x: 150, w: 200, vx:  BELT_SPEED }, // P3 right half → right
+    { platIdx: 4, x:  20, w: 200, vx: -BELT_SPEED }, // P4 left half  → left
+  ];
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Coco {
   id: number; x: number; y: number;
@@ -125,6 +153,9 @@ interface GS {
   // Explosion effects
   explosions: Explosion[];
   explosionIdCtr: number;
+
+  // Conveyor belts active this level (empty for non-L2 level types)
+  conveyorBelts: ConveyorBelt[];
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
@@ -141,6 +172,7 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     hammerPickups: HAMMER_DEFS.map(() => false),
     jumpedCocoIds: new Set<number>(),
     explosions: [], explosionIdCtr: 0,
+    conveyorBelts: getConveyorBelts(lvl),
   };
 }
 
@@ -351,6 +383,65 @@ function drawCoco(ctx: CanvasRenderingContext2D, c: Coco) {
   ctx.beginPath(); ctx.arc(c.x - 2, c.y - 3, COCO_R * 0.38, 0, Math.PI * 2); ctx.fill();
 }
 
+function drawConveyorBelt(ctx: CanvasRenderingContext2D, belt: ConveyorBelt, frame: number) {
+  const platsArr = PLATS as ReadonlyArray<{ x: number; y: number; w: number }>;
+  const py = platsArr[belt.platIdx].y;
+  const PERIOD = 18;
+  const rawOff = (frame * 0.5) % PERIOD;
+  const scrollX = belt.vx > 0 ? rawOff : PERIOD - rawOff;
+  // Belt surface – industrial steel-gray, 5px overlaying the platform top edge
+  ctx.fillStyle = "rgba(51,65,85,0.88)";
+  ctx.fillRect(belt.x, py, belt.w, 5);
+  // Animated diagonal stripes (clipped to belt area)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(belt.x, py, belt.w, 5); ctx.clip();
+  ctx.fillStyle = "rgba(148,163,184,0.42)";
+  for (let sx = belt.x - PERIOD * 2 + scrollX; sx < belt.x + belt.w + PERIOD; sx += PERIOD) {
+    ctx.beginPath();
+    ctx.moveTo(sx,                   py);
+    ctx.lineTo(sx + PERIOD * 0.55,   py + 5);
+    ctx.lineTo(sx + PERIOD,          py + 5);
+    ctx.lineTo(sx + PERIOD * 0.45,   py);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  // Direction edge highlight (amber = right, blue = left)
+  ctx.strokeStyle = belt.vx > 0 ? "rgba(251,191,36,0.85)" : "rgba(96,165,250,0.85)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(belt.x, py); ctx.lineTo(belt.x + belt.w, py); ctx.stroke();
+}
+
+function drawWanne(ctx: CanvasRenderingContext2D, c: Coco) {
+  const r = COCO_R;
+  // Trapezoid body (cement trough)
+  ctx.fillStyle = "#78716c";
+  ctx.beginPath();
+  ctx.moveTo(c.x - r + 1,   c.y - r * 0.55);
+  ctx.lineTo(c.x + r - 1,   c.y - r * 0.55);
+  ctx.lineTo(c.x + r - 3,   c.y + r * 0.6);
+  ctx.lineTo(c.x - r + 3,   c.y + r * 0.6);
+  ctx.closePath(); ctx.fill();
+  // Lighter cement fill on top surface
+  ctx.fillStyle = "#a8a29e";
+  ctx.beginPath();
+  ctx.moveTo(c.x - r + 2,   c.y - r * 0.55);
+  ctx.lineTo(c.x + r - 2,   c.y - r * 0.55);
+  ctx.lineTo(c.x + r - 3.5, c.y - r * 0.05);
+  ctx.lineTo(c.x - r + 3.5, c.y - r * 0.05);
+  ctx.closePath(); ctx.fill();
+  // Carrying handle (U-shape)
+  ctx.strokeStyle = "#57534e"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(c.x - r + 2, c.y - r * 0.55);
+  ctx.lineTo(c.x - r,     c.y - r * 1.15);
+  ctx.lineTo(c.x + r,     c.y - r * 1.15);
+  ctx.lineTo(c.x + r - 2, c.y - r * 0.55);
+  ctx.stroke();
+  // Dark shadow on bottom
+  ctx.fillStyle = "#44403c";
+  ctx.fillRect(c.x - r + 3, c.y + r * 0.25, (r - 3) * 2, r * 0.35);
+}
+
 function drawGoal(ctx: CanvasRenderingContext2D) {
   ctx.font = "24px serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -392,6 +483,8 @@ function drawOverlay(ctx: CanvasRenderingContext2D, gs: GS) {
     ctx.fillText(`+${gs.bonusTimer} Bonus-Punkte`, CW / 2, CH / 2 + 18);
     ctx.font = "14px sans-serif"; ctx.fillStyle = "#94a3b8";
     ctx.fillText(`Level ${gs.level + 1} startet …`, CW / 2, CH / 2 + 46);
+    ctx.font = "13px sans-serif"; ctx.fillStyle = "#fbbf24";
+    ctx.fillText(LEVEL_NAMES[getLevelType(gs.level + 1)], CW / 2, CH / 2 + 70);
   }
 
   if (gs.phase === "LIFE_LOST") {
@@ -607,6 +700,18 @@ export default function StrandturmGameScreen() {
       }
     }
 
+    // ── Conveyor belt effect (Level 2 mechanic) ──────────────────────────────
+    if (gs.ponGround && !gs.ponLadder && gs.conveyorBelts.length > 0) {
+      const platsArr = PLATS as ReadonlyArray<{ x: number; y: number; w: number }>;
+      for (const belt of gs.conveyorBelts) {
+        if (Math.abs(gs.py - platsArr[belt.platIdx].y) < 2 &&
+            gs.px >= belt.x && gs.px <= belt.x + belt.w) {
+          gs.px = Math.max(PW / 2, Math.min(CW - PW / 2, gs.px + belt.vx));
+          break;
+        }
+      }
+    }
+
     // ── Ladder exit ───────────────────────────────────────────────────────────
     if (gs.ponLadder && gs.pladderIdx >= 0) {
       const l = LADDERS[gs.pladderIdx];
@@ -802,6 +907,9 @@ export default function StrandturmGameScreen() {
     // Platforms
     for (const p of PLATS) drawPlat(ctx, p);
 
+    // Conveyor belts (overlaid on platform surface, under ladders – Level 2 mechanic)
+    for (const belt of gs.conveyorBelts) drawConveyorBelt(ctx, belt, gs.totalFrame);
+
     // Ladders
     for (const l of LADDERS) drawLadder(ctx, l);
 
@@ -819,8 +927,11 @@ export default function StrandturmGameScreen() {
     // Seelöwe
     drawSeeloewe(ctx, gs.totalFrame);
 
-    // Coconuts
-    for (const c of gs.cocos) drawCoco(ctx, c);
+    // Obstacles (coconuts in L1, cement troughs in L2)
+    for (const c of gs.cocos) {
+      if (getLevelType(gs.level) === 2) drawWanne(ctx, c);
+      else drawCoco(ctx, c);
+    }
 
     // Explosions (above coconuts, below player)
     for (const e of gs.explosions) drawExplosion(ctx, e);
