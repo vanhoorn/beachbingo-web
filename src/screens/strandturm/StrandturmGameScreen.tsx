@@ -15,7 +15,7 @@ const PW = 16, PH = 26;
 const GRAVITY    = 0.48;
 const MAX_FALL   = 11;
 const WALK_SPEED = 2.2;
-const JUMP_VY    = -9.8;
+const JUMP_VY    = -7.5; // max ~58px – cannot reach next platform (85px gap)
 const CLIMB_SPD  = 1.7;
 
 // ── Level layout ───────────────────────────────────────────────────────────────
@@ -33,18 +33,31 @@ const PLAT_H = 11;
 // Ladders: cx = center x, y1 = top (platform above), y2 = bottom (platform below)
 const LADDERS = [
   { cx: 355, y1: 420, y2: 505 }, // R: P0→P1
+  { cx: 130, y1: 420, y2: 505 }, // L: P0→P1 (extra)
   { cx: 25,  y1: 335, y2: 420 }, // L: P1→P2
+  { cx: 255, y1: 335, y2: 420 }, // R: P1→P2 (extra)
   { cx: 355, y1: 250, y2: 335 }, // R: P2→P3
+  { cx: 130, y1: 250, y2: 335 }, // L: P2→P3 (extra)
   { cx: 25,  y1: 165, y2: 250 }, // L: P3→P4
+  { cx: 255, y1: 165, y2: 250 }, // R: P3→P4 (extra)
   { cx: 355, y1: 80,  y2: 165 }, // R: P4→P5
+  { cx: 130, y1: 80,  y2: 165 }, // L: P4→P5 (extra)
 ] as const;
 const LADD_W = 18;
 
 const GOAL_X = 340; // x-threshold on P5 to win
-const MOEVE_X = 55, MOEVE_Y = 48; // Möwe center, above P5 left side
+const MOEVE_X = 55; // Möwe x position on P5 left side
 
 // Coconut roll directions per platform index (positive = right)
+// Alternating creates the DK-style zigzag cascade from top to bottom
 const ROLL_DIR = [-1, 1, -1, 1, -1, 1] as const;
+
+// Hammer power-up definitions
+const HAMMER_DEFS = [
+  { x: 190, platIdx: 1 }, // P1 center
+  { x: 190, platIdx: 3 }, // P3 center
+] as const;
+const HAMMER_DURATION = 300; // 5 s at 60 fps
 const COCO_R = 8;
 
 // ── Bonus timer ────────────────────────────────────────────────────────────────
@@ -94,6 +107,14 @@ interface GS {
   phase: "PLAYING" | "LEVEL_COMPLETE" | "LIFE_LOST" | "GAME_OVER";
   phaseTimer: number;
   totalFrame: number;
+
+  // Hammer power-up
+  hasHammer: boolean;
+  hammerTimer: number;
+  hammerPickups: boolean[]; // one entry per HAMMER_DEFS
+
+  // Jump-over bonus tracking
+  jumpedCocoIds: Set<number>;
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
@@ -106,6 +127,9 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     lives, score, level: lvl,
     bonusTimer: bonusForLevel(lvl), bonusTickAcc: 0,
     phase: "PLAYING", phaseTimer: 0, totalFrame: 0,
+    hasHammer: false, hammerTimer: 0,
+    hammerPickups: HAMMER_DEFS.map(() => false),
+    jumpedCocoIds: new Set<number>(),
   };
 }
 
@@ -135,30 +159,95 @@ function drawLadder(ctx: CanvasRenderingContext2D, l: typeof LADDERS[number]) {
   }
 }
 
-function drawMoeve(ctx: CanvasRenderingContext2D, frame: number) {
-  const mx = MOEVE_X, my = MOEVE_Y;
-  const wing = frame % 60 < 30 ? -6 : 0;
-  // Body
-  ctx.fillStyle = "#e2e8f0";
-  ctx.beginPath(); ctx.ellipse(mx, my + 8, 20, 11, 0, 0, Math.PI * 2); ctx.fill();
-  // Wings
-  ctx.fillStyle = "#cbd5e1";
-  ctx.beginPath();
-  ctx.moveTo(mx - 5, my + 6);
-  ctx.quadraticCurveTo(mx - 26, my + wing, mx - 36, my + 3 + wing);
-  ctx.quadraticCurveTo(mx - 26, my + 10, mx - 5, my + 14); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(mx + 5, my + 6);
-  ctx.quadraticCurveTo(mx + 26, my + wing, mx + 36, my + 3 + wing);
-  ctx.quadraticCurveTo(mx + 26, my + 10, mx + 5, my + 14); ctx.fill();
-  // Beak (right)
-  ctx.fillStyle = "#f97316";
-  ctx.beginPath(); ctx.moveTo(mx + 18, my + 7); ctx.lineTo(mx + 26, my + 4); ctx.lineTo(mx + 18, my + 13); ctx.fill();
+function drawSeeloewe(ctx: CanvasRenderingContext2D, frame: number) {
+  const mx = MOEVE_X;
+  const gy = PLATS[5].y; // ground level of top platform
+
+  // Flipper animation: smooth raise/lower
+  const flipRaise = Math.sin(frame * 0.1) * 5;
+
+  ctx.save();
+  ctx.lineCap = "round";
+
+  // Hind flippers (rest on ground)
+  ctx.fillStyle = "#2a2018";
+  ctx.beginPath(); ctx.ellipse(mx - 7, gy + 5, 11, 5, -0.25, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(mx + 7, gy + 5, 11, 5, 0.25, 0, Math.PI * 2); ctx.fill();
+
+  // Main body
+  ctx.fillStyle = "#4a3828";
+  ctx.beginPath(); ctx.ellipse(mx, gy - 15, 15, 17, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Belly lighter patch
+  ctx.fillStyle = "#6b5240";
+  ctx.beginPath(); ctx.ellipse(mx + 2, gy - 13, 8, 11, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Left front flipper (hangs down)
+  ctx.fillStyle = "#2a2018";
+  ctx.beginPath(); ctx.ellipse(mx - 16, gy - 17, 8, 4, 0.6, 0, Math.PI * 2); ctx.fill();
+
+  // Right front flipper (raised – throwing pose)
+  ctx.fillStyle = "#2a2018";
+  ctx.beginPath(); ctx.ellipse(mx + 17, gy - 24 - flipRaise, 9, 4, -0.7, 0, Math.PI * 2); ctx.fill();
+
+  // Neck
+  ctx.fillStyle = "#4a3828";
+  ctx.beginPath(); ctx.ellipse(mx + 4, gy - 34, 8, 9, 0.15, 0, Math.PI * 2); ctx.fill();
+
+  // Head
+  ctx.fillStyle = "#5a4535";
+  ctx.beginPath(); ctx.arc(mx + 6, gy - 46, 10, 0, Math.PI * 2); ctx.fill();
+
+  // Ear bumps
+  ctx.fillStyle = "#3d2e20";
+  ctx.beginPath(); ctx.arc(mx + 1, gy - 55, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx + 10, gy - 54, 3, 0, Math.PI * 2); ctx.fill();
+
+  // Snout / muzzle (lighter)
+  ctx.fillStyle = "#7a6050";
+  ctx.beginPath(); ctx.ellipse(mx + 13, gy - 46, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Nose
+  ctx.fillStyle = "#1a0f0a";
+  ctx.beginPath(); ctx.ellipse(mx + 18, gy - 46, 2.2, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+
   // Eye
-  ctx.fillStyle = "#0f172a";
-  ctx.beginPath(); ctx.arc(mx + 10, my + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#0a0a12";
+  ctx.beginPath(); ctx.arc(mx + 10, gy - 50, 3, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#fff";
-  ctx.beginPath(); ctx.arc(mx + 11, my + 4.5, 0.9, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx + 11, gy - 51, 1.1, 0, Math.PI * 2); ctx.fill();
+  // Grumpy brow
+  ctx.strokeStyle = "#1a0f0a";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(mx + 6, gy - 54); ctx.lineTo(mx + 13, gy - 52); ctx.stroke();
+
+  // Whiskers (both sides)
+  ctx.strokeStyle = "#c8b8a0";
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < 4; i++) {
+    const wy = gy - 49 + i * 1.4;
+    // right whiskers
+    ctx.beginPath(); ctx.moveTo(mx + 15, wy); ctx.lineTo(mx + 28, wy - 1 + i * 0.3); ctx.stroke();
+    // left whiskers
+    ctx.beginPath(); ctx.moveTo(mx + 8, wy); ctx.lineTo(mx - 4, wy - 0.5 + i * 0.3); ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawHammerPickup(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  // Handle
+  ctx.fillStyle = "#92400e";
+  ctx.fillRect(x - 2, y - 17, 3, 13);
+  // Head
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillRect(x - 7, y - 22, 13, 6);
+  // Glint
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.fillRect(x - 6, y - 21, 5, 2);
+  // Glow
+  ctx.fillStyle = "rgba(251,191,36,0.25)";
+  ctx.beginPath(); ctx.arc(x, y - 16, 10, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawPlayer(ctx: CanvasRenderingContext2D, gs: GS) {
@@ -197,6 +286,22 @@ function drawPlayer(ctx: CanvasRenderingContext2D, gs: GS) {
     const swing = panimTick % 2 === 0 ? 5 : -5;
     ctx.beginPath(); ctx.moveTo(px - 3, py - PH + 29); ctx.lineTo(px - 3 + swing * f, py); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px + 3, py - PH + 29); ctx.lineTo(px + 3 - swing * f, py); ctx.stroke();
+  }
+
+  // Hammer held above head
+  if (gs.hasHammer) {
+    const swing = gs.totalFrame % 24 < 12;
+    const hx = px + f * 6;
+    const hy = py - PH - (swing ? 8 : 3);
+    ctx.fillStyle = "#92400e";
+    ctx.fillRect(hx - 1, hy, 3, 11);
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillRect(hx - 6, hy - (swing ? 6 : 2), 12, 5);
+    // Sparkles when active
+    if (gs.hammerTimer > 0 && gs.totalFrame % 6 < 3) {
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath(); ctx.arc(hx + 7, hy - 4, 2, 0, Math.PI * 2); ctx.fill();
+    }
   }
 }
 
@@ -320,6 +425,9 @@ export default function StrandturmGameScreen() {
           gs.cocos = []; gs.cocoSpawnAcc = 0;
           gs.bonusTimer = bonusForLevel(gs.level); gs.bonusTickAcc = 0;
           gs.pinvTimer = 120; // 2s invincibility
+          gs.hasHammer = false; gs.hammerTimer = 0;
+          gs.hammerPickups = HAMMER_DEFS.map(() => false);
+          gs.jumpedCocoIds = new Set<number>();
           gs.phase = "PLAYING";
           setBonus(gs.bonusTimer); setPhase("PLAYING");
         }
@@ -342,6 +450,26 @@ export default function StrandturmGameScreen() {
         return;
       }
       setBonus(gs.bonusTimer);
+    }
+
+    // ── Hammer pickup ─────────────────────────────────────────────────────────
+    if (!gs.hasHammer) {
+      for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
+        if (gs.hammerPickups[hi]) continue;
+        const h = HAMMER_DEFS[hi];
+        const hy = PLATS[h.platIdx].y;
+        if (Math.abs(gs.px - h.x) < 14 && Math.abs(gs.py - hy) < 6) {
+          gs.hasHammer = true;
+          gs.hammerTimer = HAMMER_DURATION;
+          gs.hammerPickups[hi] = true;
+          gs.score += 500;
+          setScore(gs.score);
+          audioManager.playSound("bonus");
+        }
+      }
+    } else {
+      gs.hammerTimer--;
+      if (gs.hammerTimer <= 0) { gs.hasHammer = false; gs.hammerTimer = 0; }
     }
 
     // ── Spawn coconut ─────────────────────────────────────────────────────────
@@ -388,6 +516,8 @@ export default function StrandturmGameScreen() {
           if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 4 && Math.abs(gs.py - l.y2) <= 8) {
             gs.ponLadder = true; gs.pladderIdx = i;
             gs.ponGround = false; gs.pvx = 0; gs.pvy = 0;
+            gs.py = l.y2 - 2; // nudge above exit threshold so it doesn't fire immediately
+            gs.px = l.cx;     // center on ladder
             break;
           }
         }
@@ -499,19 +629,28 @@ export default function StrandturmGameScreen() {
         c.x += c.vx;
         c.y = p.y - COCO_R;
 
-        // Check if fell off left or right edge
+        // Check if fell off left or right edge → cascade to next platform below
         if (c.x < p.x - COCO_R || c.x > p.x + p.w + COCO_R) {
-          c.platIdx = -1; // now airborne
+          const nextPIdx = c.platIdx - 1;
+          if (nextPIdx >= 0) {
+            // Snap x to correct end of the next platform for a clean cascade
+            const np = PLATS[nextPIdx];
+            c.x = c.vx > 0 ? np.x + np.w - 25 : np.x + 25;
+          }
+          // Move y just BELOW the current platform so the landing check
+          // doesn't immediately re-land the coconut on the same platform
+          c.y = p.y + PLAT_H + 1;
+          c.platIdx = -1;
           c.vy = 1;
+          c.vx = 0; // fall straight down
         }
       } else {
-        // Airborne
+        // Airborne – fall straight down
         c.vy = Math.min(c.vy + 0.6, 14);
-        c.x += c.vx * 0.4; // slight horizontal drift
         c.y += c.vy;
 
         // Land on a platform?
-        for (let pi = c.platIdx === -1 ? 0 : 0; pi < PLATS.length; pi++) {
+        for (let pi = 0; pi < PLATS.length; pi++) {
           const p = PLATS[pi];
           if (c.x > p.x && c.x < p.x + p.w) {
             if (c.y + COCO_R >= p.y && c.y + COCO_R <= p.y + COCO_R + 8 && c.vy > 0) {
@@ -529,14 +668,36 @@ export default function StrandturmGameScreen() {
         if (c.y > CH + 30) cocoToRemove.push(ci);
       }
 
+      // Jump-over bonus: coconut rolls under airborne player
+      if (
+        c.platIdx >= 0 &&
+        !gs.ponGround && !gs.ponLadder &&
+        !gs.jumpedCocoIds.has(c.id) &&
+        Math.abs(c.x - gs.px) < PW / 2 + COCO_R + 4 &&
+        gs.py < c.y - COCO_R // player's feet are above the coconut
+      ) {
+        gs.jumpedCocoIds.add(c.id);
+        gs.score += 100;
+        setScore(gs.score);
+        audioManager.playSound("bonus");
+      }
+
       // Player collision
       if (gs.pinvTimer === 0) {
         const dx = Math.abs(c.x - gs.px);
         const dy = Math.abs(c.y - (gs.py - PH / 2));
         if (dx < PW / 2 + COCO_R - 2 && dy < PH / 2 + COCO_R - 2) {
-          audioManager.playSound("hit");
-          loseLife(gs);
-          return;
+          if (gs.hasHammer) {
+            // Smash the coconut with the hammer!
+            cocoToRemove.push(ci);
+            gs.score += 300;
+            setScore(gs.score);
+            audioManager.playSound("bonus");
+          } else {
+            audioManager.playSound("hit");
+            loseLife(gs);
+            return;
+          }
         }
       }
     }
@@ -607,8 +768,16 @@ export default function StrandturmGameScreen() {
     // Goal
     drawGoal(ctx);
 
-    // Möwe
-    drawMoeve(ctx, gs.totalFrame);
+    // Hammer pickups
+    for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
+      if (!gs.hammerPickups[hi]) {
+        const h = HAMMER_DEFS[hi];
+        drawHammerPickup(ctx, h.x, PLATS[h.platIdx].y);
+      }
+    }
+
+    // Seelöwe
+    drawSeeloewe(ctx, gs.totalFrame);
 
     // Coconuts
     for (const c of gs.cocos) drawCoco(ctx, c);

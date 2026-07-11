@@ -77,9 +77,9 @@ export default function StrandturmLobbyScreen() {
         textAlign: "center",
       }}>
         <div style={{ fontSize: 56 }}>🗼</div>
-        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>Rette das Surfbrett!</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>Hol Euch den Rettungsring!</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.6 }}>
-          Mega-Möwe 🐦 wirft Kokosnüsse 🥥 vom Pier.<br />
+          Böser Seelöwe 🦭 wirft Kokosnüsse 🥥 vom Pier.<br />
           Klettere nach oben — ohne getroffen zu werden!
         </div>
       </div>
@@ -102,6 +102,7 @@ export default function StrandturmLobbyScreen() {
       <div className="card" style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7 }}>
         <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>So geht's</div>
         <div>🪜 Leitern hochklettern &nbsp;·&nbsp; 🥥 Kokosnüssen ausweichen</div>
+        <div>🔨 Hammer finden &nbsp;·&nbsp; Kokosnüsse zerschmettern!</div>
         <div>❤️ 3 Leben &nbsp;·&nbsp; ⏱ Bonuszeit läuft ab</div>
         <div style={{ marginTop: 4, color: "var(--text-sub)", fontSize: 12 }}>
           Steuerung: <strong style={{ color: "var(--text)" }}>
