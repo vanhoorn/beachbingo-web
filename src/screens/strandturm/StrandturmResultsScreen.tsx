@@ -65,7 +65,7 @@ export default function StrandturmResultsScreen() {
         }}>
           <div style={{ fontSize: 28 }}>🏆</div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "var(--accent)", marginTop: 4 }}>
-            {newHighScore && newBestLevel ? "Neuer Rekord & Level!" : newHighScore ? "Neuer Punkterekord!" : "Neues Höchstlevel!"}
+            {newHighScore && newBestLevel ? "Neuer Rekord & neues Höchstlevel!" : newHighScore ? "Neuer Punkterekord!" : "Neues Höchstlevel!"}
           </div>
         </div>
       )}
@@ -77,18 +77,21 @@ export default function StrandturmResultsScreen() {
         </div>
         <div className="card" style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "var(--primary)" }}>Lv. {level}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Erreicht</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Level</div>
         </div>
       </div>
 
       {highScore !== null && (
-        <div className="card" style={{ width: "100%", textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
-            🏆 Persönlicher Rekord
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%" }}>
+          <div className="card" style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>🏆 Rekord</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--accent)" }}>{highScore > 0 ? highScore : "—"}</div>
+            {highScore > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Punkte</div>}
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: "var(--accent)" }}>{highScore}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-            Punkte · Höchstes Level: {bestLevel}
+          <div className="card" style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>🎯 Best</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "var(--primary)" }}>{(bestLevel ?? 0) > 0 ? `Lv. ${bestLevel}` : "—"}</div>
+            {(bestLevel ?? 0) > 0 && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Level</div>}
           </div>
         </div>
       )}

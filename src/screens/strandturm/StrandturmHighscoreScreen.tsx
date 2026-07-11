@@ -49,12 +49,12 @@ export default function StrandturmHighscoreScreen() {
           background: `linear-gradient(135deg, rgba(220,38,38,0.15) 0%, ${BG} 100%)`,
           padding: "28px 20px", textAlign: "center",
         }}>
-          <div style={{ fontSize: 64 }}>🗼</div>
+          <div style={{ fontSize: 64 }}>🏆</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#fbbf24", marginTop: 8 }}>
-            Deine Bestleistung
+            Deine Bestleistungen
           </div>
           <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
-            Strandturm – Klettere so hoch wie möglich!
+            Strandturm – Küsten-Klara
           </div>
         </div>
 

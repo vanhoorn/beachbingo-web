@@ -642,7 +642,7 @@ export default function StrandturmGameScreen() {
       if (upRef.current && wasOnGround) {
         for (let i = 0; i < LADDERS.length; i++) {
           const l = LADDERS[i];
-          if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 4 && Math.abs(gs.py - l.y2) <= 8) {
+          if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 14 && Math.abs(gs.py - l.y2) <= 12) {
             gs.ponLadder = true; gs.pladderIdx = i;
             gs.ponGround = false; gs.pvx = 0; gs.pvy = 0;
             gs.py = l.y2 - 2; // nudge above exit threshold so it doesn't fire immediately
@@ -656,7 +656,7 @@ export default function StrandturmGameScreen() {
       if (downRef.current && wasOnGround) {
         for (let i = 0; i < LADDERS.length; i++) {
           const l = LADDERS[i];
-          if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 4 && Math.abs(gs.py - l.y1) <= 5) {
+          if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 14 && Math.abs(gs.py - l.y1) <= 8) {
             gs.ponLadder = true; gs.pladderIdx = i;
             gs.ponGround = false; gs.pvx = 0; gs.pvy = CLIMB_SPD;
             break;
@@ -1124,7 +1124,7 @@ export default function StrandturmGameScreen() {
         <div style={{ width: 1, height: 14, background: "var(--border)", margin: "0 4px" }} />
         <span style={{ fontSize: 14, fontWeight: 700 }}>Lv.{gs.level}</span>
         <div style={{ width: 1, height: 14, background: "var(--border)", margin: "0 4px" }} />
-        <span style={{ fontSize: 12 }}>{"❤️".repeat(Math.max(0, lives))}</span>
+        <span style={{ fontSize: 12 }}>{[0,1,2].map(i => i < lives ? "❤️" : "🖤").join("")}</span>
         <div style={{ width: 1, height: 14, background: "var(--border)", margin: "0 4px" }} />
         <span style={{ fontSize: 11, color: bonusTimer < 1000 ? RED : "var(--text-muted)" }}>⏱{bonusTimer}</span>
       </GameHudBar>
@@ -1209,7 +1209,7 @@ export default function StrandturmGameScreen() {
 
       {controlMode === "TOUCH" && !isOver && (
         <div style={{ padding: "8px 0", fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
-          Links / Rechts tippen · Oben tippen = Springen
+          Links / Rechts tippen · Oben tippen = Springen / Klettern
         </div>
       )}
 
