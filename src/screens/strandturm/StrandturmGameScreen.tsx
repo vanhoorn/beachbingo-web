@@ -105,11 +105,41 @@ function getConveyorBelts(lvl: number): ConveyorBelt[] {
   ];
 }
 
+// ── Elevators (Level 3 mechanic) ──────────────────────────────────────────────
+const ELEV_SPEED = 1.2;
+const ELEV_H = 11; // same thickness as PLAT_H
+
+interface Elevator {
+  x: number; w: number;
+  y: number;    // current surface y (top)
+  y1: number;   // upper travel limit (smaller y = higher)
+  y2: number;   // lower travel limit (larger y = lower)
+  vy: number;   // current velocity (positive = moving down)
+}
+
+function getElevators(lvl: number): Elevator[] {
+  if (getLevelType(lvl) !== 3) return [];
+  // Four elevators in the central shaft, one per inter-platform gap.
+  // Phase-staggered so they are never all at the same level simultaneously.
+  return [
+    { x: 175, w: 50, y: 480, y1: 420, y2: 505, vy: -ELEV_SPEED }, // P0→P1
+    { x: 175, w: 50, y: 400, y1: 335, y2: 420, vy:  ELEV_SPEED }, // P1→P2
+    { x: 175, w: 50, y: 310, y1: 250, y2: 335, vy: -ELEV_SPEED }, // P2→P3
+    { x: 175, w: 50, y: 232, y1: 165, y2: 250, vy:  ELEV_SPEED }, // P3→P4
+  ];
+}
+
+// ── Bouncing weights (Level 3 obstacle) ────────────────────────────────────────
+const WEIGHT_BOUNCE_FACTOR = 0.72;
+const WEIGHT_MAX_BOUNCES = 4;
+const WEIGHT_MIN_SPEED = 2.5;
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Coco {
   id: number; x: number; y: number;
   vx: number; vy: number;
-  platIdx: number; // -1 = airborne
+  platIdx: number; // -1 = airborne; always -1 for Level-3 weights
+  bounces: number; // number of platform bounces (Level-3 weights only)
 }
 
 interface Explosion {
@@ -156,6 +186,11 @@ interface GS {
 
   // Conveyor belts active this level (empty for non-L2 level types)
   conveyorBelts: ConveyorBelt[];
+
+  // Elevators active this level (empty for non-L3 level types)
+  elevators: Elevator[];
+  ponElevator: boolean;
+  pElevatorIdx: number;
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
@@ -173,6 +208,8 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     jumpedCocoIds: new Set<number>(),
     explosions: [], explosionIdCtr: 0,
     conveyorBelts: getConveyorBelts(lvl),
+    elevators: getElevators(lvl),
+    ponElevator: false, pElevatorIdx: -1,
   };
 }
 
@@ -411,6 +448,73 @@ function drawConveyorBelt(ctx: CanvasRenderingContext2D, belt: ConveyorBelt, fra
   ctx.beginPath(); ctx.moveTo(belt.x, py); ctx.lineTo(belt.x + belt.w, py); ctx.stroke();
 }
 
+function drawElevatorTrack(ctx: CanvasRenderingContext2D, el: Elevator) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(59,130,246,0.2)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  // Left rail
+  ctx.beginPath(); ctx.moveTo(el.x + 5, el.y1); ctx.lineTo(el.x + 5, el.y2 + ELEV_H); ctx.stroke();
+  // Right rail
+  ctx.beginPath(); ctx.moveTo(el.x + el.w - 5, el.y1); ctx.lineTo(el.x + el.w - 5, el.y2 + ELEV_H); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawElevator(ctx: CanvasRenderingContext2D, el: Elevator) {
+  const { x, y, w } = el;
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(x + 2, y + 3, w, ELEV_H);
+  // Main body
+  ctx.fillStyle = "#1d4ed8";
+  ctx.fillRect(x, y, w, ELEV_H);
+  // Top highlight
+  ctx.fillStyle = "#3b82f6";
+  ctx.fillRect(x, y, w, 3);
+  // Bottom shadow
+  ctx.fillStyle = "#1e3a8a";
+  ctx.fillRect(x, y + ELEV_H - 2, w, 2);
+  // Side bolts
+  ctx.fillStyle = "#93c5fd";
+  ctx.beginPath(); ctx.arc(x + 7,     y + ELEV_H / 2 + 1, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + w - 7, y + ELEV_H / 2 + 1, 2, 0, Math.PI * 2); ctx.fill();
+  // Direction arrow
+  ctx.font = "7px sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(191,219,254,0.95)";
+  ctx.fillText(el.vy > 0 ? "▼" : "▲", x + w / 2, y + ELEV_H / 2 + 1);
+}
+
+function drawWeight(ctx: CanvasRenderingContext2D, c: Coco) {
+  const r = 8;
+  const { x, y } = c;
+  // Outer border
+  ctx.fillStyle = "#111827";
+  ctx.fillRect(x - r - 1, y - r - 1, r * 2 + 2, r * 2 + 2);
+  // Body
+  ctx.fillStyle = "#374151";
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  // Top highlight
+  ctx.fillStyle = "#4b5563";
+  ctx.fillRect(x - r, y - r, r * 2, 3);
+  // Left edge
+  ctx.fillStyle = "#4b5563";
+  ctx.fillRect(x - r, y - r, 2, r * 2);
+  // Bottom shadow
+  ctx.fillStyle = "#1f2937";
+  ctx.fillRect(x - r + 2, y + r - 3, r * 2 - 2, 3);
+  // "KG" label
+  ctx.font = "bold 6px monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#9ca3af";
+  ctx.fillText("KG", x, y + 1);
+  // Hook at top
+  ctx.strokeStyle = "#6b7280";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y - r - 3, 3, Math.PI, 2 * Math.PI); ctx.stroke();
+}
+
 function drawWanne(ctx: CanvasRenderingContext2D, c: Coco) {
   const r = COCO_R;
   // Trapezoid body (cement trough)
@@ -557,6 +661,7 @@ export default function StrandturmGameScreen() {
           gs.hammerPickups = HAMMER_DEFS.map(() => false);
           gs.jumpedCocoIds = new Set<number>();
           gs.explosions = []; gs.explosionIdCtr = 0;
+          gs.ponElevator = false; gs.pElevatorIdx = -1;
           gs.phase = "PLAYING";
           setBonus(gs.bonusTimer); setPhase("PLAYING");
         }
@@ -565,6 +670,13 @@ export default function StrandturmGameScreen() {
     }
 
     gs.totalFrame++;
+
+    // ── Elevator movement (Level 3 mechanic) ─────────────────────────────────
+    for (const el of gs.elevators) {
+      el.y += el.vy;
+      if (el.y <= el.y1) { el.y = el.y1; el.vy =  Math.abs(el.vy); }
+      if (el.y >= el.y2) { el.y = el.y2; el.vy = -Math.abs(el.vy); }
+    }
 
     // ── Bonus timer ──────────────────────────────────────────────────────────
     gs.bonusTickAcc++;
@@ -601,17 +713,30 @@ export default function StrandturmGameScreen() {
       if (gs.hammerTimer <= 0) { gs.hasHammer = false; gs.hammerTimer = 0; }
     }
 
-    // ── Spawn coconut ─────────────────────────────────────────────────────────
+    // ── Spawn obstacle ────────────────────────────────────────────────────────
     gs.cocoSpawnAcc++;
     if (gs.cocoSpawnAcc >= spawnInterval(gs.level)) {
       gs.cocoSpawnAcc = 0;
-      const spd = cocoSpeed(gs.level);
-      gs.cocos.push({
-        id: gs.cocoIdCtr++,
-        x: MOEVE_X + 35, y: PLATS[5].y - COCO_R,
-        vx: spd, vy: 0,
-        platIdx: 5,
-      });
+      if (getLevelType(gs.level) === 3) {
+        // Level 3: spawn bouncing weight
+        gs.cocos.push({
+          id: gs.cocoIdCtr++,
+          x: MOEVE_X + 35, y: PLATS[5].y - 8,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: 1.5,
+          platIdx: -1,
+          bounces: 0,
+        });
+      } else {
+        const spd = cocoSpeed(gs.level);
+        gs.cocos.push({
+          id: gs.cocoIdCtr++,
+          x: MOEVE_X + 35, y: PLATS[5].y - COCO_R,
+          vx: spd, vy: 0,
+          platIdx: 5,
+          bounces: 0,
+        });
+      }
     }
 
     // ── Player movement ────────────────────────────────────────────────────────
@@ -700,6 +825,27 @@ export default function StrandturmGameScreen() {
       }
     }
 
+    // ── Elevator snap (Level 3 mechanic) ─────────────────────────────────────
+    gs.ponElevator = false;
+    gs.pElevatorIdx = -1;
+    if (!gs.ponGround && !gs.ponLadder && gs.elevators.length > 0 && gs.pvy >= 0) {
+      const tol = ELEV_SPEED + 3;
+      for (let ei = 0; ei < gs.elevators.length; ei++) {
+        const el = gs.elevators[ei];
+        if (gs.px > el.x && gs.px < el.x + el.w) {
+          if (gs.py >= el.y - 2 && gs.py <= el.y + tol) {
+            gs.py = el.y;
+            gs.pvy = 0;
+            gs.ponGround = true;
+            gs.ponElevator = true;
+            gs.pElevatorIdx = ei;
+            if (!wasOnGround) audioManager.playSound("land");
+            break;
+          }
+        }
+      }
+    }
+
     // ── Conveyor belt effect (Level 2 mechanic) ──────────────────────────────
     if (gs.ponGround && !gs.ponLadder && gs.conveyorBelts.length > 0) {
       const platsArr = PLATS as ReadonlyArray<{ x: number; y: number; w: number }>;
@@ -758,81 +904,110 @@ export default function StrandturmGameScreen() {
     // ── Explosion update ─────────────────────────────────────────────────────
     gs.explosions = gs.explosions.filter(e => { e.frame++; return e.frame < EXPLOSION_FRAMES; });
 
-    // ── Coconut physics ───────────────────────────────────────────────────────
+    // ── Obstacle physics (coconuts L1, cement troughs L2, iron weights L3) ──
     const spd = cocoSpeed(gs.level);
+    const levelType = getLevelType(gs.level);
     const cocoToRemove: number[] = [];
 
     for (let ci = 0; ci < gs.cocos.length; ci++) {
       const c = gs.cocos[ci];
 
-      if (c.platIdx >= 0) {
-        // Rolling on platform
-        const p = PLATS[c.platIdx];
-        const rollVx = ROLL_DIR[c.platIdx] * spd;
-        c.vx = rollVx;
-        c.x += c.vx;
-        c.y = p.y - COCO_R;
-
-        // Check if fell off left or right edge → cascade to next platform below
-        if (c.x < p.x - COCO_R || c.x > p.x + p.w + COCO_R) {
-          const nextPIdx = c.platIdx - 1;
-          if (nextPIdx >= 0) {
-            // Snap x to correct end of the next platform for a clean cascade
-            const np = PLATS[nextPIdx];
-            c.x = c.vx > 0 ? np.x + np.w - 25 : np.x + 25;
-          }
-          // Move y just BELOW the current platform so the landing check
-          // doesn't immediately re-land the coconut on the same platform
-          c.y = p.y + PLAT_H + 1;
-          c.platIdx = -1;
-          c.vy = 1;
-          c.vx = 0; // fall straight down
-        }
-      } else {
-        // Airborne – fall straight down
+      if (levelType === 3) {
+        // ── Level 3: Bouncing weight physics ──────────────────────────────
         c.vy = Math.min(c.vy + 0.6, 14);
+        c.x += c.vx;
         c.y += c.vy;
+        // Bounce off canvas edges horizontally
+        if (c.x < 8)       { c.x = 8;       c.vx = Math.abs(c.vx); }
+        if (c.x > CW - 8)  { c.x = CW - 8;  c.vx = -Math.abs(c.vx); }
 
-        // Land on a platform?
+        // Bounce off platforms
+        let bounced = false;
         for (let pi = 0; pi < PLATS.length; pi++) {
           const p = PLATS[pi];
-          if (c.x > p.x && c.x < p.x + p.w) {
-            if (c.y + COCO_R >= p.y && c.y + COCO_R <= p.y + COCO_R + 8 && c.vy > 0) {
-              c.y = p.y - COCO_R;
-              c.vy = 0;
-              c.vx = ROLL_DIR[pi] * spd;
-              c.platIdx = pi;
-              audioManager.playSound("coconut_bounce");
+          if (c.x > p.x && c.x < p.x + p.w &&
+              c.y + 8 >= p.y && c.y + 8 <= p.y + 16 && c.vy > 0) {
+            c.y = p.y - 8;
+            c.vy = -Math.abs(c.vy) * WEIGHT_BOUNCE_FACTOR;
+            c.vx += (Math.random() - 0.5) * 0.8;
+            c.bounces++;
+            audioManager.playSound("coconut_bounce");
+            if (c.bounces >= WEIGHT_MAX_BOUNCES || Math.abs(c.vy) < WEIGHT_MIN_SPEED) {
+              cocoToRemove.push(ci);
+            }
+            bounced = true;
+            break;
+          }
+        }
+        // Bounce off elevator surfaces
+        if (!bounced) {
+          for (const el of gs.elevators) {
+            if (c.x > el.x && c.x < el.x + el.w &&
+                c.y + 8 >= el.y && c.y + 8 <= el.y + 16 && c.vy > 0) {
+              c.y = el.y - 8;
+              c.vy = -Math.abs(c.vy) * WEIGHT_BOUNCE_FACTOR;
+              c.vx += (Math.random() - 0.5) * 0.6;
+              c.bounces++;
+              if (c.bounces >= WEIGHT_MAX_BOUNCES || Math.abs(c.vy) < WEIGHT_MIN_SPEED) {
+                cocoToRemove.push(ci);
+              }
               break;
             }
           }
         }
-
-        // Off screen → remove
         if (c.y > CH + 30) cocoToRemove.push(ci);
+
+      } else {
+        // ── Level 1/2: Rolling coconut / cement-trough physics ────────────
+        if (c.platIdx >= 0) {
+          const p = PLATS[c.platIdx];
+          c.vx = ROLL_DIR[c.platIdx] * spd;
+          c.x += c.vx;
+          c.y = p.y - COCO_R;
+          if (c.x < p.x - COCO_R || c.x > p.x + p.w + COCO_R) {
+            const nextPIdx = c.platIdx - 1;
+            if (nextPIdx >= 0) {
+              const np = PLATS[nextPIdx];
+              c.x = c.vx > 0 ? np.x + np.w - 25 : np.x + 25;
+            }
+            c.y = p.y + PLAT_H + 1;
+            c.platIdx = -1; c.vy = 1; c.vx = 0;
+          }
+        } else {
+          c.vy = Math.min(c.vy + 0.6, 14);
+          c.y += c.vy;
+          for (let pi = 0; pi < PLATS.length; pi++) {
+            const p = PLATS[pi];
+            if (c.x > p.x && c.x < p.x + p.w &&
+                c.y + COCO_R >= p.y && c.y + COCO_R <= p.y + COCO_R + 8 && c.vy > 0) {
+              c.y = p.y - COCO_R; c.vy = 0;
+              c.vx = ROLL_DIR[pi] * spd; c.platIdx = pi;
+              audioManager.playSound("coconut_bounce");
+              break;
+            }
+          }
+          if (c.y > CH + 30) cocoToRemove.push(ci);
+        }
+
+        // Jump-over bonus (rolling obstacles only)
+        if (c.platIdx >= 0 && !gs.ponGround && !gs.ponLadder &&
+            !gs.jumpedCocoIds.has(c.id) &&
+            Math.abs(c.x - gs.px) < PW / 2 + COCO_R + 4 &&
+            gs.py < c.y - COCO_R) {
+          gs.jumpedCocoIds.add(c.id);
+          gs.score += 100;
+          setScore(gs.score);
+          audioManager.playSound("bonus");
+        }
       }
 
-      // Jump-over bonus: coconut rolls under airborne player
-      if (
-        c.platIdx >= 0 &&
-        !gs.ponGround && !gs.ponLadder &&
-        !gs.jumpedCocoIds.has(c.id) &&
-        Math.abs(c.x - gs.px) < PW / 2 + COCO_R + 4 &&
-        gs.py < c.y - COCO_R // player's feet are above the coconut
-      ) {
-        gs.jumpedCocoIds.add(c.id);
-        gs.score += 100;
-        setScore(gs.score);
-        audioManager.playSound("bonus");
-      }
-
-      // Player collision
+      // Player collision (shared for all level types)
       if (gs.pinvTimer === 0) {
+        const r = levelType === 3 ? 8 : COCO_R;
         const dx = Math.abs(c.x - gs.px);
         const dy = Math.abs(c.y - (gs.py - PH / 2));
-        if (dx < PW / 2 + COCO_R - 2 && dy < PH / 2 + COCO_R - 2) {
+        if (dx < PW / 2 + r - 2 && dy < PH / 2 + r - 2) {
           if (gs.hasHammer) {
-            // Smash the coconut with the hammer!
             cocoToRemove.push(ci);
             gs.score += 300;
             gs.explosions.push({ id: gs.explosionIdCtr++, x: c.x, y: c.y, frame: 0 });
@@ -847,7 +1022,6 @@ export default function StrandturmGameScreen() {
       }
     }
 
-    // Remove off-screen coconuts (reverse to preserve indices)
     for (let i = cocoToRemove.length - 1; i >= 0; i--) {
       gs.cocos.splice(cocoToRemove[i], 1);
     }
@@ -910,6 +1084,10 @@ export default function StrandturmGameScreen() {
     // Conveyor belts (overlaid on platform surface, under ladders – Level 2 mechanic)
     for (const belt of gs.conveyorBelts) drawConveyorBelt(ctx, belt, gs.totalFrame);
 
+    // Elevator shafts + moving platforms (Level 3 mechanic)
+    for (const el of gs.elevators) drawElevatorTrack(ctx, el);
+    for (const el of gs.elevators) drawElevator(ctx, el);
+
     // Ladders
     for (const l of LADDERS) drawLadder(ctx, l);
 
@@ -927,9 +1105,11 @@ export default function StrandturmGameScreen() {
     // Seelöwe
     drawSeeloewe(ctx, gs.totalFrame);
 
-    // Obstacles (coconuts in L1, cement troughs in L2)
+    // Obstacles (coconuts in L1, cement troughs in L2, iron weights in L3)
+    const lt = getLevelType(gs.level);
     for (const c of gs.cocos) {
-      if (getLevelType(gs.level) === 2) drawWanne(ctx, c);
+      if (lt === 2) drawWanne(ctx, c);
+      else if (lt === 3) drawWeight(ctx, c);
       else drawCoco(ctx, c);
     }
 
