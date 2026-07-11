@@ -3,8 +3,6 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User, GameMode, DrawStyle } from "../types";
-import { audioManager } from "../audio/AudioManager";
-
 function SettingsOption({
   selected, onClick, title, description,
 }: {
@@ -45,8 +43,6 @@ export default function SettingsScreen() {
   const [gameMode, setGameMode] = useState<GameMode>("AUTO_MARK");
   const [drawStyle, setDrawStyle] = useState<DrawStyle>("INSTANT");
   const [eliminationInterval, setEliminationInterval] = useState(5);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [musicEnabled, setMusicEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
@@ -60,8 +56,6 @@ export default function SettingsScreen() {
         setGameMode(u.preferredGameMode || "AUTO_MARK");
         setDrawStyle(u.preferredDrawStyle || "INSTANT");
         setEliminationInterval(u.bossLevelEliminationInterval || 5);
-        setSoundEnabled(u.soundEnabled !== false);
-        setMusicEnabled(u.musicEnabled !== false);
       }
     });
   }, [uid]);
@@ -73,11 +67,7 @@ export default function SettingsScreen() {
       preferredGameMode: gameMode,
       preferredDrawStyle: drawStyle,
       bossLevelEliminationInterval: eliminationInterval,
-      soundEnabled,
-      musicEnabled,
     });
-    audioManager.setSound(soundEnabled);
-    audioManager.setMusic(musicEnabled);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -163,47 +153,6 @@ export default function SettingsScreen() {
           title="🥁 Lostrommel"
           description="3-Sekunden-Animation baut Spannung auf bevor die Zahl erscheint."
         />
-      </div>
-
-      {/* Audio settings — global for all games */}
-      <div className="flex flex-col gap-2">
-        <div className="card-title" style={{ paddingLeft: 4 }}>🔊 Audio (alle Spiele)</div>
-        {(
-          [
-            { key: "sound", label: "Sound-Effekte", sub: "Sprung-, Treffer- und Spielgeräusche", val: soundEnabled, set: setSoundEnabled },
-            { key: "music", label: "Musik", sub: "Hintergrundmusik während des Spiels", val: musicEnabled, set: setMusicEnabled },
-          ] as const
-        ).map(({ key, label, sub, val, set }) => (
-          <div
-            key={key}
-            onClick={() => set(!val)}
-            style={{
-              background: val ? "var(--primary-bg)" : "var(--surface)",
-              border: `1.5px solid ${val ? "var(--primary)" : "var(--border)"}`,
-              borderRadius: "var(--radius)",
-              padding: "14px 18px",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              transition: "border-color 0.15s, background 0.15s",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{label}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{sub}</div>
-            </div>
-            <div style={{
-              width: 44, height: 24, borderRadius: 12,
-              background: val ? "var(--primary)" : "var(--border)",
-              position: "relative", transition: "background 0.2s", flexShrink: 0,
-            }}>
-              <div style={{
-                position: "absolute", top: 3, left: val ? 22 : 3,
-                width: 18, height: 18, borderRadius: "50%",
-                background: "#fff", transition: "left 0.2s",
-              }} />
-            </div>
-          </div>
-        ))}
       </div>
 
       {saved && (
