@@ -8,7 +8,7 @@ const RED = "#dc2626";
 const RED_BG = "rgba(220,38,38,0.12)";
 
 export default function StrandturmLobbyScreen() {
-  const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH">("BUTTONS");
+  const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH" | "SPLIT">("BUTTONS");
   const [highScore, setHighScore] = useState(0);
   const [bestLevel, setBestLevel] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -106,7 +106,7 @@ export default function StrandturmLobbyScreen() {
         <div>❤️ 3 Leben &nbsp;·&nbsp; ⏱ Bonuszeit läuft ab</div>
         <div style={{ marginTop: 4, color: "var(--text-sub)", fontSize: 12 }}>
           Steuerung: <strong style={{ color: "var(--text)" }}>
-            {controlMode === "BUTTONS" ? "🔲 Buttons" : "👆 Touch-Zonen"}
+            {controlMode === "BUTTONS" ? "🔲 Klassisch" : controlMode === "SPLIT" ? "✌️ Zwei-Händig" : "👆 Touch-Zonen"}
           </strong>
           {" "}·{" "}
           <span style={{ cursor: "pointer", color: RED }} onClick={() => navigate("/strandturm/settings")}>Ändern</span>

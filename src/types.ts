@@ -28,7 +28,7 @@ export interface User {
   preferredWormControlMode?: "BUTTONS" | "SWIPE";
   wormHighScores?: { ROOKIE?: number; SNIPER?: number; BOSS_LEVEL?: number };
   // Strandturm preferences
-  preferredStrandturmControlMode?: "BUTTONS" | "TOUCH";
+  preferredStrandturmControlMode?: "BUTTONS" | "TOUCH" | "SPLIT";
   strandturmHighScore?: number;
   strandturmBestLevel?: number;
   // Global audio settings

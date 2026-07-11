@@ -47,6 +47,8 @@ const LADD_W = 18;
 
 const GOAL_X = 340; // x-threshold on P5 to win
 const MOEVE_X = 55; // Möwe x position on P5 left side
+const HAMMER_FLOAT = 30; // px above platform surface – requires a jump to reach
+const EXPLOSION_FRAMES = 18;
 
 // Coconut roll directions per platform index (positive = right)
 // Alternating creates the DK-style zigzag cascade from top to bottom
@@ -82,6 +84,10 @@ interface Coco {
   platIdx: number; // -1 = airborne
 }
 
+interface Explosion {
+  id: number; x: number; y: number; frame: number;
+}
+
 interface GS {
   // Player position (center x, bottom y)
   px: number; py: number;
@@ -115,6 +121,10 @@ interface GS {
 
   // Jump-over bonus tracking
   jumpedCocoIds: Set<number>;
+
+  // Explosion effects
+  explosions: Explosion[];
+  explosionIdCtr: number;
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
@@ -130,6 +140,7 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     hasHammer: false, hammerTimer: 0,
     hammerPickups: HAMMER_DEFS.map(() => false),
     jumpedCocoIds: new Set<number>(),
+    explosions: [], explosionIdCtr: 0,
   };
 }
 
@@ -233,6 +244,30 @@ function drawSeeloewe(ctx: CanvasRenderingContext2D, frame: number) {
   }
 
   ctx.restore();
+}
+
+function drawExplosion(ctx: CanvasRenderingContext2D, e: Explosion) {
+  const t = e.frame / EXPLOSION_FRAMES;
+  const r = 4 + t * 20;
+  const a = 1 - t;
+  // Bright core
+  ctx.fillStyle = `rgba(255,255,200,${a * 0.95})`;
+  ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
+  // Orange fill
+  ctx.fillStyle = `rgba(251,146,60,${a * 0.75})`;
+  ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.7, 0, Math.PI * 2); ctx.fill();
+  // Red expanding ring
+  ctx.strokeStyle = `rgba(239,68,68,${a})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.stroke();
+  // 8 flying sparks
+  for (let i = 0; i < 8; i++) {
+    const ang = (i * Math.PI * 2) / 8;
+    const sx = e.x + Math.cos(ang) * r * 1.4;
+    const sy = e.y + Math.sin(ang) * r * 1.4;
+    ctx.fillStyle = `rgba(251,191,36,${a})`;
+    ctx.beginPath(); ctx.arc(sx, sy, 2.5 * (1 - t * 0.7), 0, Math.PI * 2); ctx.fill();
+  }
 }
 
 function drawHammerPickup(ctx: CanvasRenderingContext2D, x: number, y: number) {
@@ -382,7 +417,7 @@ function drawOverlay(ctx: CanvasRenderingContext2D, gs: GS) {
 export default function StrandturmGameScreen() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" } | null;
+  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" | "SPLIT" } | null;
   const controlMode = state?.controlMode ?? "BUTTONS";
 
   const canvasRef  = useRef<HTMLCanvasElement>(null);
@@ -428,6 +463,7 @@ export default function StrandturmGameScreen() {
           gs.hasHammer = false; gs.hammerTimer = 0;
           gs.hammerPickups = HAMMER_DEFS.map(() => false);
           gs.jumpedCocoIds = new Set<number>();
+          gs.explosions = []; gs.explosionIdCtr = 0;
           gs.phase = "PLAYING";
           setBonus(gs.bonusTimer); setPhase("PLAYING");
         }
@@ -457,8 +493,8 @@ export default function StrandturmGameScreen() {
       for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
         if (gs.hammerPickups[hi]) continue;
         const h = HAMMER_DEFS[hi];
-        const hy = PLATS[h.platIdx].y;
-        if (Math.abs(gs.px - h.x) < 14 && Math.abs(gs.py - hy) < 6) {
+        const hy = PLATS[h.platIdx].y - HAMMER_FLOAT; // floated above platform
+        if (Math.abs(gs.px - h.x) < 20 && Math.abs(gs.py - hy) < 18) {
           gs.hasHammer = true;
           gs.hammerTimer = HAMMER_DURATION;
           gs.hammerPickups[hi] = true;
@@ -614,6 +650,9 @@ export default function StrandturmGameScreen() {
     // ── Invincibility countdown ───────────────────────────────────────────────
     if (gs.pinvTimer > 0) gs.pinvTimer--;
 
+    // ── Explosion update ─────────────────────────────────────────────────────
+    gs.explosions = gs.explosions.filter(e => { e.frame++; return e.frame < EXPLOSION_FRAMES; });
+
     // ── Coconut physics ───────────────────────────────────────────────────────
     const spd = cocoSpeed(gs.level);
     const cocoToRemove: number[] = [];
@@ -691,6 +730,7 @@ export default function StrandturmGameScreen() {
             // Smash the coconut with the hammer!
             cocoToRemove.push(ci);
             gs.score += 300;
+            gs.explosions.push({ id: gs.explosionIdCtr++, x: c.x, y: c.y, frame: 0 });
             setScore(gs.score);
             audioManager.playSound("bonus");
           } else {
@@ -768,11 +808,11 @@ export default function StrandturmGameScreen() {
     // Goal
     drawGoal(ctx);
 
-    // Hammer pickups
+    // Hammer pickups (floated above platform – jump to reach)
     for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
       if (!gs.hammerPickups[hi]) {
         const h = HAMMER_DEFS[hi];
-        drawHammerPickup(ctx, h.x, PLATS[h.platIdx].y);
+        drawHammerPickup(ctx, h.x, PLATS[h.platIdx].y - HAMMER_FLOAT);
       }
     }
 
@@ -781,6 +821,9 @@ export default function StrandturmGameScreen() {
 
     // Coconuts
     for (const c of gs.cocos) drawCoco(ctx, c);
+
+    // Explosions (above coconuts, below player)
+    for (const e of gs.explosions) drawExplosion(ctx, e);
 
     // Player
     drawPlayer(ctx, gs);
@@ -1015,6 +1058,40 @@ export default function StrandturmGameScreen() {
               onPointerLeave={() => { downRef.current = false; }}
             >▼</button>
             <div style={{ width: 56 }} />
+          </div>
+        </div>
+      )}
+
+      {/* SPLIT layout: ◄ ► left side, ▲ ▼ right side – two-handed play */}
+      {controlMode === "SPLIT" && !isOver && (
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px" }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              style={btnS}
+              onPointerDown={() => { leftRef.current = true; }}
+              onPointerUp={() => { leftRef.current = false; }}
+              onPointerLeave={() => { leftRef.current = false; }}
+            >◄</button>
+            <button
+              style={btnS}
+              onPointerDown={() => { rightRef.current = true; }}
+              onPointerUp={() => { rightRef.current = false; }}
+              onPointerLeave={() => { rightRef.current = false; }}
+            >►</button>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              style={btnS}
+              onPointerDown={() => { upRef.current = true; jumpPressRef.current = true; }}
+              onPointerUp={() => { upRef.current = false; }}
+              onPointerLeave={() => { upRef.current = false; }}
+            >▲</button>
+            <button
+              style={btnS}
+              onPointerDown={() => { downRef.current = true; }}
+              onPointerUp={() => { downRef.current = false; }}
+              onPointerLeave={() => { downRef.current = false; }}
+            >▼</button>
           </div>
         </div>
       )}

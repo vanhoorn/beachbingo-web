@@ -39,7 +39,7 @@ function ModeOption({ selected, onClick, title, description }: {
 }
 
 export default function StrandturmSettingsScreen() {
-  const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH">("BUTTONS");
+  const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH" | "SPLIT">("BUTTONS");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
@@ -89,8 +89,14 @@ export default function StrandturmSettingsScreen() {
         <ModeOption
           selected={controlMode === "BUTTONS"}
           onClick={() => setControlMode("BUTTONS")}
-          title="🔲 Buttons"
-          description="D-Pad unter dem Spielfeld: ◄ ▲ ► und ▼ zum Klettern"
+          title="🔲 Klassisch"
+          description="D-Pad mittig unter dem Spielfeld: ◄ ▲ ► und ▼ zum Klettern"
+        />
+        <ModeOption
+          selected={controlMode === "SPLIT"}
+          onClick={() => setControlMode("SPLIT")}
+          title="✌️ Zwei-Händig"
+          description="◄ ► links · ▲ ▼ rechts – ideal zum Spielen mit zwei Daumen"
         />
         <ModeOption
           selected={controlMode === "TOUCH"}
