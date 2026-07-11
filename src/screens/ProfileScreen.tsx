@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase";
+import { audioManager } from "../audio/AudioManager";
 import { AVATAR_CATEGORIES, BEACH_AVATARS } from "../types";
 import type { User } from "../types";
 
@@ -34,6 +35,8 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName] = useState("");
   const [avatar, setAvatar]       = useState(BEACH_AVATARS[0]);
   const [activeTab, setActiveTab] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
   const navigate = useNavigate();
@@ -50,6 +53,8 @@ export default function ProfileScreen() {
         setAvatar(av);
         const idx = AVATAR_CATEGORIES.findIndex((c) => (c.avatars as readonly string[]).includes(av));
         if (idx >= 0) setActiveTab(idx);
+        setSoundEnabled(u.soundEnabled !== false);
+        setMusicEnabled(u.musicEnabled !== false);
       }
     });
   }, [uid]);
@@ -60,7 +65,11 @@ export default function ProfileScreen() {
     await updateDoc(doc(db, "users", uid), {
       displayName: displayName.trim(),
       avatarUrl: avatar,
+      soundEnabled,
+      musicEnabled,
     });
+    audioManager.setSound(soundEnabled);
+    audioManager.setMusic(musicEnabled);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -207,6 +216,49 @@ export default function ProfileScreen() {
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Dein Name"
         />
+      </div>
+
+      {/* Audio */}
+      <div className="card flex flex-col gap-0" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "14px 16px 12px", color: "var(--text)", fontWeight: 700, fontSize: 15, borderBottom: "1px solid var(--border)" }}>
+          🔊 Audio (alle Spiele)
+        </div>
+        {[
+          { key: "music", emoji: "🎵", label: "Hintergrundmusik", val: musicEnabled, set: setMusicEnabled },
+          { key: "sound", emoji: "🔔", label: "Soundeffekte",      val: soundEnabled, set: setSoundEnabled },
+        ].map((row, i, arr) => (
+          <div
+            key={row.key}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "14px 16px",
+              borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{row.emoji} {row.label}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Für alle Spiele</div>
+            </div>
+            <label style={{ position: "relative", display: "inline-block", width: 44, height: 24, flexShrink: 0 }}>
+              <input
+                type="checkbox"
+                checked={row.val}
+                onChange={(e) => row.set(e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+              />
+              <span style={{
+                position: "absolute", inset: 0, borderRadius: 12, cursor: "pointer", transition: "background 0.2s",
+                background: row.val ? "var(--primary)" : "var(--surface2)",
+              }}>
+                <span style={{
+                  position: "absolute", top: 3, left: row.val ? 23 : 3,
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: "#fff", transition: "left 0.2s",
+                }} />
+              </span>
+            </label>
+          </div>
+        ))}
       </div>
 
       {saved && (
