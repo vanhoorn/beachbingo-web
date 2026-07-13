@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase";
 import type { User } from "../../types";
 
 const RED = "#dc2626";
+const ADMIN_UID = "oliWTLaCLydkhHl9qF9XZWvSi322";
 
 function ModeOption({ selected, onClick, title, description }: {
   selected: boolean; onClick: () => void; title: string; description: string;
@@ -40,10 +41,12 @@ function ModeOption({ selected, onClick, title, description }: {
 
 export default function StrandturmSettingsScreen() {
   const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH" | "SPLIT">("BUTTONS");
+  const [startLevel, setStartLevel] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
+  const isAdmin = uid === ADMIN_UID;
 
   useEffect(() => {
     if (!uid) return;
@@ -51,6 +54,7 @@ export default function StrandturmSettingsScreen() {
       if (snap.exists()) {
         const u = snap.data() as User;
         setControlMode(u.preferredStrandturmControlMode ?? "BUTTONS");
+        setStartLevel((u as any).strandturmStartLevel ?? 1);
       }
     });
   }, [uid]);
@@ -58,9 +62,9 @@ export default function StrandturmSettingsScreen() {
   async function handleSave() {
     if (!uid) return;
     setSaving(true);
-    await updateDoc(doc(db, "users", uid), {
-      preferredStrandturmControlMode: controlMode,
-    });
+    const updates: Record<string, unknown> = { preferredStrandturmControlMode: controlMode };
+    if (isAdmin) updates.strandturmStartLevel = startLevel;
+    await updateDoc(doc(db, "users", uid), updates);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -105,6 +109,37 @@ export default function StrandturmSettingsScreen() {
           description="Linke Hälfte = Links · Rechte Hälfte = Rechts · Tap oben = Springen"
         />
       </div>
+
+      {isAdmin && (
+        <div className="flex flex-col gap-2">
+          <div className="card-title" style={{ paddingLeft: 4, color: "#f59e0b" }}>🔧 Admin</div>
+          <div className="card" style={{ border: "1.5px solid rgba(245,158,11,0.4)", background: "rgba(245,158,11,0.06)" }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "#f59e0b", marginBottom: 10 }}>Startlevel (nur für Tests)</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[1, 2, 3, 4].map((lvl) => {
+                const labels = ["", "🏗️ Level 1", "🏭 Level 2", "🛗 Level 3", "🔩 Level 4"];
+                const selected = startLevel === lvl;
+                return (
+                  <button
+                    key={lvl}
+                    onClick={() => setStartLevel(lvl)}
+                    style={{
+                      flex: 1, padding: "10px 4px", borderRadius: "var(--radius-sm)", cursor: "pointer",
+                      fontSize: 12, fontWeight: selected ? 700 : 400, lineHeight: 1.4,
+                      background: selected ? "rgba(245,158,11,0.18)" : "var(--surface)",
+                      border: `1.5px solid ${selected ? "#f59e0b" : "var(--border)"}`,
+                      color: selected ? "#f59e0b" : "var(--text-muted)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {labels[lvl]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7 }}>
         <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>Steuerung im Detail</div>

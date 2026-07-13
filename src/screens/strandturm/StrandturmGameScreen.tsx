@@ -131,8 +131,7 @@ function getElevators(lvl: number): Elevator[] {
 
 // ── Bouncing weights (Level 3 obstacle) ────────────────────────────────────────
 const WEIGHT_BOUNCE_FACTOR = 0.72;
-const WEIGHT_MAX_BOUNCES = 4;
-const WEIGHT_MIN_SPEED = 2.5;
+const WEIGHT_MAX_BOUNCES = 10;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Coco {
@@ -614,12 +613,13 @@ function drawOverlay(ctx: CanvasRenderingContext2D, gs: GS) {
 export default function StrandturmGameScreen() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" | "SPLIT" } | null;
+  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" | "SPLIT"; startLevel?: number } | null;
   const controlMode = state?.controlMode ?? "BUTTONS";
+  const startLevel  = state?.startLevel ?? 1;
 
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const rafRef     = useRef<number>(0);
-  const gsRef      = useRef<GS>(makeGS());
+  const gsRef      = useRef<GS>(makeGS(startLevel));
   const savedRef   = useRef(false);
 
   // Input state
@@ -718,15 +718,11 @@ export default function StrandturmGameScreen() {
     if (gs.cocoSpawnAcc >= spawnInterval(gs.level)) {
       gs.cocoSpawnAcc = 0;
       if (getLevelType(gs.level) === 3) {
-        // Level 3: spawn bouncing weight
-        gs.cocos.push({
-          id: gs.cocoIdCtr++,
-          x: MOEVE_X + 35, y: PLATS[5].y - 8,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: 1.5,
-          platIdx: -1,
-          bounces: 0,
-        });
+        // Level 3: spawn 2 weights at staggered x positions
+        const x1 = 40 + Math.random() * 150;
+        const x2 = 210 + Math.random() * 150;
+        gs.cocos.push({ id: gs.cocoIdCtr++, x: x1, y: -8, vx: (Math.random()-0.5)*2, vy: 2.5, platIdx: -1, bounces: 0 });
+        gs.cocos.push({ id: gs.cocoIdCtr++, x: x2, y: -8, vx: (Math.random()-0.5)*2, vy: 2.5, platIdx: -1, bounces: 0 });
       } else {
         const spd = cocoSpeed(gs.level);
         gs.cocos.push({
@@ -913,49 +909,26 @@ export default function StrandturmGameScreen() {
       const c = gs.cocos[ci];
 
       if (levelType === 3) {
-        // ── Level 3: Bouncing weight physics ──────────────────────────────
+        // ── Level 3: Falling weight — passes through platforms, bounces off elevators ──
         c.vy = Math.min(c.vy + 0.6, 14);
         c.x += c.vx;
         c.y += c.vy;
-        // Bounce off canvas edges horizontally
-        if (c.x < 8)       { c.x = 8;       c.vx = Math.abs(c.vx); }
-        if (c.x > CW - 8)  { c.x = CW - 8;  c.vx = -Math.abs(c.vx); }
+        // No wall clamping — weights fall freely off-screen
 
-        // Bounce off platforms
-        let bounced = false;
-        for (let pi = 0; pi < PLATS.length; pi++) {
-          const p = PLATS[pi];
-          if (c.x > p.x && c.x < p.x + p.w &&
-              c.y + 8 >= p.y && c.y + 8 <= p.y + 16 && c.vy > 0) {
-            c.y = p.y - 8;
+        // Bounce off elevator surfaces only
+        for (const el of gs.elevators) {
+          if (c.x > el.x && c.x < el.x + el.w &&
+              c.y + 8 >= el.y && c.y + 8 <= el.y + 16 && c.vy > 0) {
+            c.y = el.y - 8;
             c.vy = -Math.abs(c.vy) * WEIGHT_BOUNCE_FACTOR;
-            c.vx += (Math.random() - 0.5) * 0.8;
+            c.vx += (Math.random() - 0.5) * 4;
             c.bounces++;
             audioManager.playSound("coconut_bounce");
-            if (c.bounces >= WEIGHT_MAX_BOUNCES || Math.abs(c.vy) < WEIGHT_MIN_SPEED) {
-              cocoToRemove.push(ci);
-            }
-            bounced = true;
+            if (c.bounces >= WEIGHT_MAX_BOUNCES) cocoToRemove.push(ci);
             break;
           }
         }
-        // Bounce off elevator surfaces
-        if (!bounced) {
-          for (const el of gs.elevators) {
-            if (c.x > el.x && c.x < el.x + el.w &&
-                c.y + 8 >= el.y && c.y + 8 <= el.y + 16 && c.vy > 0) {
-              c.y = el.y - 8;
-              c.vy = -Math.abs(c.vy) * WEIGHT_BOUNCE_FACTOR;
-              c.vx += (Math.random() - 0.5) * 0.6;
-              c.bounces++;
-              if (c.bounces >= WEIGHT_MAX_BOUNCES || Math.abs(c.vy) < WEIGHT_MIN_SPEED) {
-                cocoToRemove.push(ci);
-              }
-              break;
-            }
-          }
-        }
-        if (c.y > CH + 30) cocoToRemove.push(ci);
+        if (c.y > CH + 30 || c.x < -40 || c.x > CW + 40) cocoToRemove.push(ci);
 
       } else {
         // ── Level 1/2: Rolling coconut / cement-trough physics ────────────

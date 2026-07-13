@@ -11,6 +11,7 @@ export default function StrandturmLobbyScreen() {
   const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH" | "SPLIT">("BUTTONS");
   const [highScore, setHighScore] = useState(0);
   const [bestLevel, setBestLevel] = useState(0);
+  const [startLevel, setStartLevel] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function StrandturmLobbyScreen() {
         setControlMode(u.preferredStrandturmControlMode ?? "BUTTONS");
         setHighScore(u.strandturmHighScore ?? 0);
         setBestLevel(u.strandturmBestLevel ?? 0);
+        setStartLevel((u as any).strandturmStartLevel ?? 1);
         setIsFavorite(
           ((u as unknown as Record<string, string[]>).favoriteGames ?? []).includes("strandturm")
         );
@@ -116,7 +118,7 @@ export default function StrandturmLobbyScreen() {
       <button
         className="btn btn-primary"
         style={{ background: RED, borderColor: RED, fontSize: 17, padding: "16px" }}
-        onClick={() => navigate("/strandturm/game", { state: { controlMode } })}
+        onClick={() => navigate("/strandturm/game", { state: { controlMode, startLevel } })}
       >
         🎮 Spielen
       </button>
