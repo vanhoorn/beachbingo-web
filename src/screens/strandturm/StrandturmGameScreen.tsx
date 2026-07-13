@@ -1169,13 +1169,13 @@ export default function StrandturmGameScreen() {
         o.x += o.vx;
         if (o.x < p.x + OKTO_R) { o.x = p.x + OKTO_R; o.vx = Math.abs(o.vx); }
         if (o.x > p.x + p.w - OKTO_R) { o.x = p.x + p.w - OKTO_R; o.vx = -Math.abs(o.vx); }
-        // Level 4: bounce at niete gaps
+        // Level 4: bounce at niete gaps (side-check prevents perpetual re-bounce)
         if (getLevelType(gs.level) === 4) {
           for (const n of gs.nieten) {
             if (!n.collected || n.platIdx !== o.platIdx) continue;
-            if (o.vx > 0 && o.x + OKTO_R >= n.x - NIETE_GAP) {
+            if (o.vx > 0 && o.x < n.x && o.x + OKTO_R >= n.x - NIETE_GAP) {
               o.x = n.x - NIETE_GAP - OKTO_R; o.vx = -Math.abs(o.vx); break;
-            } else if (o.vx < 0 && o.x - OKTO_R <= n.x + NIETE_GAP) {
+            } else if (o.vx < 0 && o.x > n.x && o.x - OKTO_R <= n.x + NIETE_GAP) {
               o.x = n.x + NIETE_GAP + OKTO_R; o.vx = Math.abs(o.vx); break;
             }
           }
