@@ -960,7 +960,11 @@ export default function StrandturmGameScreen() {
       for (let i = 0; i < gs.activePlats.length; i++) {
         const p = gs.activePlats[i];
         if (gs.px + PW / 2 > p.x && gs.px - PW / 2 < p.x + p.w) {
-          if (gs.pvy >= 0 && prevPY <= p.y + 1 && gs.py >= p.y) {
+          // Level 4: fall through niete gaps
+          const overGap = getLevelType(gs.level) === 4 && gs.nieten.some(
+            n => n.collected && n.platIdx === i && Math.abs(gs.px - n.x) < NIETE_GAP
+          );
+          if (!overGap && gs.pvy >= 0 && prevPY <= p.y + 1 && gs.py >= p.y) {
             gs.py = p.y; gs.pvy = 0; gs.ponGround = true;
             if (!wasOnGround) audioManager.playSound("land");
             break;
