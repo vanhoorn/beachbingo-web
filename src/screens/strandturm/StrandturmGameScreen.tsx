@@ -293,17 +293,32 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
 }
 
 // ── Drawing helpers ─────────────────────────────────────────────────────────────
-function drawPlat(ctx: CanvasRenderingContext2D, p: Plat) {
-  ctx.fillStyle = "#7c3f1a";
-  ctx.fillRect(p.x, p.y, p.w, PLAT_H);
-  ctx.fillStyle = "#a05a2c";
-  ctx.fillRect(p.x, p.y, p.w, 2);
-  ctx.fillStyle = "#4a2409";
-  ctx.fillRect(p.x, p.y + PLAT_H - 2, p.w, 2);
+function drawPlat(ctx: CanvasRenderingContext2D, p: Plat, gaps: number[] = []) {
+  const GAP_HALF = 7;
+  const sorted = [...gaps].sort((a, b) => a - b);
+  // Build segments to draw (skip gap regions)
+  const segs: Array<{ x: number; w: number }> = [];
+  let left = p.x;
+  for (const g of sorted) {
+    const gl = g - GAP_HALF, gr = g + GAP_HALF;
+    if (gl > left) segs.push({ x: left, w: gl - left });
+    left = Math.max(left, gr);
+  }
+  if (left < p.x + p.w) segs.push({ x: left, w: p.x + p.w - left });
+  for (const seg of segs) {
+    ctx.fillStyle = "#7c3f1a";
+    ctx.fillRect(seg.x, p.y, seg.w, PLAT_H);
+    ctx.fillStyle = "#a05a2c";
+    ctx.fillRect(seg.x, p.y, seg.w, 2);
+    ctx.fillStyle = "#4a2409";
+    ctx.fillRect(seg.x, p.y + PLAT_H - 2, seg.w, 2);
+  }
   ctx.strokeStyle = "#6b3416";
   ctx.lineWidth = 0.5;
   for (let gx = p.x + 8; gx < p.x + p.w - 4; gx += 16) {
-    ctx.beginPath(); ctx.moveTo(gx, p.y + 2); ctx.lineTo(gx, p.y + PLAT_H - 2); ctx.stroke();
+    if (!sorted.some(g => gx >= g - GAP_HALF && gx <= g + GAP_HALF)) {
+      ctx.beginPath(); ctx.moveTo(gx, p.y + 2); ctx.lineTo(gx, p.y + PLAT_H - 2); ctx.stroke();
+    }
   }
 }
 
@@ -1227,7 +1242,12 @@ export default function StrandturmGameScreen() {
     ctx.fillRect(0, CH - 60, CW, 60);
 
     // Platforms
-    for (const p of gs.activePlats) drawPlat(ctx, p);
+    for (let pi = 0; pi < gs.activePlats.length; pi++) {
+      const gaps = getLevelType(gs.level) === 4
+        ? gs.nieten.filter(n => n.collected && n.platIdx === pi).map(n => n.x)
+        : [];
+      drawPlat(ctx, gs.activePlats[pi], gaps);
+    }
 
     // Conveyor belts (overlaid on platform surface, under ladders – Level 2 mechanic)
     for (const belt of gs.conveyorBelts) drawConveyorBelt(ctx, belt, gs.totalFrame);
