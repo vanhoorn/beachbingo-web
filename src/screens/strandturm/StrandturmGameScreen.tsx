@@ -87,11 +87,30 @@ function getHammerDefsForLevel(lvl: number): HammerDefT[] {
     : [{ x: 190, platIdx: 1 }, { x: 190, platIdx: 3 }];
 }
 function spawnOktos(lvl: number): Okto[] {
-  if (getLevelType(lvl) !== 3) return [];
-  return [1, 4, 5, 8].map((pi, i) => {
-    const p = LEVEL3_PLATS[pi];
-    return { id: i, x: p.x + p.w / 2, y: p.y, vx: pi % 2 === 0 ? OKTO_SPD : -OKTO_SPD, platIdx: pi };
-  });
+  if (getLevelType(lvl) === 3) {
+    return [1, 4, 5, 8].map((pi, i) => {
+      const p = LEVEL3_PLATS[pi];
+      return { id: i, x: p.x + p.w / 2, y: p.y, vx: pi % 2 === 0 ? OKTO_SPD : -OKTO_SPD, platIdx: pi };
+    });
+  }
+  if (getLevelType(lvl) === 4) {
+    return [1, 2, 3, 4].map((pi, i) => {
+      const p = PLATS[pi];
+      return { id: i, x: p.x + p.w / 2, y: p.y, vx: i % 2 === 0 ? OKTO_SPD * 1.3 : -OKTO_SPD * 1.3, platIdx: pi };
+    });
+  }
+  return [];
+}
+
+const NIETEN_DEFS = [
+  { x: 90,  platIdx: 1 }, { x: 280, platIdx: 1 },
+  { x: 80,  platIdx: 2 }, { x: 270, platIdx: 2 },
+  { x: 100, platIdx: 3 }, { x: 260, platIdx: 3 },
+  { x: 95,  platIdx: 4 }, { x: 255, platIdx: 4 },
+] as const;
+
+function spawnNieten(): Niete[] {
+  return NIETEN_DEFS.map((d, i) => ({ id: i, x: d.x, platIdx: d.platIdx, collected: false }));
 }
 
 const HAMMER_DURATION = 300; // 5 s at 60 fps
@@ -181,6 +200,10 @@ interface Okto {
   vx: number; platIdx: number;
 }
 
+interface Niete {
+  id: number; x: number; platIdx: number; collected: boolean;
+}
+
 interface GS {
   // Player position (center x, bottom y)
   px: number; py: number;
@@ -232,9 +255,13 @@ interface GS {
   activeLadders: readonly Ladd[];
   activeHammerDefs: HammerDefT[];
 
-  // Level 3 Okto-Feinde
+  // Level 3 + Level 4 Okto-Feinde
   oktos: Okto[];
   oktoIdCtr: number;
+
+  // Level 4 Nieten (Bolzen)
+  nieten: Niete[];
+  nietenCollected: number;
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
@@ -260,6 +287,8 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     activeHammerDefs: hd,
     oktos: spawnOktos(lvl),
     oktoIdCtr: 0,
+    nieten: getLevelType(lvl) === 4 ? spawnNieten() : [],
+    nietenCollected: 0,
   };
 }
 
@@ -595,10 +624,32 @@ function drawWanne(ctx: CanvasRenderingContext2D, c: Coco) {
   ctx.fillRect(c.x - r + 3, c.y + r * 0.25, (r - 3) * 2, r * 0.35);
 }
 
-function drawGoal(ctx: CanvasRenderingContext2D, topPlatY: number) {
+function drawNiete(ctx: CanvasRenderingContext2D, n: Niete, platY: number) {
+  if (n.collected) return;
+  const x = n.x, y = platY - 9;
+  // Glow
+  ctx.fillStyle = "rgba(251,191,36,0.22)";
+  ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
+  // Hexagonal bolt head
+  ctx.fillStyle = "#fbbf24";
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+    const r = 5.5;
+    if (i === 0) ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    else         ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1; ctx.stroke();
+  // Dark center hole
+  ctx.fillStyle = "#78350f";
+  ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawGoal(ctx: CanvasRenderingContext2D, topPlatY: number, locked = false) {
   ctx.font = "24px serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("🛟", GOAL_X + 15, topPlatY - 16);
+  ctx.fillText(locked ? "🔒" : "🛟", GOAL_X + 15, topPlatY - 16);
 }
 
 function drawOkto(ctx: CanvasRenderingContext2D, o: Okto) {
@@ -641,6 +692,14 @@ function drawHUD(ctx: CanvasRenderingContext2D, gs: GS) {
   ctx.font = "14px serif";
   for (let i = 0; i < 3; i++) {
     ctx.fillText(i < gs.lives ? "❤️" : "🖤", CW / 2 - 16 + i * 18, 6);
+  }
+
+  // Nieten counter (Level 4)
+  if (getLevelType(gs.level) === 4) {
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = gs.nietenCollected >= 8 ? "#22c55e" : "#fbbf24";
+    ctx.fillText(`🔩 ${gs.nietenCollected}/8`, CW / 2, 22);
   }
 }
 
@@ -787,8 +846,8 @@ export default function StrandturmGameScreen() {
     }
 
     // ── Spawn obstacle ────────────────────────────────────────────────────────
-    gs.cocoSpawnAcc++;
-    if (gs.cocoSpawnAcc >= spawnInterval(gs.level)) {
+    if (getLevelType(gs.level) !== 4) gs.cocoSpawnAcc++;
+    if (getLevelType(gs.level) !== 4 && gs.cocoSpawnAcc >= spawnInterval(gs.level)) {
       gs.cocoSpawnAcc = 0;
       if (getLevelType(gs.level) === 3) {
         // Level 3: single weight on right side only
@@ -954,8 +1013,24 @@ export default function StrandturmGameScreen() {
       return;
     }
 
+    // ── Nieten collection (Level 4) ───────────────────────────────────────────
+    if (getLevelType(gs.level) === 4) {
+      for (const n of gs.nieten) {
+        if (n.collected) continue;
+        const platY = gs.activePlats[n.platIdx].y;
+        if (Math.abs(gs.px - n.x) < 14 && Math.abs(gs.py - platY) < 4) {
+          n.collected = true;
+          gs.nietenCollected++;
+          gs.score += 100;
+          setScore(gs.score);
+          audioManager.playSound("bonus");
+        }
+      }
+    }
+
     // ── Goal check (reached top platform right side) ─────────────────────────
-    if (gs.py <= gs.activePlats[gs.activePlats.length - 1].y + 2 && gs.px >= GOAL_X && gs.phase === "PLAYING") {
+    const nietenGate = getLevelType(gs.level) !== 4 || gs.nietenCollected >= 8;
+    if (nietenGate && gs.py <= gs.activePlats[gs.activePlats.length - 1].y + 2 && gs.px >= GOAL_X && gs.phase === "PLAYING") {
       gs.score += 300 + gs.bonusTimer;
       audioManager.playSound("level_complete");
       audioManager.playSound("bonus");
@@ -1164,8 +1239,14 @@ export default function StrandturmGameScreen() {
     // Ladders
     for (const l of gs.activeLadders) drawLadder(ctx, l);
 
+    // Nieten (Level 4 Bolzen – unter dem Spieler gezeichnet)
+    if (getLevelType(gs.level) === 4) {
+      for (const n of gs.nieten) drawNiete(ctx, n, gs.activePlats[n.platIdx].y);
+    }
+
     // Goal
-    drawGoal(ctx, gs.activePlats[gs.activePlats.length - 1].y);
+    const goalLocked = getLevelType(gs.level) === 4 && gs.nietenCollected < 8;
+    drawGoal(ctx, gs.activePlats[gs.activePlats.length - 1].y, goalLocked);
 
     // Hammer pickups (floated above platform – jump to reach)
     for (let hi = 0; hi < gs.activeHammerDefs.length; hi++) {
@@ -1186,7 +1267,7 @@ export default function StrandturmGameScreen() {
       else drawCoco(ctx, c);
     }
 
-    // Okto enemies (Level 3)
+    // Okto enemies (Level 3 + Level 4)
     for (const o of gs.oktos) drawOkto(ctx, o);
 
     // Explosions (above coconuts, below player)
