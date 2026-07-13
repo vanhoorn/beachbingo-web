@@ -626,7 +626,7 @@ function drawWanne(ctx: CanvasRenderingContext2D, c: Coco) {
 
 function drawNiete(ctx: CanvasRenderingContext2D, n: Niete, platY: number) {
   if (n.collected) return;
-  const x = n.x, y = platY - 9;
+  const x = n.x, y = platY + PLAT_H / 2;
   // Glow
   ctx.fillStyle = "rgba(251,191,36,0.22)";
   ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
