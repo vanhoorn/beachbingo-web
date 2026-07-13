@@ -54,11 +54,46 @@ const EXPLOSION_FRAMES = 18;
 // Alternating creates the DK-style zigzag cascade from top to bottom
 const ROLL_DIR = [-1, 1, -1, 1, -1, 1] as const;
 
-// Hammer power-up definitions
-const HAMMER_DEFS = [
-  { x: 190, platIdx: 1 }, // P1 center
-  { x: 190, platIdx: 3 }, // P3 center
-] as const;
+// ── Level 3 – Aufzüge layout ──────────────────────────────────────────────────
+type Plat = { x: number; y: number; w: number };
+type Ladd = { cx: number; y1: number; y2: number };
+type HammerDefT = { x: number; platIdx: number };
+
+const LEVEL3_PLATS: readonly Plat[] = [
+  { x: 10,  y: 505, w: 380 }, // P0 full bottom (start)
+  { x: 50,  y: 420, w: 140 }, // P1a links  x=50..190
+  { x: 230, y: 420, w: 70  }, // P1b links  x=230..300
+  { x: 100, y: 335, w: 80  }, // P2a rechts x=100..180
+  { x: 220, y: 335, w: 135 }, // P2b rechts x=220..355
+  { x: 50,  y: 250, w: 140 }, // P3a links  x=50..190
+  { x: 230, y: 250, w: 70  }, // P3b links  x=230..300
+  { x: 100, y: 165, w: 80  }, // P4a rechts x=100..180
+  { x: 220, y: 165, w: 135 }, // P4b rechts x=220..355
+  { x: 10,  y: 80,  w: 380 }, // P5 full top (goal)
+];
+const LEVEL3_LADDERS: readonly Ladd[] = [];
+const OKTO_R   = 7;
+const OKTO_SPD = 0.8;
+
+function getActivePlats(lvl: number): readonly Plat[] {
+  return getLevelType(lvl) === 3 ? LEVEL3_PLATS : PLATS;
+}
+function getActiveLadders(lvl: number): readonly Ladd[] {
+  return getLevelType(lvl) === 3 ? LEVEL3_LADDERS : LADDERS;
+}
+function getHammerDefsForLevel(lvl: number): HammerDefT[] {
+  return getLevelType(lvl) === 3
+    ? [{ x: 120, platIdx: 1 }, { x: 120, platIdx: 5 }]
+    : [{ x: 190, platIdx: 1 }, { x: 190, platIdx: 3 }];
+}
+function spawnOktos(lvl: number): Okto[] {
+  if (getLevelType(lvl) !== 3) return [];
+  return [1, 4, 5, 8].map((pi, i) => {
+    const p = LEVEL3_PLATS[pi];
+    return { id: i, x: p.x + p.w / 2, y: p.y, vx: pi % 2 === 0 ? OKTO_SPD : -OKTO_SPD, platIdx: pi };
+  });
+}
+
 const HAMMER_DURATION = 300; // 5 s at 60 fps
 const COCO_R = 8;
 
@@ -119,13 +154,9 @@ interface Elevator {
 
 function getElevators(lvl: number): Elevator[] {
   if (getLevelType(lvl) !== 3) return [];
-  // Four elevators in the central shaft, one per inter-platform gap.
-  // Phase-staggered so they are never all at the same level simultaneously.
   return [
-    { x: 175, w: 50, y: 480, y1: 420, y2: 505, vy: -ELEV_SPEED }, // P0→P1
-    { x: 175, w: 50, y: 400, y1: 335, y2: 420, vy:  ELEV_SPEED }, // P1→P2
-    { x: 175, w: 50, y: 310, y1: 250, y2: 335, vy: -ELEV_SPEED }, // P2→P3
-    { x: 175, w: 50, y: 232, y1: 165, y2: 250, vy:  ELEV_SPEED }, // P3→P4
+    { x: 5,   w: 40, y: 380, y1: 80, y2: 490, vy: -ELEV_SPEED }, // Links,  fährt hoch
+    { x: 355, w: 40, y: 210, y1: 80, y2: 490, vy:  ELEV_SPEED }, // Rechts, fährt runter
   ];
 }
 
@@ -143,6 +174,11 @@ interface Coco {
 
 interface Explosion {
   id: number; x: number; y: number; frame: number;
+}
+
+interface Okto {
+  id: number; x: number; y: number;
+  vx: number; platIdx: number;
 }
 
 interface GS {
@@ -190,9 +226,19 @@ interface GS {
   elevators: Elevator[];
   ponElevator: boolean;
   pElevatorIdx: number;
+
+  // Aktives Level-Layout (Level 3 hat andere Plattformen/Leitern)
+  activePlats: readonly Plat[];
+  activeLadders: readonly Ladd[];
+  activeHammerDefs: HammerDefT[];
+
+  // Level 3 Okto-Feinde
+  oktos: Okto[];
+  oktoIdCtr: number;
 }
 
 function makeGS(lvl = 1, lives = 3, score = 0): GS {
+  const hd = getHammerDefsForLevel(lvl);
   return {
     px: 50, py: 505,
     pvx: 0, pvy: 0,
@@ -203,17 +249,22 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
     bonusTimer: bonusForLevel(lvl), bonusTickAcc: 0,
     phase: "PLAYING", phaseTimer: 0, totalFrame: 0,
     hasHammer: false, hammerTimer: 0,
-    hammerPickups: HAMMER_DEFS.map(() => false),
+    hammerPickups: hd.map(() => false),
     jumpedCocoIds: new Set<number>(),
     explosions: [], explosionIdCtr: 0,
     conveyorBelts: getConveyorBelts(lvl),
     elevators: getElevators(lvl),
     ponElevator: false, pElevatorIdx: -1,
+    activePlats: getActivePlats(lvl),
+    activeLadders: getActiveLadders(lvl),
+    activeHammerDefs: hd,
+    oktos: spawnOktos(lvl),
+    oktoIdCtr: 0,
   };
 }
 
 // ── Drawing helpers ─────────────────────────────────────────────────────────────
-function drawPlat(ctx: CanvasRenderingContext2D, p: typeof PLATS[number]) {
+function drawPlat(ctx: CanvasRenderingContext2D, p: Plat) {
   ctx.fillStyle = "#7c3f1a";
   ctx.fillRect(p.x, p.y, p.w, PLAT_H);
   ctx.fillStyle = "#a05a2c";
@@ -227,7 +278,7 @@ function drawPlat(ctx: CanvasRenderingContext2D, p: typeof PLATS[number]) {
   }
 }
 
-function drawLadder(ctx: CanvasRenderingContext2D, l: typeof LADDERS[number]) {
+function drawLadder(ctx: CanvasRenderingContext2D, l: Ladd) {
   ctx.strokeStyle = "#8b6534";
   ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(l.cx - LADD_W / 2 + 2, l.y1); ctx.lineTo(l.cx - LADD_W / 2 + 2, l.y2); ctx.stroke();
@@ -238,9 +289,9 @@ function drawLadder(ctx: CanvasRenderingContext2D, l: typeof LADDERS[number]) {
   }
 }
 
-function drawSeeloewe(ctx: CanvasRenderingContext2D, frame: number) {
+function drawSeeloewe(ctx: CanvasRenderingContext2D, frame: number, topPlatY: number) {
   const mx = MOEVE_X;
-  const gy = PLATS[5].y; // ground level of top platform
+  const gy = topPlatY; // ground level of top platform
 
   // Flipper animation: smooth raise/lower
   const flipRaise = Math.sin(frame * 0.1) * 5;
@@ -420,8 +471,7 @@ function drawCoco(ctx: CanvasRenderingContext2D, c: Coco) {
 }
 
 function drawConveyorBelt(ctx: CanvasRenderingContext2D, belt: ConveyorBelt, frame: number) {
-  const platsArr = PLATS as ReadonlyArray<{ x: number; y: number; w: number }>;
-  const py = platsArr[belt.platIdx].y;
+  const py = PLATS[belt.platIdx].y;
   const PERIOD = 18;
   const rawOff = (frame * 0.5) % PERIOD;
   const scrollX = belt.vx > 0 ? rawOff : PERIOD - rawOff;
@@ -545,10 +595,32 @@ function drawWanne(ctx: CanvasRenderingContext2D, c: Coco) {
   ctx.fillRect(c.x - r + 3, c.y + r * 0.25, (r - 3) * 2, r * 0.35);
 }
 
-function drawGoal(ctx: CanvasRenderingContext2D) {
+function drawGoal(ctx: CanvasRenderingContext2D, topPlatY: number) {
   ctx.font = "24px serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("🛟", GOAL_X + 15, PLATS[5].y - 16);
+  ctx.fillText("🛟", GOAL_X + 15, topPlatY - 16);
+}
+
+function drawOkto(ctx: CanvasRenderingContext2D, o: Okto) {
+  const { x, y } = o;
+  const r = OKTO_R;
+  // Body
+  ctx.fillStyle = "#7c3aed";
+  ctx.beginPath(); ctx.arc(x, y - r, r, Math.PI, 2 * Math.PI); ctx.fill();
+  ctx.fillRect(x - r, y - r, r * 2, r);
+  // Tentacles (4 wiggly legs)
+  ctx.strokeStyle = "#7c3aed"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+  for (let i = 0; i < 4; i++) {
+    const tx = x - r + r * 0.5 * i + r * 0.25;
+    ctx.beginPath(); ctx.moveTo(tx, y); ctx.lineTo(tx - 1, y + 5); ctx.stroke();
+  }
+  // Eyes
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(x - 2.5, y - r - 1, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 2.5, y - r - 1, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#1e1b4b";
+  ctx.beginPath(); ctx.arc(x - 2, y - r - 1, 1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 3, y - r - 1, 1, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawHUD(ctx: CanvasRenderingContext2D, gs: GS) {
@@ -658,10 +730,11 @@ export default function StrandturmGameScreen() {
           gs.bonusTimer = bonusForLevel(gs.level); gs.bonusTickAcc = 0;
           gs.pinvTimer = 120; // 2s invincibility
           gs.hasHammer = false; gs.hammerTimer = 0;
-          gs.hammerPickups = HAMMER_DEFS.map(() => false);
+          gs.hammerPickups = gs.activeHammerDefs.map(() => false);
           gs.jumpedCocoIds = new Set<number>();
           gs.explosions = []; gs.explosionIdCtr = 0;
           gs.ponElevator = false; gs.pElevatorIdx = -1;
+          gs.oktos = spawnOktos(gs.level);
           gs.phase = "PLAYING";
           setBonus(gs.bonusTimer); setPhase("PLAYING");
         }
@@ -695,10 +768,10 @@ export default function StrandturmGameScreen() {
 
     // ── Hammer pickup ─────────────────────────────────────────────────────────
     if (!gs.hasHammer) {
-      for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
+      for (let hi = 0; hi < gs.activeHammerDefs.length; hi++) {
         if (gs.hammerPickups[hi]) continue;
-        const h = HAMMER_DEFS[hi];
-        const hy = PLATS[h.platIdx].y - HAMMER_FLOAT; // floated above platform
+        const h = gs.activeHammerDefs[hi];
+        const hy = gs.activePlats[h.platIdx].y - HAMMER_FLOAT; // floated above platform
         if (Math.abs(gs.px - h.x) < 20 && Math.abs(gs.py - hy) < 18) {
           gs.hasHammer = true;
           gs.hammerTimer = HAMMER_DURATION;
@@ -718,18 +791,18 @@ export default function StrandturmGameScreen() {
     if (gs.cocoSpawnAcc >= spawnInterval(gs.level)) {
       gs.cocoSpawnAcc = 0;
       if (getLevelType(gs.level) === 3) {
-        // Level 3: spawn 2 weights at staggered x positions
-        const x1 = 40 + Math.random() * 150;
-        const x2 = 210 + Math.random() * 150;
-        gs.cocos.push({ id: gs.cocoIdCtr++, x: x1, y: -8, vx: (Math.random()-0.5)*2, vy: 2.5, platIdx: -1, bounces: 0 });
-        gs.cocos.push({ id: gs.cocoIdCtr++, x: x2, y: -8, vx: (Math.random()-0.5)*2, vy: 2.5, platIdx: -1, bounces: 0 });
+        // Level 3: single weight on right side only
+        const wx = 300 + Math.random() * 80;
+        const wvx = (Math.random() - 0.3) * 1.5;
+        gs.cocos.push({ id: gs.cocoIdCtr++, x: wx, y: -8, vx: wvx, vy: 2.5, platIdx: -1, bounces: 0 });
       } else {
         const spd = cocoSpeed(gs.level);
+        const topPlat = gs.activePlats[gs.activePlats.length - 1];
         gs.cocos.push({
           id: gs.cocoIdCtr++,
-          x: MOEVE_X + 35, y: PLATS[5].y - COCO_R,
+          x: MOEVE_X + 35, y: topPlat.y - COCO_R,
           vx: spd, vy: 0,
-          platIdx: 5,
+          platIdx: gs.activePlats.length - 1,
           bounces: 0,
         });
       }
@@ -761,8 +834,8 @@ export default function StrandturmGameScreen() {
 
       // Enter ladder from bottom (UP near ladder)
       if (upRef.current && wasOnGround) {
-        for (let i = 0; i < LADDERS.length; i++) {
-          const l = LADDERS[i];
+        for (let i = 0; i < gs.activeLadders.length; i++) {
+          const l = gs.activeLadders[i];
           if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 14 && Math.abs(gs.py - l.y2) <= 12) {
             gs.ponLadder = true; gs.pladderIdx = i;
             gs.ponGround = false; gs.pvx = 0; gs.pvy = 0;
@@ -775,8 +848,8 @@ export default function StrandturmGameScreen() {
 
       // Enter ladder from top (DOWN while on platform over a ladder)
       if (downRef.current && wasOnGround) {
-        for (let i = 0; i < LADDERS.length; i++) {
-          const l = LADDERS[i];
+        for (let i = 0; i < gs.activeLadders.length; i++) {
+          const l = gs.activeLadders[i];
           if (Math.abs(gs.px - l.cx) <= LADD_W / 2 + 14 && Math.abs(gs.py - l.y1) <= 8) {
             gs.ponLadder = true; gs.pladderIdx = i;
             gs.ponGround = false; gs.pvx = 0; gs.pvy = CLIMB_SPD;
@@ -809,8 +882,8 @@ export default function StrandturmGameScreen() {
     // ── Platform collision ────────────────────────────────────────────────────
     if (!gs.ponLadder) {
       gs.ponGround = false;
-      for (let i = 0; i < PLATS.length; i++) {
-        const p = PLATS[i];
+      for (let i = 0; i < gs.activePlats.length; i++) {
+        const p = gs.activePlats[i];
         if (gs.px + PW / 2 > p.x && gs.px - PW / 2 < p.x + p.w) {
           if (gs.pvy >= 0 && prevPY <= p.y + 1 && gs.py >= p.y) {
             gs.py = p.y; gs.pvy = 0; gs.ponGround = true;
@@ -844,9 +917,8 @@ export default function StrandturmGameScreen() {
 
     // ── Conveyor belt effect (Level 2 mechanic) ──────────────────────────────
     if (gs.ponGround && !gs.ponLadder && gs.conveyorBelts.length > 0) {
-      const platsArr = PLATS as ReadonlyArray<{ x: number; y: number; w: number }>;
       for (const belt of gs.conveyorBelts) {
-        if (Math.abs(gs.py - platsArr[belt.platIdx].y) < 2 &&
+        if (Math.abs(gs.py - gs.activePlats[belt.platIdx].y) < 2 &&
             gs.px >= belt.x && gs.px <= belt.x + belt.w) {
           gs.px = Math.max(PW / 2, Math.min(CW - PW / 2, gs.px + belt.vx));
           break;
@@ -856,7 +928,7 @@ export default function StrandturmGameScreen() {
 
     // ── Ladder exit ───────────────────────────────────────────────────────────
     if (gs.ponLadder && gs.pladderIdx >= 0) {
-      const l = LADDERS[gs.pladderIdx];
+      const l = gs.activeLadders[gs.pladderIdx];
       if (gs.py <= l.y1) {
         gs.py = l.y1; gs.ponLadder = false; gs.pladderIdx = -1;
         gs.ponGround = true; gs.pvy = 0;
@@ -882,8 +954,8 @@ export default function StrandturmGameScreen() {
       return;
     }
 
-    // ── Goal check (reached P5 right side) ───────────────────────────────────
-    if (gs.py <= PLATS[5].y + 2 && gs.px >= GOAL_X && gs.phase === "PLAYING") {
+    // ── Goal check (reached top platform right side) ─────────────────────────
+    if (gs.py <= gs.activePlats[gs.activePlats.length - 1].y + 2 && gs.px >= GOAL_X && gs.phase === "PLAYING") {
       gs.score += 300 + gs.bonusTimer;
       audioManager.playSound("level_complete");
       audioManager.playSound("bonus");
@@ -933,14 +1005,14 @@ export default function StrandturmGameScreen() {
       } else {
         // ── Level 1/2: Rolling coconut / cement-trough physics ────────────
         if (c.platIdx >= 0) {
-          const p = PLATS[c.platIdx];
-          c.vx = ROLL_DIR[c.platIdx] * spd;
+          const p = gs.activePlats[c.platIdx];
+          c.vx = ROLL_DIR[c.platIdx % ROLL_DIR.length] * spd;
           c.x += c.vx;
           c.y = p.y - COCO_R;
           if (c.x < p.x - COCO_R || c.x > p.x + p.w + COCO_R) {
             const nextPIdx = c.platIdx - 1;
             if (nextPIdx >= 0) {
-              const np = PLATS[nextPIdx];
+              const np = gs.activePlats[nextPIdx];
               c.x = c.vx > 0 ? np.x + np.w - 25 : np.x + 25;
             }
             c.y = p.y + PLAT_H + 1;
@@ -949,12 +1021,12 @@ export default function StrandturmGameScreen() {
         } else {
           c.vy = Math.min(c.vy + 0.6, 14);
           c.y += c.vy;
-          for (let pi = 0; pi < PLATS.length; pi++) {
-            const p = PLATS[pi];
+          for (let pi = 0; pi < gs.activePlats.length; pi++) {
+            const p = gs.activePlats[pi];
             if (c.x > p.x && c.x < p.x + p.w &&
                 c.y + COCO_R >= p.y && c.y + COCO_R <= p.y + COCO_R + 8 && c.vy > 0) {
               c.y = p.y - COCO_R; c.vy = 0;
-              c.vx = ROLL_DIR[pi] * spd; c.platIdx = pi;
+              c.vx = ROLL_DIR[pi % ROLL_DIR.length] * spd; c.platIdx = pi;
               audioManager.playSound("coconut_bounce");
               break;
             }
@@ -997,6 +1069,34 @@ export default function StrandturmGameScreen() {
 
     for (let i = cocoToRemove.length - 1; i >= 0; i--) {
       gs.cocos.splice(cocoToRemove[i], 1);
+    }
+
+    // ── Okto movement (Level 3 wandering enemies) ─────────────────────────────
+    if (gs.oktos.length > 0) {
+      for (const o of gs.oktos) {
+        const p = gs.activePlats[o.platIdx];
+        o.x += o.vx;
+        if (o.x < p.x + OKTO_R) { o.x = p.x + OKTO_R; o.vx = Math.abs(o.vx); }
+        if (o.x > p.x + p.w - OKTO_R) { o.x = p.x + p.w - OKTO_R; o.vx = -Math.abs(o.vx); }
+
+        if (gs.pinvTimer === 0) {
+          const dx = Math.abs(o.x - gs.px);
+          const dy = Math.abs(o.y - gs.py);
+          if (dx < PW / 2 + OKTO_R && dy < PH / 2 + OKTO_R) {
+            if (gs.hasHammer) {
+              gs.oktos = gs.oktos.filter(oo => oo.id !== o.id);
+              gs.score += 300;
+              gs.explosions.push({ id: gs.explosionIdCtr++, x: o.x, y: o.y, frame: 0 });
+              setScore(gs.score);
+              audioManager.playSound("bonus");
+            } else {
+              audioManager.playSound("hit");
+              loseLife(gs);
+              return;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1052,7 +1152,7 @@ export default function StrandturmGameScreen() {
     ctx.fillRect(0, CH - 60, CW, 60);
 
     // Platforms
-    for (const p of PLATS) drawPlat(ctx, p);
+    for (const p of gs.activePlats) drawPlat(ctx, p);
 
     // Conveyor belts (overlaid on platform surface, under ladders – Level 2 mechanic)
     for (const belt of gs.conveyorBelts) drawConveyorBelt(ctx, belt, gs.totalFrame);
@@ -1062,21 +1162,21 @@ export default function StrandturmGameScreen() {
     for (const el of gs.elevators) drawElevator(ctx, el);
 
     // Ladders
-    for (const l of LADDERS) drawLadder(ctx, l);
+    for (const l of gs.activeLadders) drawLadder(ctx, l);
 
     // Goal
-    drawGoal(ctx);
+    drawGoal(ctx, gs.activePlats[gs.activePlats.length - 1].y);
 
     // Hammer pickups (floated above platform – jump to reach)
-    for (let hi = 0; hi < HAMMER_DEFS.length; hi++) {
+    for (let hi = 0; hi < gs.activeHammerDefs.length; hi++) {
       if (!gs.hammerPickups[hi]) {
-        const h = HAMMER_DEFS[hi];
-        drawHammerPickup(ctx, h.x, PLATS[h.platIdx].y - HAMMER_FLOAT);
+        const h = gs.activeHammerDefs[hi];
+        drawHammerPickup(ctx, h.x, gs.activePlats[h.platIdx].y - HAMMER_FLOAT);
       }
     }
 
     // Seelöwe
-    drawSeeloewe(ctx, gs.totalFrame);
+    drawSeeloewe(ctx, gs.totalFrame, gs.activePlats[gs.activePlats.length - 1].y);
 
     // Obstacles (coconuts in L1, cement troughs in L2, iron weights in L3)
     const lt = getLevelType(gs.level);
@@ -1085,6 +1185,9 @@ export default function StrandturmGameScreen() {
       else if (lt === 3) drawWeight(ctx, c);
       else drawCoco(ctx, c);
     }
+
+    // Okto enemies (Level 3)
+    for (const o of gs.oktos) drawOkto(ctx, o);
 
     // Explosions (above coconuts, below player)
     for (const e of gs.explosions) drawExplosion(ctx, e);
