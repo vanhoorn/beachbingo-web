@@ -111,7 +111,7 @@ const NIETEN_DEFS = [
 ] as const;
 
 function spawnNieten(): Niete[] {
-  return NIETEN_DEFS.map((d, i) => ({ id: i, x: d.x, platIdx: d.platIdx, collected: false }));
+  return NIETEN_DEFS.map((d, i) => ({ id: i, x: d.x, platIdx: d.platIdx, collected: false, graceTick: 0 }));
 }
 
 const HAMMER_DURATION = 300; // 5 s at 60 fps
@@ -202,7 +202,7 @@ interface Okto {
 }
 
 interface Niete {
-  id: number; x: number; platIdx: number; collected: boolean;
+  id: number; x: number; platIdx: number; collected: boolean; graceTick: number;
 }
 
 interface GS {
@@ -954,15 +954,18 @@ export default function StrandturmGameScreen() {
     gs.py += gs.pvy;
     gs.px = Math.max(PW / 2, Math.min(CW - PW / 2, gs.px));
 
+    // ── Niete grace tick countdown ────────────────────────────────────────────
+    for (const n of gs.nieten) { if (n.graceTick > 0) n.graceTick--; }
+
     // ── Platform collision ────────────────────────────────────────────────────
     if (!gs.ponLadder) {
       gs.ponGround = false;
       for (let i = 0; i < gs.activePlats.length; i++) {
         const p = gs.activePlats[i];
         if (gs.px + PW / 2 > p.x && gs.px - PW / 2 < p.x + p.w) {
-          // Level 4: fall through niete gaps
+          // Level 4: fall through niete gaps (only once grace period expired)
           const overGap = getLevelType(gs.level) === 4 && gs.nieten.some(
-            n => n.collected && n.platIdx === i && Math.abs(gs.px - n.x) < NIETE_GAP
+            n => n.collected && n.graceTick === 0 && n.platIdx === i && Math.abs(gs.px - n.x) < NIETE_GAP
           );
           if (!overGap && gs.pvy >= 0 && prevPY <= p.y + 1 && gs.py >= p.y) {
             gs.py = p.y; gs.pvy = 0; gs.ponGround = true;
@@ -1040,6 +1043,7 @@ export default function StrandturmGameScreen() {
         const platY = gs.activePlats[n.platIdx].y;
         if (Math.abs(gs.px - n.x) < 14 && Math.abs(gs.py - platY) < 4) {
           n.collected = true;
+          n.graceTick = 20; // stay solid for ~0.33s after collection
           gs.nietenCollected++;
           gs.score += 100;
           setScore(gs.score);
