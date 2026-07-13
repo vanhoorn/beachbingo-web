@@ -72,8 +72,9 @@ const LEVEL3_PLATS: readonly Plat[] = [
   { x: 10,  y: 80,  w: 380 }, // P5 full top (goal)
 ];
 const LEVEL3_LADDERS: readonly Ladd[] = [];
-const OKTO_R   = 7;
-const OKTO_SPD = 0.8;
+const OKTO_R    = 7;
+const OKTO_SPD  = 0.8;
+const NIETE_GAP = 7; // half-width of platform gap left by collected niete
 
 function getActivePlats(lvl: number): readonly Plat[] {
   return getLevelType(lvl) === 3 ? LEVEL3_PLATS : PLATS;
@@ -294,7 +295,7 @@ function makeGS(lvl = 1, lives = 3, score = 0): GS {
 
 // ── Drawing helpers ─────────────────────────────────────────────────────────────
 function drawPlat(ctx: CanvasRenderingContext2D, p: Plat, gaps: number[] = []) {
-  const GAP_HALF = 7;
+  const GAP_HALF = NIETE_GAP;
   const sorted = [...gaps].sort((a, b) => a - b);
   // Build segments to draw (skip gap regions)
   const segs: Array<{ x: number; w: number }> = [];
@@ -1168,6 +1169,17 @@ export default function StrandturmGameScreen() {
         o.x += o.vx;
         if (o.x < p.x + OKTO_R) { o.x = p.x + OKTO_R; o.vx = Math.abs(o.vx); }
         if (o.x > p.x + p.w - OKTO_R) { o.x = p.x + p.w - OKTO_R; o.vx = -Math.abs(o.vx); }
+        // Level 4: bounce at niete gaps
+        if (getLevelType(gs.level) === 4) {
+          for (const n of gs.nieten) {
+            if (!n.collected || n.platIdx !== o.platIdx) continue;
+            if (o.vx > 0 && o.x + OKTO_R >= n.x - NIETE_GAP) {
+              o.x = n.x - NIETE_GAP - OKTO_R; o.vx = -Math.abs(o.vx); break;
+            } else if (o.vx < 0 && o.x - OKTO_R <= n.x + NIETE_GAP) {
+              o.x = n.x + NIETE_GAP + OKTO_R; o.vx = Math.abs(o.vx); break;
+            }
+          }
+        }
 
         if (gs.pinvTimer === 0) {
           const dx = Math.abs(o.x - gs.px);
