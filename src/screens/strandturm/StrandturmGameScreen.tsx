@@ -1431,30 +1431,30 @@ export default function StrandturmGameScreen() {
 
       {/* SPLIT layout: ◄ ► left side, ▲ ▼ right side – two-handed play */}
       {controlMode === "SPLIT" && !isOver && (
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px" }}>
-          <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 20px", width: "100%", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", gap: 10 }}>
             <button
-              style={btnS}
+              style={{ ...btnS, width: 76, height: 68, fontSize: 24 }}
               onPointerDown={() => { leftRef.current = true; }}
               onPointerUp={() => { leftRef.current = false; }}
               onPointerLeave={() => { leftRef.current = false; }}
             >◄</button>
             <button
-              style={btnS}
+              style={{ ...btnS, width: 76, height: 68, fontSize: 24 }}
               onPointerDown={() => { rightRef.current = true; }}
               onPointerUp={() => { rightRef.current = false; }}
               onPointerLeave={() => { rightRef.current = false; }}
             >►</button>
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 10 }}>
             <button
-              style={btnS}
+              style={{ ...btnS, width: 76, height: 68, fontSize: 24 }}
               onPointerDown={() => { upRef.current = true; jumpPressRef.current = true; }}
               onPointerUp={() => { upRef.current = false; }}
               onPointerLeave={() => { upRef.current = false; }}
             >▲</button>
             <button
-              style={btnS}
+              style={{ ...btnS, width: 76, height: 68, fontSize: 24 }}
               onPointerDown={() => { downRef.current = true; }}
               onPointerUp={() => { downRef.current = false; }}
               onPointerLeave={() => { downRef.current = false; }}

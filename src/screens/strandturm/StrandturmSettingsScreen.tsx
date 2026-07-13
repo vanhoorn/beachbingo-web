@@ -110,6 +110,25 @@ export default function StrandturmSettingsScreen() {
         />
       </div>
 
+      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7 }}>
+        <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>Steuerung im Detail</div>
+        <div><strong style={{ color: "var(--text)" }}>Laufen:</strong> ◄ / ► drücken</div>
+        <div><strong style={{ color: "var(--text)" }}>Springen:</strong> ▲ drücken (auf dem Boden)</div>
+        <div><strong style={{ color: "var(--text)" }}>Leiter hoch:</strong> ▲ an der Leiter halten</div>
+        <div><strong style={{ color: "var(--text)" }}>Leiter runter:</strong> ▼ auf der Plattform über Leiter</div>
+      </div>
+
+      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+        💡 Musik & Soundeffekte findest du in{" "}
+        <span
+          style={{ color: RED, cursor: "pointer" }}
+          onClick={() => navigate("/profile")}
+        >
+          Profil & Abmelden
+        </span>
+        .
+      </div>
+
       {isAdmin && (
         <div className="flex flex-col gap-2">
           <div className="card-title" style={{ paddingLeft: 4, color: "#f59e0b" }}>🔧 Admin</div>
@@ -140,25 +159,6 @@ export default function StrandturmSettingsScreen() {
           </div>
         </div>
       )}
-
-      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7 }}>
-        <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>Steuerung im Detail</div>
-        <div><strong style={{ color: "var(--text)" }}>Laufen:</strong> ◄ / ► drücken</div>
-        <div><strong style={{ color: "var(--text)" }}>Springen:</strong> ▲ drücken (auf dem Boden)</div>
-        <div><strong style={{ color: "var(--text)" }}>Leiter hoch:</strong> ▲ an der Leiter halten</div>
-        <div><strong style={{ color: "var(--text)" }}>Leiter runter:</strong> ▼ auf der Plattform über Leiter</div>
-      </div>
-
-      <div className="card" style={{ fontSize: 13, color: "var(--text-muted)" }}>
-        💡 Musik & Soundeffekte findest du in den{" "}
-        <span
-          style={{ color: RED, cursor: "pointer" }}
-          onClick={() => navigate("/settings")}
-        >
-          allgemeinen Einstellungen
-        </span>
-        .
-      </div>
 
       {saved && (
         <div style={{
