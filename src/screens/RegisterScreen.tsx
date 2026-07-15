@@ -30,7 +30,11 @@ export default function RegisterScreen() {
         bossLevelEliminationInterval: 5,
         createdAt: Date.now(),
       });
-      navigate("/lobby");
+      // Write to public username index for username-based login
+      await setDoc(doc(db, "usernameMap", displayName.trim().toLowerCase()), {
+        email: email.trim(),
+      });
+      navigate("/home");
     } catch (e: unknown) {
       const msg = (e as { code?: string })?.code;
       if (msg === "auth/email-already-in-use") setError("E-Mail bereits registriert.");

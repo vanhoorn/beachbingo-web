@@ -22,7 +22,7 @@ export default function HomeScreen() {
     });
   }, [uid]);
 
-  function handleGameClick(gameId: string, path: string) {
+  function handleGameClick(_gameId: string, path: string) {
     navigate(path);
   }
 

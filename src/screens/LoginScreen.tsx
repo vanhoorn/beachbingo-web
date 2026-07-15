@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 
@@ -18,13 +18,13 @@ export default function LoginScreen() {
     try {
       let email = input.trim();
       if (!email.includes("@")) {
-        const q = query(collection(db, "users"), where("displayName", "==", email));
-        const snap = await getDocs(q);
-        if (snap.empty) throw new Error("Anzeigename nicht gefunden");
-        email = snap.docs[0].data().email;
+        // Lookup by username via the publicly-readable usernameMap collection
+        const snap = await getDoc(doc(db, "usernameMap", email.toLowerCase()));
+        if (!snap.exists()) throw new Error("Anzeigename nicht gefunden");
+        email = snap.data().email as string;
       }
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/lobby");
+      navigate("/home");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg === "Anzeigename nicht gefunden")
