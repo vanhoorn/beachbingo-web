@@ -37,6 +37,7 @@ import StrandturmResultsScreen from "./screens/strandturm/StrandturmResultsScree
 import StrandturmHighscoreScreen from "./screens/strandturm/StrandturmHighscoreScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
+import AllGamesScreen from "./screens/AllGamesScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -101,6 +102,7 @@ function App() {
         <Route path="/strandturm/highscores" element={loggedIn ? <StrandturmHighscoreScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
+        <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

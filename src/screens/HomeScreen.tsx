@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
@@ -8,7 +8,6 @@ import { ALL_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, type PlayerCountKey }
 export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-  const [recentIds, setRecentIds] = useState<string[]>([]);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -19,29 +18,17 @@ export default function HomeScreen() {
         const data = snap.data();
         setUser(data as User);
         setFavoriteIds(data.favoriteGames ?? []);
-        setRecentIds(data.recentGames ?? []);
       }
     });
   }, [uid]);
 
-  async function handleGameClick(gameId: string, path: string) {
-    if (uid) {
-      const filtered = recentIds.filter((id) => id !== gameId);
-      const updated = [gameId, ...filtered].slice(0, 10);
-      setRecentIds(updated);
-      updateDoc(doc(db, "users", uid), { recentGames: updated });
-    }
+  function handleGameClick(gameId: string, path: string) {
     navigate(path);
   }
 
   const favoriteGames = ALL_GAMES
     .filter((g) => favoriteIds.includes(g.id))
     .sort((a, b) => a.title.localeCompare(b.title));
-
-  const recentGames = recentIds
-    .slice(0, 3)
-    .map((id) => ALL_GAMES.find((g) => g.id === id))
-    .filter(Boolean) as typeof ALL_GAMES;
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
@@ -110,25 +97,32 @@ export default function HomeScreen() {
           </section>
         )}
 
-        {/* Zuletzt gespielt */}
-        {recentGames.length > 0 && (
-          <section style={{ padding: "24px 20px 0" }}>
-            <SectionHeader title="Zuletzt gespielt" emoji="🕐" />
-            <div style={{ display: "flex", gap: 10 }}>
-              {recentGames.map((g) => (
-                <MiniCard
-                  key={g.id}
-                  game={g}
-                  onClick={() => handleGameClick(g.id, g.path)}
-                />
-              ))}
+        {/* Alle Spiele */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Alle Spiele" emoji="🎮" />
+          <button
+            onClick={() => navigate("/all-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(14,165,233,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🎮</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Alle Spiele</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {ALL_GAMES.length} Spiele · alphabetisch sortiert
+              </div>
             </div>
-          </section>
-        )}
+            <span style={{ fontSize: 20, color: "#0ea5e9" }}>›</span>
+          </button>
+        </section>
 
         {/* Spieleranzahl */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Spieleranzahl" emoji="🎮" />
+          <SectionHeader title="Spieleranzahl" emoji="👥" />
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
