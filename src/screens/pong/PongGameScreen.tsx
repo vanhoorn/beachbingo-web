@@ -26,6 +26,7 @@ const BALL_R       = 9;
 const BASE_SPEED   = 5;
 const MAX_SPEED    = 13;
 const CORNER_SIZE  = 38;                   // corner deflector triangle size
+const WALL_H       = 18;                   // top/bottom wall thickness (2P mode)
 
 // ── Colours per side ──────────────────────────────────────────────────────────
 const SIDE_COLOR: Record<PongSide, string> = {
@@ -57,8 +58,18 @@ function sidesForPaddles(total: number, wall: PongSide | null): PongSide[] {
 }
 
 function makeBall(cw: number, ch: number): Pick<GS, "bx"|"by"|"bvx"|"bvy"|"speed"> {
-  const angle = Math.random() * Math.PI * 2;
-  return { bx: cw / 2, by: ch / 2, bvx: BASE_SPEED * Math.cos(angle), bvy: BASE_SPEED * Math.sin(angle), speed: BASE_SPEED };
+  // Angle from horizontal: 10°–80° per quadrant (user request: no 0°/180° = vertical shots)
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const deg = 10 + Math.random() * 70;           // 10° to 80° from horizontal
+  const rad = toRad(deg);
+  const signX = Math.random() < 0.5 ? 1 : -1;   // left or right
+  const signY = Math.random() < 0.5 ? 1 : -1;   // up or down
+  return {
+    bx: cw / 2, by: ch / 2,
+    bvx: BASE_SPEED * Math.cos(rad) * signX,
+    bvy: BASE_SPEED * Math.sin(rad) * signY,
+    speed: BASE_SPEED,
+  };
 }
 
 function initGS(totalPaddles: number): GS {
@@ -76,11 +87,11 @@ function initGS(totalPaddles: number): GS {
 }
 
 // ── AI: update one paddle position toward target ──────────────────────────────
-function moveAI(current: number, target: number, speed: number, error: number, size: number): number {
+function moveAI(current: number, target: number, speed: number, error: number, min: number, max: number): number {
   const t = target + (Math.random() - 0.5) * error * 2;
   const diff = t - current;
   const next = current + Math.sign(diff) * Math.min(Math.abs(diff), speed);
-  return Math.max(PADDLE_LEN / 2, Math.min(size - PADDLE_LEN / 2, next));
+  return Math.max(min, Math.min(max, next));
 }
 
 export default function PongGameScreen() {
@@ -138,8 +149,9 @@ export default function PongGameScreen() {
     // lx, ly are in logical canvas coords
     const g = gsRef.current;
     const side = humanCount === 1 ? mySide : mySide;  // player always controls mySide
+    const wallOff = is2P && (side === "left" || side === "right") ? WALL_H : 0;
     const clamped = (axis: "x" | "y", val: number) =>
-      Math.max(PADDLE_LEN / 2, Math.min((axis === "x" ? CW : CH) - PADDLE_LEN / 2, val));
+      Math.max(PADDLE_LEN / 2 + wallOff, Math.min((axis === "x" ? CW : CH) - PADDLE_LEN / 2 - wallOff, val));
 
     if (side === "left"   || side === "right")  g.paddles[side] = clamped("y", ly);
     if (side === "top"    || side === "bottom")  g.paddles[side] = clamped("x", lx);
@@ -279,9 +291,11 @@ export default function PongGameScreen() {
             const isGuestSide   = humanCount > 1 && side !== mySide;
             if (!isMyHumanSide && !isGuestSide) {
               // Pure AI paddle
-              const target = (side === "left" || side === "right") ? g.by : g.bx;
-              const size   = (side === "left" || side === "right") ? CH : CW;
-              g.paddles[side] = moveAI(g.paddles[side], target, aiSpd, aiErr, size);
+              const isVert  = side === "left" || side === "right";
+              const target  = isVert ? g.by : g.bx;
+              const size    = isVert ? CH : CW;
+              const wallOff = is2P && isVert ? WALL_H : 0;
+              g.paddles[side] = moveAI(g.paddles[side], target, aiSpd, aiErr, PADDLE_LEN / 2 + wallOff, size - PADDLE_LEN / 2 - wallOff);
             }
           });
         }
@@ -414,9 +428,32 @@ export default function PongGameScreen() {
     ctx.restore();
   }
 
+  function draw2PWall(ctx: CanvasRenderingContext2D, cw: number, y: number) {
+    const grad = ctx.createLinearGradient(0, y, 0, y + WALL_H);
+    grad.addColorStop(0, "#5c3a1e");
+    grad.addColorStop(0.4, "#8b5e2a");
+    grad.addColorStop(1, "#a87040");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y, cw, WALL_H);
+    // highlight stripe
+    ctx.fillStyle = "rgba(255,220,150,0.18)";
+    ctx.fillRect(0, y + 3, cw, 3);
+    // shadow stripe
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(0, y + WALL_H - 3, cw, 3);
+    // border line
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, y + 0.5, cw - 1, WALL_H - 1);
+  }
+
   function draw2PField(ctx: CanvasRenderingContext2D, g: GS, cw: number, ch: number) {
     drawBackground(ctx, cw, ch);
     drawNet2P(ctx, cw, ch);
+
+    // Top and bottom walls
+    draw2PWall(ctx, cw, 0);
+    draw2PWall(ctx, cw, ch - WALL_H);
 
     drawSurfboard(ctx, MARGIN, g.paddles.left  - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR.left,  "v");
     drawSurfboard(ctx, cw - MARGIN - PADDLE_THICK, g.paddles.right - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR.right, "v");
@@ -590,9 +627,9 @@ export default function PongGameScreen() {
   // ── Physics ──────────────────────────────────────────────────────────────────
 
   function physics2P(g: GS, cw: number, ch: number): PongSide | null {
-    // Walls top/bottom
-    if (g.by - BALL_R < 0)  { g.by = BALL_R;       g.bvy =  Math.abs(g.bvy); }
-    if (g.by + BALL_R > ch) { g.by = ch - BALL_R;  g.bvy = -Math.abs(g.bvy); }
+    // Walls top/bottom — bounce at inner wall edge
+    if (g.by - BALL_R < WALL_H)        { g.by = WALL_H + BALL_R;        g.bvy =  Math.abs(g.bvy); }
+    if (g.by + BALL_R > ch - WALL_H)   { g.by = ch - WALL_H - BALL_R;   g.bvy = -Math.abs(g.bvy); }
 
     // Left paddle
     const lpx = MARGIN + PADDLE_THICK;
@@ -758,8 +795,9 @@ export default function PongGameScreen() {
           width={CW} height={CH}
           style={{
             width: is2P ? "auto" : "min(100%, calc(100vh - 80px))",
-            height: is2P ? "calc(100vh - 70px)" : "min(100%, calc(100vh - 80px))",
+            height: is2P ? "100%" : "min(100%, calc(100vh - 80px))",
             maxWidth: is2P ? CW : undefined,
+            maxHeight: is2P ? CH : undefined,
             touchAction: "none", display: "block",
           }}
         />
