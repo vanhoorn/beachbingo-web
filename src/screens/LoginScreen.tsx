@@ -18,8 +18,8 @@ export default function LoginScreen() {
     try {
       let email = input.trim();
       if (!email.includes("@")) {
-        // Lookup by username via the publicly-readable usernameMap collection
-        const snap = await getDoc(doc(db, "usernameMap", email.toLowerCase()));
+        // Lookup by username via the publicly-readable usernames collection
+        const snap = await getDoc(doc(db, "usernames", email.toLowerCase()));
         if (!snap.exists()) throw new Error("Anzeigename nicht gefunden");
         email = snap.data().email as string;
       }

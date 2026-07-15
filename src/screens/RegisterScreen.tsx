@@ -31,7 +31,7 @@ export default function RegisterScreen() {
         createdAt: Date.now(),
       });
       // Write to public username index for username-based login
-      await setDoc(doc(db, "usernameMap", displayName.trim().toLowerCase()), {
+      await setDoc(doc(db, "usernames", displayName.trim().toLowerCase()), {
         email: email.trim(),
       });
       navigate("/home");

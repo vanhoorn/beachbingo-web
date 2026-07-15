@@ -1,19 +1,34 @@
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // Username → email lookup: publicly readable so unauthenticated users
-    // can resolve a display name to an email before signing in.
-    // Writing is restricted to authenticated users (happens during registration).
-    match /usernameMap/{username} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if false;
-    }
-
-    // All other collections require authentication.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
+// Diese Datei dokumentiert die Firestore Security Rules.
+// Die aktiven Rules werden direkt in der Firebase Console verwaltet.
+//
+// Aktuelle Rules (Stand 2026-07-15):
+//
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /users/{userId} {
+//       allow read: if true;
+//       allow write: if request.auth != null;
+//     }
+//     match /games/{gameId} {
+//       allow read, write: if request.auth != null;
+//     }
+//     match /results/{resultId} {
+//       allow read, write: if request.auth != null;
+//     }
+//     match /pongGames/{gameId} {
+//       allow read, write: if request.auth != null;
+//     }
+//     match /vierGames/{gameId} {
+//       allow read, write: if request.auth != null;
+//     }
+//     match /usernames/{name} {
+//       allow read: if true;
+//       allow write: if request.auth != null;
+//     }
+//   }
+// }
+//
+// Die 'usernames'-Collection wird beim Registrieren befüllt:
+// usernames/{lowercase-displayName} → { email: "..." }
+// So können sich User mit ihrem Anzeigenamen einloggen.
