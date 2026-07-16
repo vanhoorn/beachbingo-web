@@ -7,8 +7,6 @@ import type { BingoGame, BingoPlayer } from "../types";
 import { flatToGrid } from "./LobbyScreen";
 import { GameHudBar, QuitConfirmDialog } from "../components/GameHudBar";
 
-const WEB_BASE_URL = "https://thebeachbingo.netlify.app";
-
 function checkBingo(marked: number[], flatGrid: number[]): boolean {
   const grid = flatToGrid(flatGrid);
   const s = new Set(marked);
@@ -140,7 +138,7 @@ function EliminationDialog({ drawnNumbers, onEliminate }: { drawnNumbers: number
 
 function QrShareCard({ gameId }: { gameId: string }) {
   const [tab, setTab] = useState<"android" | "web">("android");
-  const webUrl = `${WEB_BASE_URL}/game/${gameId}`;
+  const webUrl = `${window.location.origin}/game/${gameId}`;
 
   return (
     <div className="card" style={{ textAlign: "center" }}>
