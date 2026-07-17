@@ -138,43 +138,11 @@ function EliminationDialog({ drawnNumbers, onEliminate }: { drawnNumbers: number
 }
 
 function QrShareCard({ gameId }: { gameId: string }) {
-  const [tab, setTab] = useState<"android" | "web">("android");
   const webUrl = `${window.location.origin}/game/${gameId}`;
 
   return (
     <div className="card" style={{ textAlign: "center" }}>
       <div className="card-title" style={{ textAlign: "left" }}>Mitspieler einladen</div>
-
-      {/* Tab-Leiste */}
-      <div style={{
-        display: "flex",
-        background: "var(--surface2)",
-        borderRadius: 10,
-        padding: 4,
-        marginBottom: 20,
-        gap: 4,
-      }}>
-        {(["android", "web"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              flex: 1,
-              padding: "8px 0",
-              borderRadius: 8,
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: 14,
-              transition: "background 0.15s, color 0.15s",
-              background: tab === t ? "var(--primary)" : "transparent",
-              color: tab === t ? "#fff" : "var(--text-muted)",
-            }}
-          >
-            {t === "android" ? "🤖 Android" : "🍎 iPhone / Web"}
-          </button>
-        ))}
-      </div>
 
       {/* QR-Code */}
       <div style={{
@@ -185,7 +153,7 @@ function QrShareCard({ gameId }: { gameId: string }) {
         marginBottom: 16,
       }}>
         <QRCodeSVG
-          value={tab === "android" ? gameId : webUrl}
+          value={webUrl}
           size={180}
           bgColor="#ffffff"
           fgColor="#0a1628"
@@ -193,34 +161,21 @@ function QrShareCard({ gameId }: { gameId: string }) {
         />
       </div>
 
-      {tab === "android" ? (
-        <>
-          <div style={{
-            background: "var(--surface2)",
-            borderRadius: "var(--radius-sm)",
-            padding: "12px 16px",
-            fontFamily: "monospace",
-            fontSize: 15,
-            letterSpacing: 1,
-            wordBreak: "break-all",
-            marginBottom: 8,
-          }}>
-            {gameId}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            QR-Code scannen oder Code in der App eingeben
-          </div>
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-            QR-Code mit iPhone scannen — öffnet BeachBingo direkt im Browser
-          </div>
-          <div style={{ fontSize: 12, color: "var(--primary)", marginTop: 4 }}>
-            {webUrl}
-          </div>
-        </>
-      )}
+      <div style={{
+        background: "var(--surface2)",
+        borderRadius: "var(--radius-sm)",
+        padding: "12px 16px",
+        fontFamily: "monospace",
+        fontSize: 15,
+        letterSpacing: 1,
+        wordBreak: "break-all",
+        marginBottom: 8,
+      }}>
+        {gameId}
+      </div>
+      <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+        QR-Code scannen oder Code in der App eingeben
+      </div>
     </div>
   );
 }
