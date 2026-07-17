@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
 import { db, auth } from "../../firebase";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { audioManager } from "../../audio/AudioManager";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
 
 interface PongSettings {
@@ -127,6 +128,11 @@ export default function PongGameScreen() {
       }
     });
   }, [uid]);
+
+  useEffect(() => {
+    audioManager.startMusic("pong");
+    return () => audioManager.stopMusic();
+  }, []);
 
   const resultWrittenRef = useRef(false);
 

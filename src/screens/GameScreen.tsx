@@ -6,6 +6,7 @@ import { auth, db } from "../firebase";
 import type { BingoGame, BingoPlayer } from "../types";
 import { flatToGrid } from "./LobbyScreen";
 import { GameHudBar, QuitConfirmDialog } from "../components/GameHudBar";
+import { audioManager } from "../audio/AudioManager";
 
 function checkBingo(marked: number[], flatGrid: number[]): boolean {
   const grid = flatToGrid(flatGrid);
@@ -244,6 +245,12 @@ export default function GameScreen() {
       setGame({ gameId: snap.id, ...data } as BingoGame);
     });
   }, [gameId, navigate]);
+
+  useEffect(() => {
+    if (game?.status !== "RUNNING") return;
+    audioManager.startMusic("bingo");
+    return () => audioManager.stopMusic();
+  }, [game?.status]);
 
   // Elimination-Animation nach 3s ausblenden
   useEffect(() => {

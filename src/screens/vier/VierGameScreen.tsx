@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase";
 import type { VierDifficulty, VierGame } from "../../types";
 import { DrinkPiece, getDrink } from "./drinkIcons";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { audioManager } from "../../audio/AudioManager";
 
 const ROWS = 6;
 const COLS = 7;
@@ -194,6 +195,11 @@ export default function VierGameScreen() {
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localRef = useRef(local);
   useEffect(() => { localRef.current = local; }, [local]);
+
+  useEffect(() => {
+    audioManager.startMusic("vier");
+    return () => audioManager.stopMusic();
+  }, []);
 
   // Load user profile for result saving
   const userProfileRef = useRef<{ displayName: string; avatarUrl: string } | null>(null);
