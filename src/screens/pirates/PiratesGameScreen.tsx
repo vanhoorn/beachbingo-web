@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { PiratesDifficulty } from "../../types";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { audioManager } from "../../audio/AudioManager";
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
 const CW = 400;
@@ -244,6 +245,11 @@ export default function PiratesGameScreen() {
     });
   }, [uid, difficulty, navigate]);
 
+  useEffect(() => {
+    audioManager.startMusic("pirates");
+    return () => audioManager.stopMusic();
+  }, []);
+
   // ── Game loop ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -326,7 +332,7 @@ export default function PiratesGameScreen() {
           gs.playerBullets.splice(i, 1); hit = true; break;
         }
       }
-      if (hit) continue;
+      if (hit) { audioManager.playSound("hit"); continue; }
       for (const sh of gs.shields) {
         if (shieldBlockAt(sh, pb.x, pb.y)) {
           erodeShield(sh, pb.x, pb.y); gs.playerBullets.splice(i, 1); break;
@@ -387,7 +393,14 @@ export default function PiratesGameScreen() {
                   gs.playerX - PLAYER_W / 2, PLAYER_Y - PLAYER_W / 2, PLAYER_W, PLAYER_W)) {
         gs.lives--;
         gs.enemyBullets.splice(i, 1);
-        gs.phase = gs.lives <= 0 ? "game_over" : "hit";
+        if (gs.lives <= 0) {
+          gs.phase = "game_over";
+          audioManager.stopMusic();
+          audioManager.playSound("game_over");
+        } else {
+          gs.phase = "hit";
+          audioManager.playSound("life_lost");
+        }
         gs.phaseTimer = 0;
         break;
       }
@@ -397,13 +410,17 @@ export default function PiratesGameScreen() {
     for (const inv of gs.invaders) {
       if (!inv.alive) continue;
       if (inv.y + INVADER_H >= PLAYER_Y - PLAYER_W / 2) {
-        gs.lives = 0; gs.phase = "game_over"; gs.phaseTimer = 0; break;
+        gs.lives = 0; gs.phase = "game_over"; gs.phaseTimer = 0;
+        audioManager.stopMusic();
+        audioManager.playSound("game_over");
+        break;
       }
     }
 
     // Wave clear?
     if (gs.phase === "playing" && aliveInvaders.length === 0) {
       gs.phase = "wave_clear"; gs.phaseTimer = 0;
+      audioManager.playSound("level_complete");
     }
   }
 
@@ -509,7 +526,10 @@ export default function PiratesGameScreen() {
   // ── Pause / Quit handlers ─────────────────────────────────────────────────────
   function handlePause() {
     if (uiPhase === "game_over") return;
-    setPausedSync(!pausedRef.current);
+    const next = !pausedRef.current;
+    setPausedSync(next);
+    if (next) audioManager.stopMusic();
+    else audioManager.startMusic("pirates");
   }
   function handleQuitRequest() {
     setPausedSync(true);       // pause while dialog is open

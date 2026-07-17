@@ -634,8 +634,8 @@ export default function PongGameScreen() {
 
   function physics2P(g: GS, cw: number, ch: number): PongSide | null {
     // Walls top/bottom — bounce at inner wall edge
-    if (g.by - BALL_R < WALL_H)        { g.by = WALL_H + BALL_R;        g.bvy =  Math.abs(g.bvy); }
-    if (g.by + BALL_R > ch - WALL_H)   { g.by = ch - WALL_H - BALL_R;   g.bvy = -Math.abs(g.bvy); }
+    if (g.by - BALL_R < WALL_H)        { g.by = WALL_H + BALL_R;        g.bvy =  Math.abs(g.bvy); audioManager.playSound("land"); }
+    if (g.by + BALL_R > ch - WALL_H)   { g.by = ch - WALL_H - BALL_R;   g.bvy = -Math.abs(g.bvy); audioManager.playSound("land"); }
 
     // Left paddle
     const lpx = MARGIN + PADDLE_THICK;
@@ -646,6 +646,7 @@ export default function PongGameScreen() {
       g.bvx =  g.speed * Math.cos(rel * 0.75);
       g.bvy =  g.speed * Math.sin(rel * 0.75);
       g.bx  = lpx + BALL_R + 1;
+      audioManager.playSound("coconut_bounce");
     }
 
     // Right paddle
@@ -657,6 +658,7 @@ export default function PongGameScreen() {
       g.bvx = -g.speed * Math.cos(rel * 0.75);
       g.bvy =  g.speed * Math.sin(rel * 0.75);
       g.bx  = rpx - BALL_R - 1;
+      audioManager.playSound("coconut_bounce");
     }
 
     if (g.bx + BALL_R < 0)   return "left";
@@ -681,52 +683,56 @@ export default function PongGameScreen() {
     // LEFT
     const lx = MARGIN + PADDLE_THICK;
     if (g.bvx < 0 && g.bx - BALL_R < lx) {
-      if (wall === "left") { g.bvx = Math.abs(g.bvx); g.bx = lx + BALL_R; }
+      if (wall === "left") { g.bvx = Math.abs(g.bvx); g.bx = lx + BALL_R; audioManager.playSound("land"); }
       else if (inRange(g.bx - BALL_R, MARGIN - 2, lx) && inRange(g.by, g.paddles.left - PADDLE_LEN/2 - BALL_R, g.paddles.left + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.by - g.paddles.left) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvx =  g.speed * Math.cos(rel * 0.7);
         g.bvy =  g.speed * Math.sin(rel * 0.7);
         g.bx  = lx + BALL_R + 1;
+        audioManager.playSound("coconut_bounce");
       } else if (g.bx + BALL_R < 0 && padSide.includes("left")) return "left";
     }
 
     // RIGHT
     const rx = size - MARGIN - PADDLE_THICK;
     if (g.bvx > 0 && g.bx + BALL_R > rx) {
-      if (wall === "right") { g.bvx = -Math.abs(g.bvx); g.bx = rx - BALL_R; }
+      if (wall === "right") { g.bvx = -Math.abs(g.bvx); g.bx = rx - BALL_R; audioManager.playSound("land"); }
       else if (inRange(g.bx + BALL_R, rx, size - MARGIN + 2) && inRange(g.by, g.paddles.right - PADDLE_LEN/2 - BALL_R, g.paddles.right + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.by - g.paddles.right) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvx = -g.speed * Math.cos(rel * 0.7);
         g.bvy =  g.speed * Math.sin(rel * 0.7);
         g.bx  = rx - BALL_R - 1;
+        audioManager.playSound("coconut_bounce");
       } else if (g.bx - BALL_R > size && padSide.includes("right")) return "right";
     }
 
     // TOP
     const ty = MARGIN + PADDLE_THICK;
     if (g.bvy < 0 && g.by - BALL_R < ty) {
-      if (wall === "top") { g.bvy = Math.abs(g.bvy); g.by = ty + BALL_R; }
+      if (wall === "top") { g.bvy = Math.abs(g.bvy); g.by = ty + BALL_R; audioManager.playSound("land"); }
       else if (inRange(g.by - BALL_R, MARGIN - 2, ty) && inRange(g.bx, g.paddles.top - PADDLE_LEN/2 - BALL_R, g.paddles.top + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.bx - g.paddles.top) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvy =  g.speed * Math.cos(rel * 0.7);
         g.bvx =  g.speed * Math.sin(rel * 0.7);
         g.by  = ty + BALL_R + 1;
+        audioManager.playSound("coconut_bounce");
       } else if (g.by + BALL_R < 0 && padSide.includes("top")) return "top";
     }
 
     // BOTTOM
     const by_ = size - MARGIN - PADDLE_THICK;
     if (g.bvy > 0 && g.by + BALL_R > by_) {
-      if (wall === "bottom") { g.bvy = -Math.abs(g.bvy); g.by = by_ - BALL_R; }
+      if (wall === "bottom") { g.bvy = -Math.abs(g.bvy); g.by = by_ - BALL_R; audioManager.playSound("land"); }
       else if (inRange(g.by + BALL_R, by_, size - MARGIN + 2) && inRange(g.bx, g.paddles.bottom - PADDLE_LEN/2 - BALL_R, g.paddles.bottom + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.bx - g.paddles.bottom) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvy = -g.speed * Math.cos(rel * 0.7);
         g.bvx =  g.speed * Math.sin(rel * 0.7);
         g.by  = by_ - BALL_R - 1;
+        audioManager.playSound("coconut_bounce");
       } else if (g.by - BALL_R > size && padSide.includes("bottom")) return "bottom";
     }
 

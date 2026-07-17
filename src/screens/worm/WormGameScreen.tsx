@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { WormDifficulty } from "../../types";
 import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { audioManager } from "../../audio/AudioManager";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const WORM_GREEN = "#22c55e";
@@ -193,6 +194,7 @@ export default function WormGameScreen() {
       const newSnake = [newHead, ...snake];
       snakeRef.current = newSnake;
       foodRef.current = spawnFood(newSnake);
+      audioManager.playSound(food.points >= 20 ? "level_complete" : "bonus");
       setScore(scoreRef.current);
       setLength(newSnake.length);
     } else {
@@ -205,6 +207,8 @@ export default function WormGameScreen() {
     if (savedRef.current) return;
     savedRef.current = true;
     statusRef.current = "DEAD";
+    audioManager.stopMusic();
+    audioManager.playSound("game_over");
     setDead(true);
 
     const uid = auth.currentUser?.uid;
@@ -244,6 +248,11 @@ export default function WormGameScreen() {
   }, [stepInterval]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    audioManager.startMusic("worm");
+    return () => audioManager.stopMusic();
+  }, []);
+
+  useEffect(() => {
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
   }, [loop]);
@@ -275,10 +284,12 @@ export default function WormGameScreen() {
     if (statusRef.current === "PLAYING") {
       statusRef.current = "PAUSED";
       setPaused(true);
+      audioManager.stopMusic();
     } else {
       statusRef.current = "PLAYING";
       setPaused(false);
       lastStepRef.current = 0;
+      audioManager.startMusic("worm");
     }
   }
 

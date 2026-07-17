@@ -97,29 +97,6 @@ export default function HomeScreen() {
           </section>
         )}
 
-        {/* Alle Spiele */}
-        <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Alle Spiele" emoji="🎮" />
-          <button
-            onClick={() => navigate("/all-games")}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 14,
-              padding: "18px 20px", background: "var(--surface)",
-              border: "1.5px solid rgba(14,165,233,0.4)", borderRadius: 14,
-              cursor: "pointer", textAlign: "left",
-            }}
-          >
-            <span style={{ fontSize: 28 }}>🎮</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Alle Spiele</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                {ALL_GAMES.length} Spiele · alphabetisch sortiert
-              </div>
-            </div>
-            <span style={{ fontSize: 20, color: "#0ea5e9" }}>›</span>
-          </button>
-        </section>
-
         {/* Spieleranzahl */}
         <section style={{ padding: "24px 20px 0" }}>
           <SectionHeader title="Spieleranzahl" emoji="👥" />
@@ -143,6 +120,29 @@ export default function HomeScreen() {
               );
             })}
           </div>
+        </section>
+
+        {/* Alle Spiele */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Alle Spiele" emoji="🎮" />
+          <button
+            onClick={() => navigate("/all-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(14,165,233,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🎮</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Alle Spiele</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {ALL_GAMES.length} Spiele · alphabetisch sortiert
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#0ea5e9" }}>›</span>
+          </button>
         </section>
 
       </div>
