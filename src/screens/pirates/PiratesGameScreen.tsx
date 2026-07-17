@@ -77,9 +77,10 @@ function fireCooldownFrames(rate: number) {
 const POINTS_BY_ROW = [40, 30, 20, 10];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Invader { col: number; row: number; x: number; y: number; alive: boolean; }
-interface Bullet  { x: number; y: number; dy: number; }
-interface Shield  { x: number; blocks: boolean[]; }
+interface Invader   { col: number; row: number; x: number; y: number; alive: boolean; }
+interface Bullet    { x: number; y: number; dy: number; }
+interface Shield    { x: number; blocks: boolean[]; }
+interface Explosion { x: number; y: number; t: number; }
 
 // ── Shield helpers ────────────────────────────────────────────────────────────
 function makeShields(): Shield[] {
@@ -145,6 +146,7 @@ interface GS {
   phase: "playing" | "hit" | "wave_clear" | "game_over";
   phaseTimer: number;
   keys: { left: boolean; right: boolean };
+  explosions: Explosion[];
 }
 
 function makeInvaders(wave: number, groupX: number): Invader[] {
@@ -171,6 +173,7 @@ function initGS(diff: DiffConfig, wave: number, lives: number, score: number): G
     score, lives, wave, diff,
     phase: "playing", phaseTimer: 0,
     keys: { left: false, right: false },
+    explosions: [],
   };
 }
 
@@ -285,6 +288,11 @@ export default function PiratesGameScreen() {
 
   // ── Physics update ────────────────────────────────────────────────────────────
   function update(gs: GS) {
+    for (let i = gs.explosions.length - 1; i >= 0; i--) {
+      gs.explosions[i].t++;
+      if (gs.explosions[i].t >= 20) gs.explosions.splice(i, 1);
+    }
+
     if (gs.phase === "hit") {
       gs.phaseTimer++;
       if (gs.phaseTimer > 90) {
@@ -329,6 +337,7 @@ export default function PiratesGameScreen() {
         const ix = gs.groupX + inv.col * (INVADER_W + INVADER_PAD_X);
         if (rectHit(pb.x - BULLET_W / 2, pb.y, BULLET_W, BULLET_H, ix, inv.y, INVADER_W, INVADER_H)) {
           inv.alive = false; gs.score += POINTS_BY_ROW[inv.row];
+          gs.explosions.push({ x: ix + INVADER_W / 2, y: inv.y + INVADER_H / 2, t: 0 });
           gs.playerBullets.splice(i, 1); hit = true; break;
         }
       }
@@ -453,6 +462,13 @@ export default function PiratesGameScreen() {
     ctx.shadowColor = "#f97316"; ctx.shadowBlur = 6; ctx.fillStyle = "#fb923c";
     for (const eb of gs.enemyBullets) ctx.fillRect(eb.x - BULLET_W / 2, eb.y, BULLET_W, BULLET_H);
     ctx.shadowBlur = 0;
+
+    for (const ex of gs.explosions) {
+      const p = ex.t / 20;
+      ctx.globalAlpha = 1 - p * 0.85;
+      drawEmoji(ctx, "💥", ex.x, ex.y, 14 + p * 20);
+    }
+    ctx.globalAlpha = 1;
 
     if (gs.phase === "hit" && Math.floor(gs.phaseTimer / 8) % 2 === 0)
       drawEmoji(ctx, "💥", gs.playerX, PLAYER_Y, 36);
