@@ -280,7 +280,8 @@ export default function BrandungGameScreen() {
     }, AI_DELAY);
     return () => { if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local?.currentTurnIndex, local?.phase, local?.aiThinking]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local?.currentTurnIndex, local?.phase]);
 
   // ── Save AI result ───────────────────────────────────────────────────────
   useEffect(() => {
