@@ -218,6 +218,11 @@ export default function BrandungGameScreen() {
   const localRef = useRef(local);
   useEffect(() => { localRef.current = local; }, [local]);
 
+  useEffect(() => {
+    audioManager.startMusic("brandung");
+    return () => audioManager.stopMusic();
+  }, []);
+
   // ── Init AI mode ────────────────────────────────────────────────────────
   useEffect(() => {
     if (mode !== "ai") return;
