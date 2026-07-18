@@ -13,7 +13,13 @@ export type SoundId =
   | "level_complete"
   | "game_over"
   | "timer_tick"
-  | "bonus";
+  | "bonus"
+  | "card_deal"
+  | "card_draw"
+  | "card_place"
+  | "card_knock"
+  | "card_select"
+  | "card_feuer";
 
 export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier";
 
@@ -142,6 +148,88 @@ const SOUNDS: Record<SoundId, SoundDef> = {
       g.gain.setValueAtTime(0.18, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
       osc.start(t); osc.stop(t + 0.1);
+    });
+  },
+
+  card_deal: (ctx) => {
+    // Soft paper rustle
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.5) * 0.5;
+    const src = ctx.createBufferSource();
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 3000; f.Q.value = 0.5;
+    const g = ctx.createGain();
+    src.buffer = buf; src.connect(f); f.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.4, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    src.start(ctx.currentTime);
+  },
+
+  card_draw: (ctx) => {
+    // Slide sound
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (i / d.length) * (1 - i / d.length) * 2;
+    const src = ctx.createBufferSource();
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2500; f.Q.value = 0.8;
+    const g = ctx.createGain();
+    src.buffer = buf; src.connect(f); f.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.35, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+    src.start(ctx.currentTime);
+  },
+
+  card_place: (ctx) => {
+    // Soft thud on table
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "sine"; osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
+    // Paper layer
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) * 0.3;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const g2 = ctx.createGain(); src.connect(g2); g2.connect(ctx.destination);
+    g2.gain.setValueAtTime(0.25, ctx.currentTime); src.start(ctx.currentTime);
+  },
+
+  card_knock: (ctx) => {
+    // Table knock — two short thumps
+    [0, 0.18].forEach(offset => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = "sine"; osc.frequency.setValueAtTime(160, ctx.currentTime + offset);
+      osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + offset + 0.12);
+      g.gain.setValueAtTime(0.45, ctx.currentTime + offset);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.14);
+      osc.start(ctx.currentTime + offset); osc.stop(ctx.currentTime + offset + 0.15);
+    });
+  },
+
+  card_select: (ctx) => {
+    // Soft tick
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "sine"; osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.07);
+  },
+
+  card_feuer: (ctx) => {
+    // Dramatic fanfare — Feuer/Blitz!
+    [523, 659, 784, 1047, 1319].forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = "square"; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.09;
+      g.gain.setValueAtTime(0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.start(t); osc.stop(t + 0.2);
     });
   },
 };

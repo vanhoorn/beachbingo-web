@@ -86,6 +86,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE"],
     genres: ["ACTION"],
   },
+  {
+    id: "brandung",
+    emoji: "🌊",
+    title: "Brandung",
+    description: "Schwimm nicht unter! Sammel 31 Punkte gleicher Farbe — Kartenspiel für 2–6.",
+    color: "#0d9488",
+    path: "/brandung/lobby",
+    playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
+    genres: ["PARTY", "LOGICAL"],
+  },
 ];
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

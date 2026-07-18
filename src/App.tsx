@@ -35,6 +35,10 @@ import StrandturmGameScreen from "./screens/strandturm/StrandturmGameScreen";
 import StrandturmSettingsScreen from "./screens/strandturm/StrandturmSettingsScreen";
 import StrandturmResultsScreen from "./screens/strandturm/StrandturmResultsScreen";
 import StrandturmHighscoreScreen from "./screens/strandturm/StrandturmHighscoreScreen";
+import BrandungLobbyScreen from "./screens/brandung/BrandungLobbyScreen";
+import BrandungGameScreen from "./screens/brandung/BrandungGameScreen";
+import BrandungSettingsScreen from "./screens/brandung/BrandungSettingsScreen";
+import BrandungResultsScreen from "./screens/brandung/BrandungResultsScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
@@ -100,6 +104,10 @@ function App() {
         <Route path="/strandturm/settings"   element={loggedIn ? <StrandturmSettingsScreen />   : <Navigate to="/login" />} />
         <Route path="/strandturm/results"    element={loggedIn ? <StrandturmResultsScreen />    : <Navigate to="/login" />} />
         <Route path="/strandturm/highscores" element={loggedIn ? <StrandturmHighscoreScreen />  : <Navigate to="/login" />} />
+        <Route path="/brandung/lobby"    element={loggedIn ? <BrandungLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/brandung/game"     element={loggedIn ? <BrandungGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/brandung/settings" element={loggedIn ? <BrandungSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/brandung/results"  element={loggedIn ? <BrandungResultsScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />

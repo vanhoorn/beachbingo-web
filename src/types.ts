@@ -31,6 +31,9 @@ export interface User {
   preferredStrandturmControlMode?: "BUTTONS" | "TOUCH" | "SPLIT";
   strandturmHighScore?: number;
   strandturmBestLevel?: number;
+  // Brandung preferences
+  brandungNewCardsOnAllPass?: boolean;
+  brandungPassingForbidden?: boolean;
   // Global audio settings
   soundEnabled?: boolean;
   musicEnabled?: boolean;
@@ -123,6 +126,50 @@ export interface VierGame {
 
 // BeachPirates
 export type PiratesDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+
+// Brandung (Schwimmen)
+export type CardSuit = "♣" | "♠" | "♥" | "♦";
+export type CardRank = "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
+export type BrandungDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+
+export interface BrandungCard { suit: CardSuit; rank: CardRank }
+
+export interface BrandungPlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  hand: BrandungCard[];
+  lives: number;
+  eliminated: boolean;
+  isAI: boolean;
+}
+
+export interface BrandungSettings {
+  newCardsOnAllPass: boolean;
+  passingForbidden: boolean;
+}
+
+export interface BrandungGame {
+  gameId: string;
+  adminId: string;
+  status: "LOBBY" | "RUNNING" | "FINISHED";
+  phase: "TURN" | "ROUND_END" | "GAME_OVER";
+  players: { [uid: string]: BrandungPlayer };
+  playerIds: string[];
+  currentTurnIndex: number;
+  tableCards: BrandungCard[];
+  deck: BrandungCard[];
+  knockedByUserId: string | null;
+  knockRoundRemaining: string[];
+  round: number;
+  passCount: number;
+  settings: BrandungSettings;
+  winnerId: string | null;
+  roundLosers: string[];
+  roundScores: { [uid: string]: number };
+  lastAction: string;
+  createdAt: number;
+}
 
 // Wattwurm
 export type WormDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
