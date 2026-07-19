@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ALL_GAMES } from "../gameMetadata";
+import { ALL_GAMES, type GameMetadata } from "../gameMetadata";
+import { GAME_RULES } from "../gameRules";
+import GameRulesModal from "../components/GameRulesModal";
 
 export default function AllGamesScreen() {
   const navigate = useNavigate();
   const games = [...ALL_GAMES].sort((a, b) => a.title.localeCompare(b.title));
+  const [rulesGameId, setRulesGameId] = useState<string | null>(null);
+  const activeRule = rulesGameId ? GAME_RULES[rulesGameId] : null;
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
@@ -36,17 +40,36 @@ export default function AllGamesScreen() {
       {/* Game list */}
       <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 14 }}>
         {games.map((game) => (
-          <GameRow key={game.id} game={game} onClick={() => navigate(game.path)} />
+          <GameRow
+            key={game.id}
+            game={game}
+            onClick={() => navigate(game.path)}
+            onInfo={() => setRulesGameId(game.id)}
+          />
         ))}
       </div>
+
+      {activeRule && (
+        <GameRulesModal rule={activeRule} onClose={() => setRulesGameId(null)} />
+      )}
     </div>
   );
 }
 
-function GameRow({ game, onClick }: { game: typeof ALL_GAMES[0]; onClick: () => void }) {
+function GameRow({
+  game,
+  onClick,
+  onInfo,
+}: {
+  game: GameMetadata;
+  onClick: () => void;
+  onInfo: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
+  const [infoHovered, setInfoHovered] = useState(false);
+
   return (
-    <button
+    <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -66,13 +89,28 @@ function GameRow({ game, onClick }: { game: typeof ALL_GAMES[0]; onClick: () => 
       }}>
         {game.emoji}
       </div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{game.title}</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>
           {game.description}
         </div>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onInfo(); }}
+        onMouseEnter={(e) => { e.stopPropagation(); setInfoHovered(true); }}
+        onMouseLeave={(e) => { e.stopPropagation(); setInfoHovered(false); }}
+        title="Anleitung anzeigen"
+        style={{
+          width: 34, height: 34, flexShrink: 0,
+          background: infoHovered ? game.color + "33" : "var(--surface2)",
+          border: `1px solid ${infoHovered ? game.color : "var(--border)"}`,
+          borderRadius: 10, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 16, color: game.color,
+          transition: "background 0.15s, border-color 0.15s",
+        }}
+      >ℹ</button>
       <span style={{ fontSize: 20, color: "var(--text-muted)", flexShrink: 0 }}>›</span>
-    </button>
+    </div>
   );
 }

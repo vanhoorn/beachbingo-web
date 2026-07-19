@@ -3,16 +3,20 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { ALL_GAMES, PLAYER_COUNT_INFO, type PlayerCountKey } from "../gameMetadata";
+import { GAME_RULES } from "../gameRules";
+import GameRulesModal from "../components/GameRulesModal";
 
 export default function CategoryScreen() {
   const { playerCount } = useParams<{ playerCount: string }>();
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
   const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [rulesGameId, setRulesGameId] = useState<string | null>(null);
 
   const key = playerCount as PlayerCountKey;
   const info = PLAYER_COUNT_INFO[key];
   const games = ALL_GAMES.filter((g) => g.playerCounts.includes(key));
+  const activeRule = rulesGameId ? GAME_RULES[rulesGameId] : null;
 
   useEffect(() => {
     if (!uid) return;
@@ -67,22 +71,37 @@ export default function CategoryScreen() {
           </div>
         ) : (
           games.map((game) => (
-            <GameCard key={game.id} game={game} onSelect={() => handleGameClick(game.id, game.path)} />
+            <GameCard
+              key={game.id}
+              game={game}
+              onSelect={() => handleGameClick(game.id, game.path)}
+              onInfo={() => setRulesGameId(game.id)}
+            />
           ))
         )}
       </div>
+
+      {activeRule && (
+        <GameRulesModal rule={activeRule} onClose={() => setRulesGameId(null)} />
+      )}
     </div>
   );
 }
 
-function GameCard({ game, onSelect }: {
+function GameCard({
+  game,
+  onSelect,
+  onInfo,
+}: {
   game: { id: string; emoji: string; title: string; description: string; color: string };
   onSelect: () => void;
+  onInfo: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [infoHovered, setInfoHovered] = useState(false);
 
   return (
-    <button
+    <div
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -90,10 +109,10 @@ function GameCard({ game, onSelect }: {
         background: "var(--surface)",
         border: `1.5px solid ${hovered ? game.color : game.color + "55"}`,
         borderRadius: "var(--radius)", padding: "20px", cursor: "pointer",
-        textAlign: "left",
         transform: hovered ? "translateY(-2px)" : "translateY(0)",
         transition: "transform 0.15s ease, border-color 0.15s ease",
         display: "flex", alignItems: "center", gap: 16, width: "100%",
+        boxSizing: "border-box",
       }}
     >
       <div style={{
@@ -112,7 +131,22 @@ function GameCard({ game, onSelect }: {
           {game.description}
         </div>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onInfo(); }}
+        onMouseEnter={(e) => { e.stopPropagation(); setInfoHovered(true); }}
+        onMouseLeave={(e) => { e.stopPropagation(); setInfoHovered(false); }}
+        title="Anleitung anzeigen"
+        style={{
+          width: 34, height: 34, flexShrink: 0,
+          background: infoHovered ? game.color + "33" : "var(--surface2)",
+          border: `1px solid ${infoHovered ? game.color : "var(--border)"}`,
+          borderRadius: 10, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 16, color: game.color,
+          transition: "background 0.15s, border-color 0.15s",
+        }}
+      >ℹ</button>
       <div style={{ fontSize: 22, color: "var(--text-muted)", flexShrink: 0 }}>›</div>
-    </button>
+    </div>
   );
 }
