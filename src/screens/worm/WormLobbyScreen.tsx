@@ -3,6 +3,8 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firest
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { WormDifficulty, User } from "../../types";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 
 const WORM_GREEN = "#22c55e";
 
@@ -43,6 +45,7 @@ export default function WormLobbyScreen() {
   const [controlMode, setControlMode] = useState<"BUTTONS" | "SWIPE">("BUTTONS");
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -91,6 +94,7 @@ export default function WormLobbyScreen() {
           >
             {isFavorite ? "★" : "☆"}
           </button>
+          <button className="btn btn-outline btn-sm" onClick={() => setShowRules(true)} title="Spielanleitung"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg></button>
           <button className="btn btn-outline btn-sm" onClick={() => navigate("/worm/settings")}>⚙️</button>
         </div>
       </div>
@@ -147,6 +151,9 @@ export default function WormLobbyScreen() {
       >
         🎮 Spielen
       </button>
+      {showRules && GAME_RULES["worm"] && (
+        <GameRulesModal rule={GAME_RULES["worm"]} onClose={() => setShowRules(false)} />
+      )}
     </div>
   );
 }

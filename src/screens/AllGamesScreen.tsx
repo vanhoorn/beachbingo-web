@@ -87,7 +87,9 @@ function GameRow({
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 32,
       }}>
-        {game.emoji}
+        {game.id === "meermau"
+          ? <img src="/meermau-logo.svg" alt="MeerMau" style={{ width: 42, height: 42, objectFit: "contain" }} />
+          : game.emoji}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{game.title}</div>

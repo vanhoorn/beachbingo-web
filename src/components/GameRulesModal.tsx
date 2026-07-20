@@ -53,7 +53,9 @@ export default function GameRulesModal({ rule, onClose }: Props) {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28,
           }}>
-            {rule.emoji}
+            {rule.id === "meermau"
+              ? <img src="/meermau-logo.svg" alt="MeerMau" style={{ width: 36, height: 36, objectFit: "contain" }} />
+              : rule.emoji}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{rule.title}</div>

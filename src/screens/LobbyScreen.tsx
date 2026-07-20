@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { BingoGame, User } from "../types";
 import { BEACH_AVATARS } from "../types";
+import GameRulesModal from "../components/GameRulesModal";
+import { GAME_RULES } from "../gameRules";
 
 function generateCard(): number[] {
   const cols: number[][] = [];
@@ -43,6 +45,7 @@ export default function LobbyScreen() {
   const [games, setGames] = useState<BingoGame[]>([]);
   const [creating, setCreating] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -164,6 +167,12 @@ export default function LobbyScreen() {
           <button
             className="btn btn-outline btn-sm"
             style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
+            onClick={() => setShowRules(true)}
+            title="Spielanleitung"
+          ><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg></button>
+          <button
+            className="btn btn-outline btn-sm"
+            style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)", width: 42, padding: 0, fontSize: 18 }}
             onClick={() => navigate("/settings")}
             title="Einstellungen"
           >⚙️</button>
@@ -223,6 +232,9 @@ export default function LobbyScreen() {
         </div>
       )}
 
+      {showRules && GAME_RULES["bingo"] && (
+        <GameRulesModal rule={GAME_RULES["bingo"]} onClose={() => setShowRules(false)} />
+      )}
       {/* hidden avatar ref */}
       <div style={{ display: "none" }}>{BEACH_AVATARS.map(a => a)}</div>
     </div>
