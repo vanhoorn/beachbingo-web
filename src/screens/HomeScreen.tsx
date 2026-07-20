@@ -176,7 +176,11 @@ function MiniCard({ game, onClick }: { game: { id: string; emoji: string; title:
         transition: "all 0.15s",
       }}
     >
-      <div style={{ fontSize: 28, marginBottom: 6 }}>{game.emoji}</div>
+      <div style={{ fontSize: 28, marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {game.id === "meermau"
+            ? <img src="/meermau-logo.svg" alt="MeerMau" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            : game.emoji}
+        </div>
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
         {game.title}
       </div>
