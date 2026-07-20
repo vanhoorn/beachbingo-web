@@ -39,6 +39,10 @@ import BrandungLobbyScreen from "./screens/brandung/BrandungLobbyScreen";
 import BrandungGameScreen from "./screens/brandung/BrandungGameScreen";
 import BrandungSettingsScreen from "./screens/brandung/BrandungSettingsScreen";
 import BrandungResultsScreen from "./screens/brandung/BrandungResultsScreen";
+import MeermauLobbyScreen from "./screens/meermau/MeermauLobbyScreen";
+import MeermauGameScreen from "./screens/meermau/MeermauGameScreen";
+import MeermauSettingsScreen from "./screens/meermau/MeermauSettingsScreen";
+import MeermauResultsScreen from "./screens/meermau/MeermauResultsScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
@@ -108,6 +112,10 @@ function App() {
         <Route path="/brandung/game"     element={loggedIn ? <BrandungGameScreen />     : <Navigate to="/login" />} />
         <Route path="/brandung/settings" element={loggedIn ? <BrandungSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/brandung/results"  element={loggedIn ? <BrandungResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/meermau/lobby"    element={loggedIn ? <MeermauLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/meermau/game"     element={loggedIn ? <MeermauGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/meermau/settings" element={loggedIn ? <MeermauSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/meermau/results"  element={loggedIn ? <MeermauResultsScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />

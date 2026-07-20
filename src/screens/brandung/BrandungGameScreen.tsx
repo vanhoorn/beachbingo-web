@@ -38,7 +38,7 @@ function PlayingCard({
             ? `0 0 0 2px ${TEAL}, 0 6px 18px rgba(0,0,0,0.35)`
             : "0 3px 10px rgba(0,0,0,0.3)",
         } : {
-          background: "linear-gradient(135deg, #1a3d6e 0%, #1e4d8c 60%, #1a3d6e 100%)",
+          background: "linear-gradient(to bottom, #1a72c8 0%, #5ab8e8 55%, #1a8ab8 56%, #0a4a7a 100%)",
           border: "2px solid rgba(13,148,136,0.4)",
           boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
           overflow: "hidden",
@@ -70,12 +70,41 @@ function PlayingCard({
           </div>
         </>
       ) : !faceUp ? (
-        // Wave pattern on back
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.4 }}>
-          {[8, 18, 28, 38, 48, 58, 68].map(y => (
-            <path key={y} d={`M0,${y} Q14,${y - 5} 29,${y} Q44,${y + 5} 58,${y}`}
-              stroke="#0d9488" strokeWidth="1.5" fill="none" />
-          ))}
+        // Island & palm card back (daytime)
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 58 84">
+          {/* Sun glow */}
+          <circle cx="45" cy="11" r="9.5" fill="rgba(255,224,51,0.28)"/>
+          {/* Sun core */}
+          <circle cx="45" cy="11" r="5.8" fill="#ffd700"/>
+          <circle cx="43.3" cy="9.8" r="3.4" fill="#ffed4a"/>
+          {/* Sun rays */}
+          <line x1="45" y1="2.5" x2="45" y2="0.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="52.2" y1="4.8" x2="53.8" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="54.5" y1="11" x2="57" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="52.2" y1="17.2" x2="53.8" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="45" y1="19.5" x2="45" y2="21.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="37.8" y1="17.2" x2="36.2" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="35.5" y1="11" x2="33" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          <line x1="37.8" y1="4.8" x2="36.2" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
+          {/* Ocean waves */}
+          <path d="M0,57 Q7,54.5 14,57 Q21,59.5 29,57 Q37,54.5 44,57 Q51,59.5 58,57"
+            stroke="rgba(255,255,255,0.35)" strokeWidth="0.9" fill="none"/>
+          <path d="M0,67 Q8,64.5 16,67 Q24,69.5 32,67 Q40,64.5 48,67 Q56,69.5 58,67"
+            stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" fill="none"/>
+          <path d="M0,76 Q9,73.5 18,76 Q27,78.5 36,76 Q45,73.5 54,76"
+            stroke="rgba(255,255,255,0.18)" strokeWidth="0.7" fill="none"/>
+          {/* Island */}
+          <ellipse cx="29" cy="72" rx="12" ry="4.5" fill="#c8942a"/>
+          <ellipse cx="26" cy="70.5" rx="6.5" ry="2.5" fill="#e4b44a" opacity="0.5"/>
+          {/* Palm trunk */}
+          <path d="M29,70 Q27,60 28,49 Q29.5,42 32,34"
+            stroke="#7a5c2e" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+          {/* Palm fronds — filled leaf shapes */}
+          <path d="M31,33 Q19,38 8,52 Q25,45 33,35 Z" fill="#2a7828"/>
+          <path d="M31,35 Q38,45 54,52 Q44,38 33,33 Z" fill="#2a7828"/>
+          <path d="M33,33 Q25,26 10,22 Q21,33 31,35 Z" fill="#36963a"/>
+          <path d="M33,35 Q42,32 52,22 Q38,26 31,33 Z" fill="#36963a"/>
+          <path d="M34,34 Q35,24 30,12 Q28,25 31,34 Z" fill="#2a7828"/>
         </svg>
       ) : null}
     </div>

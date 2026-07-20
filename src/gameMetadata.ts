@@ -96,6 +96,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
     genres: ["PARTY", "LOGICAL"],
   },
+  {
+    id: "meermau",
+    emoji: "🂠",
+    title: "MeerMau",
+    description: "Werde als Erster alle Karten los! Mau-Mau mit Strand-Feeling — für 2–4 Spieler.",
+    color: "#7c3aed",
+    path: "/meermau/lobby",
+    playerCounts: ["ONE_TWO", "TWO_FOUR"],
+    genres: ["PARTY", "LOGICAL"],
+  },
 ];
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

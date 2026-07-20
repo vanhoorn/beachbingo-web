@@ -34,6 +34,10 @@ export interface User {
   // Brandung preferences
   brandungNewCardsOnAllPass?: boolean;
   brandungPassingForbidden?: boolean;
+  // MeerMau preferences
+  meermauReverseOn9?: boolean;
+  meermauStopperOn8?: boolean;
+  meermauWildOn10?: boolean;
   // Global audio settings
   soundEnabled?: boolean;
   musicEnabled?: boolean;
@@ -173,6 +177,42 @@ export interface BrandungGame {
 
 // Wattwurm
 export type WormDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
+
+// MeerMau (Mau-Mau clone)
+export interface MeermauCard { suit: string; rank: string; id: string; }
+
+export interface MeermauOnlinePlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  hand: MeermauCard[];
+  totalScore: number;
+  eliminated: boolean;
+  isAI: false;
+}
+
+export interface MeermauGame {
+  gameId: string;
+  adminId: string;
+  status: "LOBBY" | "RUNNING" | "FINISHED";
+  phase: "PLAYING" | "WISH" | "MAU_CHECK" | "ROUND_END" | "GAME_OVER";
+  players: { [uid: string]: MeermauOnlinePlayer };
+  playerIds: string[];
+  currentPlayerIndex: number;
+  direction: 1 | -1;
+  drawPile: MeermauCard[];
+  discardPile: MeermauCard[];
+  drawPending: number;
+  wishSuit: string | null;
+  mauPlayerId: string | null;
+  roundScores: Record<string, number>;
+  gameWinnerId: string | null;
+  eliminatedPlayerIds: string[];
+  round: number;
+  settings: { reverseOn9: boolean; stopperOn8: boolean; wildOn10: boolean };
+  lastActionText: string;
+  createdAt: number;
+}
 
 // BeachVolley
 export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
