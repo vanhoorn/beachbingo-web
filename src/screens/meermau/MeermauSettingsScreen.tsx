@@ -89,18 +89,6 @@ export default function MeermauSettingsScreen() {
           />
         </div>
 
-        <div className="card" style={{ padding: 16, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)" }}>
-          <div style={{ fontSize: 12, color: VIOLET, fontWeight: 600, marginBottom: 6 }}>Spielziel</div>
-          <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.6 }}>
-            Werde als Erster alle Karten los! Wer nur noch eine Karte hat, muss <b style={{ color: "var(--text)" }}>MAU</b> rufen.
-            Der Gewinner bekommt 0 Punkte — alle anderen die Summe ihrer Handkarten.
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-sub)", marginTop: 8, lineHeight: 1.6 }}>
-            <b style={{ color: "var(--text)" }}>Sonderkarten:</b> 7 → nächster Spieler zieht 2 (stapelbar) ·
-            J → Farbe wünschen · A → nächster Spieler setzt aus.
-          </div>
-        </div>
-
         <button
           className="btn"
           onClick={handleSave}

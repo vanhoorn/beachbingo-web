@@ -6,6 +6,8 @@ import { auth, db } from "../../firebase";
 import type { User, MeermauGame, MeermauOnlinePlayer } from "../../types";
 import type { MeerMauDifficulty, MeerMauSettings } from "./meermauLogic";
 import { dealMCards, DEFAULT_MM_SETTINGS } from "./meermauLogic";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 
 const VIOLET = "#7c3aed";
 const VIOLET_DIM = "rgba(124,58,237,0.12)";
@@ -59,6 +61,7 @@ export default function MeermauLobbyScreen() {
   const [difficulty, setDifficulty] = useState<MeerMauDifficulty>("SNIPER");
   const [settings, setSettings] = useState<MeerMauSettings>(DEFAULT_MM_SETTINGS);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   // Online state
   const [creating, setCreating] = useState(false);
@@ -244,7 +247,7 @@ export default function MeermauLobbyScreen() {
         borderRadius: "var(--radius)", padding: "20px",
         display: "flex", alignItems: "center", gap: 16,
       }}>
-        <div style={{ fontSize: 44 }}>🂠</div>
+        <img src="/meermau-logo.svg" alt="MeerMau Logo" style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>MeerMau</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>Mau-Mau am Strand</div>
@@ -258,6 +261,9 @@ export default function MeermauLobbyScreen() {
             style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}>
             {isFavorite ? "★" : "☆"}
           </button>
+          <button className="btn btn-outline btn-sm"
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            onClick={() => setShowRules(true)} title="Spielanleitung">ℹ️</button>
           <button className="btn btn-outline btn-sm"
             style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
             onClick={() => navigate("/meermau/settings")} title="Einstellungen">⚙️</button>
@@ -392,6 +398,9 @@ export default function MeermauLobbyScreen() {
             </div>
           )}
         </div>
+      )}
+      {showRules && GAME_RULES["meermau"] && (
+        <GameRulesModal rule={GAME_RULES["meermau"]} onClose={() => setShowRules(false)} />
       )}
     </div>
   );

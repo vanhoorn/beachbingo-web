@@ -1,0 +1,153 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mm-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2e1065"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="mm-tail" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="mm-hair" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="mm-wave" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e7490"/>
+      <stop offset="100%" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <clipPath id="mm-circle">
+      <circle cx="60" cy="60" r="58"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="60" cy="60" r="60" fill="url(#mm-bg)"/>
+
+  <!-- Deep water zone -->
+  <ellipse cx="60" cy="115" rx="62" ry="32" fill="#0c4a6e" opacity="0.6" clip-path="url(#mm-circle)"/>
+
+  <!-- Waves -->
+  <path d="M2 84 Q16 78 30 84 Q44 90 58 84 Q72 78 86 84 Q100 90 118 84 L118 120 L2 120 Z"
+        fill="url(#mm-wave)" opacity="0.7" clip-path="url(#mm-circle)"/>
+  <path d="M2 92 Q22 87 42 92 Q62 97 82 92 Q102 87 118 92 L118 120 L2 120 Z"
+        fill="#0c4a6e" opacity="0.8" clip-path="url(#mm-circle)"/>
+
+  <!-- Wave highlights -->
+  <path d="M8 84 Q20 80 32 84" stroke="#67e8f9" stroke-width="1.2" fill="none" opacity="0.5"/>
+  <path d="M48 84 Q60 80 72 84" stroke="#67e8f9" stroke-width="1.2" fill="none" opacity="0.5"/>
+  <path d="M88 84 Q100 80 112 84" stroke="#67e8f9" stroke-width="1.2" fill="none" opacity="0.5"/>
+
+  <!-- Mermaid tail -->
+  <path d="M47 74 Q44 83 43 90 Q41 96 44 101 Q48 108 56 109 Q62 110 68 109 Q74 107 76 101 Q79 95 77 90 Q76 83 73 74 Q66 70 60 71 Q54 70 47 74 Z"
+        fill="url(#mm-tail)"/>
+
+  <!-- Tail scales -->
+  <ellipse cx="53" cy="77" rx="4.5" ry="3" fill="#7c3aed" opacity="0.45"/>
+  <ellipse cx="63" cy="77" rx="4.5" ry="3" fill="#7c3aed" opacity="0.45"/>
+  <ellipse cx="56" cy="84" rx="5" ry="3" fill="#6d28d9" opacity="0.4"/>
+  <ellipse cx="64" cy="84" rx="5" ry="3" fill="#6d28d9" opacity="0.4"/>
+  <ellipse cx="58" cy="91" rx="4" ry="2.5" fill="#5b21b6" opacity="0.35"/>
+  <ellipse cx="63" cy="91" rx="4" ry="2.5" fill="#5b21b6" opacity="0.35"/>
+  <ellipse cx="60" cy="97" rx="3.5" ry="2" fill="#4c1d95" opacity="0.3"/>
+
+  <!-- Tail fin left -->
+  <path d="M43 101 Q36 112 32 116 Q38 113 44 109 Q46 106 44 101 Z"
+        fill="#0891b2"/>
+  <path d="M43 101 Q40 108 36 113" stroke="#67e8f9" stroke-width="0.8" fill="none" opacity="0.6"/>
+
+  <!-- Tail fin right -->
+  <path d="M76 101 Q83 112 88 116 Q82 113 76 109 Q74 106 76 101 Z"
+        fill="#0891b2"/>
+  <path d="M76 101 Q79 108 84 113" stroke="#67e8f9" stroke-width="0.8" fill="none" opacity="0.6"/>
+
+  <!-- Torso / upper body -->
+  <ellipse cx="60" cy="65" rx="11" ry="12" fill="#fcd5a0"/>
+
+  <!-- Seashell bikini top -->
+  <path d="M49 63 Q53 57 58 63 Q54 66 49 63 Z" fill="#c084fc"/>
+  <path d="M71 63 Q67 57 62 63 Q66 66 71 63 Z" fill="#c084fc"/>
+  <path d="M54 63 Q58 60 62 63" stroke="#a855f7" stroke-width="0.8" fill="none"/>
+
+  <!-- Left arm (holding card) -->
+  <path d="M49 66 Q43 68 39 73 Q41 76 44 74 Q47 69 51 68 Z" fill="#fcd5a0"/>
+
+  <!-- Right arm -->
+  <path d="M71 66 Q77 68 81 73 Q79 76 76 74 Q73 69 69 68 Z" fill="#fcd5a0"/>
+
+  <!-- Playing card -->
+  <rect x="29" y="64" width="15" height="20" rx="2.5" fill="white" stroke="#e2e8f0" stroke-width="0.7"/>
+  <text x="31.5" y="74" font-family="Georgia, serif" font-size="8.5" fill="#7c3aed" font-weight="bold">J</text>
+  <text x="32" y="81" font-family="Georgia, serif" font-size="7" fill="#7c3aed">♣</text>
+  <!-- Card corner top-right mini -->
+  <text x="38" y="68" font-family="Georgia, serif" font-size="4.5" fill="#7c3aed">J</text>
+
+  <!-- Neck -->
+  <rect x="57" y="53" width="6" height="8" rx="2" fill="#fcd5a0"/>
+
+  <!-- Head -->
+  <ellipse cx="60" cy="44" rx="13" ry="14" fill="#fcd5a0"/>
+
+  <!-- Long hair – back layer -->
+  <path d="M47 39 Q38 50 36 62 Q40 60 44 54 Q47 47 49 42 Z" fill="url(#mm-hair)"/>
+  <path d="M73 39 Q82 50 84 62 Q80 60 76 54 Q73 47 71 42 Z" fill="url(#mm-hair)"/>
+
+  <!-- Crown / hair top -->
+  <path d="M48 34 Q46 22 50 18 Q54 13 60 12 Q66 13 70 18 Q74 22 72 34
+           Q69 28 65 26 Q62 24 60 24 Q58 24 55 26 Q51 28 48 34 Z"
+        fill="url(#mm-hair)"/>
+
+  <!-- Small crown detail -->
+  <polygon points="54,22 56,17 58,22" fill="#fde68a" opacity="0.9"/>
+  <polygon points="59,20 60,15 61,20" fill="#fde68a" opacity="0.9"/>
+  <polygon points="64,22 62,17 60,22" fill="#fde68a" opacity="0.9"/>
+
+  <!-- Hair strands -->
+  <path d="M47 39 Q45 43 46 48" stroke="#c4b5fd" stroke-width="0.7" fill="none" opacity="0.6"/>
+  <path d="M73 39 Q75 43 74 48" stroke="#c4b5fd" stroke-width="0.7" fill="none" opacity="0.6"/>
+
+  <!-- Eyes -->
+  <ellipse cx="54.5" cy="43" rx="3.5" ry="4" fill="white"/>
+  <ellipse cx="65.5" cy="43" rx="3.5" ry="4" fill="white"/>
+  <!-- Iris -->
+  <circle cx="54.8" cy="43.5" r="2.4" fill="#4c1d95"/>
+  <circle cx="65.8" cy="43.5" r="2.4" fill="#4c1d95"/>
+  <!-- Pupil highlight -->
+  <circle cx="55.4" cy="42.8" r="1" fill="white"/>
+  <circle cx="66.4" cy="42.8" r="1" fill="white"/>
+
+  <!-- Eyelashes / brows -->
+  <path d="M51 40 Q54.5 38 58 40" stroke="#5b21b6" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+  <path d="M62 40 Q65.5 38 69 40" stroke="#5b21b6" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+
+  <!-- Blush -->
+  <ellipse cx="50" cy="47" rx="3.5" ry="2" fill="#fca5a5" opacity="0.45"/>
+  <ellipse cx="70" cy="47" rx="3.5" ry="2" fill="#fca5a5" opacity="0.45"/>
+
+  <!-- Smile -->
+  <path d="M55.5 51 Q60 55 64.5 51" stroke="#c2410c" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+
+  <!-- Nose hint -->
+  <path d="M59 48 Q60 50 61 48" stroke="#e8a87c" stroke-width="0.8" fill="none"/>
+
+  <!-- Decorative sparkles -->
+  <g opacity="0.85">
+    <path d="M95 22 L96.5 18 L98 22 L102 23.5 L98 25 L96.5 29 L95 25 L91 23.5 Z" fill="#fde68a"/>
+  </g>
+  <g opacity="0.6">
+    <path d="M14 55 L15 52 L16 55 L19 56 L16 57 L15 60 L14 57 L11 56 Z" fill="#a78bfa"/>
+  </g>
+  <g opacity="0.5">
+    <path d="M100 50 L100.8 48 L101.6 50 L103.6 50.8 L101.6 51.6 L100.8 53.6 L100 51.6 L98 50.8 Z" fill="#67e8f9"/>
+  </g>
+
+  <!-- Bubbles -->
+  <circle cx="90" cy="75" r="3.5" fill="none" stroke="#a5f3fc" stroke-width="1" opacity="0.5"/>
+  <circle cx="84" cy="67" r="2.2" fill="none" stroke="#a5f3fc" stroke-width="0.8" opacity="0.4"/>
+  <circle cx="94" cy="62" r="1.5" fill="#a5f3fc" opacity="0.25"/>
+  <circle cx="26" cy="73" r="2.5" fill="none" stroke="#a5f3fc" stroke-width="0.8" opacity="0.4"/>
+  <circle cx="22" cy="65" r="1.6" fill="none" stroke="#a5f3fc" stroke-width="0.7" opacity="0.35"/>
+
+  <!-- Rim glow -->
+  <circle cx="60" cy="60" r="58" fill="none" stroke="#c4b5fd" stroke-width="1" opacity="0.2"/>
+</svg>

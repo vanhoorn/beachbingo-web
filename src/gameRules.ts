@@ -120,4 +120,23 @@ export const GAME_RULES: Record<string, GameRule> = {
     ],
     proTip: "\"Klopfen\" zu früh ist wie zu früh \"BINGO\" zu rufen. Klappt manchmal. Meistens endet es in kollektivem Augenrollen.",
   },
+  meermau: {
+    id: "meermau",
+    title: "MeerMau",
+    emoji: "🂠",
+    color: "#7c3aed",
+    tagline: "Wer zuletzt noch Karten hält, zahlt die Zeche.",
+    goal: "Als Erster alle Handkarten ablegen und \"MAU!\" rufen.",
+    rules: [
+      "Jeder Spieler erhält 5 Karten. Die oberste Karte des Stapels startet die Ablage.",
+      "Lege eine Karte ab, die entweder dieselbe Farbe oder denselben Wert hat.",
+      "7 = nächster Spieler muss 2 Karten ziehen (stapelbar!).",
+      "8 = nächster Spieler wird übersprungen.",
+      "Bube (J) = Farbwunsch – du bestimmst, welche Farbe als nächstes gespielt werden muss.",
+      "Hast du nur noch eine Karte, musst du \"MAU!\" sagen – sonst Strafkarten!",
+      "Wer alle Karten losgeworden ist, gewinnt die Runde. Die übrigen Spieler erhalten Strafpunkte.",
+      "Bei 100 Punkten scheidet ein Spieler aus. Letzter Überlebender gewinnt das Spiel!",
+    ],
+    proTip: "Den Buben (J) aufheben für kritische Momente. Nichts ist befriedigender, als im richtigen Moment die Farbe zu wechseln.",
+  },
 };
