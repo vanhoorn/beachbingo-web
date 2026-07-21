@@ -8,6 +8,7 @@ import {
   MSUITS, MRED_SUITS, canPlayMCard, calcHandPoints, getAIMMove, dealMCards,
   DEFAULT_MM_SETTINGS,
 } from "./meermauLogic";
+import { audioManager } from "../../audio/AudioManager";
 
 const VIOLET = "#7c3aed";
 const AI_DELAY_MS = 1200;
@@ -17,14 +18,16 @@ const ELIMINATION_SCORE = 100;
 
 function PlayingCard({
   card, faceUp = true, selected = false, playable = true, small = false,
-  onClick, style = {},
+  onClick, style = {}, w, h,
 }: {
   card?: MCard; faceUp?: boolean; selected?: boolean; playable?: boolean;
   small?: boolean; onClick?: () => void; style?: React.CSSProperties;
+  w?: number; h?: number;
 }) {
   const isRed = card ? MRED_SUITS.has(card.suit) : false;
-  const W = small ? 36 : 58;
-  const H = small ? 52 : 84;
+  const W = w ?? (small ? 36 : 58);
+  const H = h ?? (small ? 52 : 84);
+  const fontScale = W / 58;
   return (
     <div onClick={onClick} style={{
       width: W, height: H, borderRadius: small ? 5 : 8, flexShrink: 0,
@@ -50,26 +53,26 @@ function PlayingCard({
       {faceUp && card ? (
         <>
           <div style={{
-            position: "absolute", top: small ? 2 : 4, left: small ? 3 : 5,
+            position: "absolute", top: small ? 2 : Math.round(4 * fontScale), left: small ? 3 : Math.round(5 * fontScale),
             color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1,
-            fontSize: small ? 9 : 13,
+            fontSize: small ? Math.round(9 * (W / 36)) : Math.round(13 * fontScale),
           }}>
             <div style={{ fontWeight: 900 }}>{card.rank}</div>
-            {!small && <div style={{ fontSize: 10 }}>{card.suit}</div>}
+            {!small && <div style={{ fontSize: Math.round(10 * fontScale) }}>{card.suit}</div>}
           </div>
           <div style={{
             position: "absolute", top: "50%", left: "50%",
             transform: "translate(-50%,-50%)",
-            fontSize: small ? 16 : 26, color: isRed ? "#d63031" : "#1a1a2e",
+            fontSize: small ? Math.round(16 * (W / 36)) : Math.round(26 * fontScale), color: isRed ? "#d63031" : "#1a1a2e",
           }}>{card.suit}</div>
           {!small && (
             <div style={{
-              position: "absolute", bottom: 4, right: 5,
+              position: "absolute", bottom: Math.round(4 * fontScale), right: Math.round(5 * fontScale),
               color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1,
-              fontSize: 13, transform: "rotate(180deg)",
+              fontSize: Math.round(13 * fontScale), transform: "rotate(180deg)",
             }}>
               <div style={{ fontWeight: 900 }}>{card.rank}</div>
-              <div style={{ fontSize: 10 }}>{card.suit}</div>
+              <div style={{ fontSize: Math.round(10 * fontScale) }}>{card.suit}</div>
             </div>
           )}
         </>
@@ -411,6 +414,19 @@ export default function MeermauGameScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
+  // Responsive card sizing for tablets
+  const [winW, setWinW] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setWinW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const cardScale = Math.min(Math.max(winW / 390, 1), 2.2);
+  const CARD_W = Math.round(58 * cardScale);
+  const CARD_H = Math.round(84 * cardScale);
+  const SMALL_W = Math.round(36 * cardScale);
+  const SMALL_H = Math.round(52 * cardScale);
+
   // ── Init AI game ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (mode !== "ai") return;
@@ -530,6 +546,14 @@ export default function MeermauGameScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localState?.phase]);
 
+  // ── Phase change sounds ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!localState) return;
+    if (localState.phase === "ROUND_END") audioManager.playSound("level_complete");
+    if (localState.phase === "GAME_OVER") audioManager.playSound("game_over");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localState?.phase]);
+
   // ── Derive render values ────────────────────────────────────────────────────
   const st = localState;
   const humanPlayer = st?.players[0] ?? null;
@@ -545,17 +569,19 @@ export default function MeermauGameScreen() {
   // ── Handlers ────────────────────────────────────────────────────────────────
   function handleCardClick(cardId: string) {
     if (!st || !isMyTurn || st.phase !== "PLAYING") return;
-    if (!playableIds.has(cardId)) { setSelectedCardId(prev => prev === cardId ? null : cardId); return; }
-    if (selectedCardId !== cardId) { setSelectedCardId(cardId); return; }
+    if (!playableIds.has(cardId)) { setSelectedCardId(prev => prev === cardId ? null : cardId); audioManager.playSound("card_select"); return; }
+    if (selectedCardId !== cardId) { setSelectedCardId(cardId); audioManager.playSound("card_select"); return; }
     // Second click → play (all cards including last — MAU MAU can be pressed separately)
     const card = humanPlayer?.hand.find(c => c.id === cardId);
     if (!card) return;
+    audioManager.playSound("card_place");
     setLocalState(prev => prev ? doPlayCard(prev, 0, cardId) : prev);
     if (card.rank !== "J" && !(st.settings.wildOn10 && card.rank === "10")) setSelectedCardId(null);
   }
 
   function handleMauMau() {
     if (!st) return;
+    audioManager.playSound("card_feuer");
     // Post-play: human played last card, now pressing MAU MAU → win
     if (st.pendingMauMau === uid) {
       setLocalState(prev => {
@@ -580,6 +606,7 @@ export default function MeermauGameScreen() {
 
   function handleDraw() {
     if (!st || !isMyTurn || st.phase !== "PLAYING") return;
+    audioManager.playSound("card_draw");
     setLocalState(prev => prev ? doDrawCard(prev, 0) : prev);
     setSelectedCardId(null);
   }
@@ -588,12 +615,8 @@ export default function MeermauGameScreen() {
     if (!st || !st.drawnCard || !topCard) return;
     const dc = st.drawnCard;
     if (!canPlayMCard(dc, topCard, st.wishSuit, 0, st.settings)) return;
-    const needsWish = dc.rank === "J" || (st.settings.wildOn10 && dc.rank === "10");
-    if (needsWish) {
-      setLocalState(prev => prev ? doPlayCard(prev, 0, dc.id) : prev);
-    } else {
-      setLocalState(prev => prev ? doPlayCard(prev, 0, dc.id) : prev);
-    }
+    audioManager.playSound("card_place");
+    setLocalState(prev => prev ? doPlayCard(prev, 0, dc.id) : prev);
   }
 
   function handleDrawnCardPass() {
@@ -628,10 +651,10 @@ export default function MeermauGameScreen() {
   function handleMau() {
     if (!st) return;
     const mp = st.players[0];
-    // Valid when: pendingMau is set (post-play) OR it's your turn with 2 cards (pre-play)
     const postPlay = st.pendingMau === uid;
     const prePlay = isMyTurn && st.phase === "PLAYING" && humanPlayer?.hand.length === 2 && !!selectedCardId && playableIds.has(selectedCardId);
     if (!postPlay && !prePlay) return;
+    audioManager.playSound("card_knock");
     const mauTxt = `${mp?.displayName ?? "Du"}: MAU!`;
     setLocalState(prev => {
       if (!prev) return prev;
@@ -717,12 +740,12 @@ export default function MeermauGameScreen() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                    {opp.hand.slice(0, 7).map((_, ci) => (
-                      <PlayingCard key={ci} faceUp={false} small />
+                  <div style={{ display: "flex", gap: Math.round(2 * cardScale), flexWrap: "wrap" }}>
+                    {opp.hand.slice(0, 9).map((_, ci) => (
+                      <PlayingCard key={ci} faceUp={false} small w={SMALL_W} h={SMALL_H} />
                     ))}
-                    {opp.hand.length > 7 && (
-                      <span style={{ fontSize: 9, color: "var(--text-sub)", alignSelf: "center" }}>+{opp.hand.length - 7}</span>
+                    {opp.hand.length > 9 && (
+                      <span style={{ fontSize: Math.round(9 * cardScale), color: "var(--text-sub)", alignSelf: "center" }}>+{opp.hand.length - 9}</span>
                     )}
                   </div>
                 </div>
@@ -732,14 +755,14 @@ export default function MeermauGameScreen() {
 
           {/* Table */}
           <div style={{
-            background: "#1a5c2e", borderRadius: 60, border: "4px solid #8B7355",
-            padding: "18px 32px",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexShrink: 0,
+            background: "#1a5c2e", borderRadius: Math.round(60 * cardScale), border: "4px solid #8B7355",
+            padding: `${Math.round(18 * cardScale)}px ${Math.round(32 * cardScale)}px`,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: Math.round(20 * cardScale), flexShrink: 0,
           }}>
             {/* Draw pile */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{ position: "relative" }}>
-                <PlayingCard faceUp={false} style={{ cursor: isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? "pointer" : "default" }} onClick={isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? handleDraw : undefined} />
+                <PlayingCard faceUp={false} w={CARD_W} h={CARD_H} style={{ cursor: isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? "pointer" : "default" }} onClick={isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? handleDraw : undefined} />
                 {st.drawPending > 0 && (
                   <div style={{
                     position: "absolute", top: -8, right: -8,
@@ -774,8 +797,8 @@ export default function MeermauGameScreen() {
 
             {/* Discard pile */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              {topCard && <PlayingCard card={topCard} faceUp />}
-              <div style={{ fontSize: 10, color: "var(--text-sub)" }}>Ablage</div>
+              {topCard && <PlayingCard card={topCard} faceUp w={CARD_W} h={CARD_H} />}
+              <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)" }}>Ablage</div>
             </div>
           </div>
 
@@ -791,33 +814,35 @@ export default function MeermauGameScreen() {
 
           {/* Human hand */}
           <div style={{
-            background: "var(--surface)", borderRadius: 12, padding: "10px 8px",
+            background: "var(--surface)", borderRadius: 12, padding: `${Math.round(10 * cardScale)}px ${Math.round(8 * cardScale)}px`,
             border: `1px solid ${isMyTurn && st.phase === "PLAYING" ? VIOLET + "55" : "var(--border)"}`,
             flexShrink: 0,
           }}>
-            <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+            <div style={{ display: "flex", gap: Math.round(5 * cardScale), overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
               {humanPlayer?.hand.map(card => (
                 <PlayingCard
                   key={card.id} card={card} faceUp
                   selected={selectedCardId === card.id}
                   playable={isMyTurn && st.phase === "PLAYING" && playableIds.has(card.id)}
                   onClick={() => handleCardClick(card.id)}
+                  w={CARD_W} h={CARD_H}
                 />
               ))}
               {/* Drawn card offer */}
               {st.drawnCard && isMyTurn && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: 6 }}>
-                  <div style={{ fontSize: 9, color: VIOLET, marginBottom: 3, fontWeight: 700 }}>GEZOGEN</div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: Math.round(6 * cardScale) }}>
+                  <div style={{ fontSize: Math.round(9 * cardScale), color: VIOLET, marginBottom: 3, fontWeight: 700 }}>GEZOGEN</div>
                   <PlayingCard
                     card={st.drawnCard} faceUp
                     playable={!!topCard && canPlayMCard(st.drawnCard, topCard, st.wishSuit, 0, st.settings)}
                     style={{ border: `2px dashed ${VIOLET}` }}
                     onClick={handleDrawnCardPlay}
+                    w={CARD_W} h={CARD_H}
                   />
                 </div>
               )}
             </div>
-            <div style={{ fontSize: 10, color: "var(--text-sub)", textAlign: "center", marginTop: 6 }}>
+            <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)", textAlign: "center", marginTop: 6 }}>
               Du · {humanPlayer?.hand.length ?? 0} Karten · {humanPlayer?.totalScore ?? 0} Punkte
             </div>
           </div>
