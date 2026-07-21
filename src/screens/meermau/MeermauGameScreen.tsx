@@ -732,7 +732,8 @@ export default function MeermauGameScreen() {
 
           {/* Table */}
           <div style={{
-            background: "var(--surface2)", borderRadius: 12, padding: "14px 16px",
+            background: "#1a5c2e", borderRadius: 60, border: "4px solid #8B7355",
+            padding: "18px 32px",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexShrink: 0,
           }}>
             {/* Draw pile */}
@@ -787,9 +788,6 @@ export default function MeermauGameScreen() {
               {st.lastActionText}
             </div>
           </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
 
           {/* Human hand */}
           <div style={{
