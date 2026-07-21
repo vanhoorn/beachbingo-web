@@ -1,5 +1,5 @@
 export type PlayerCountKey = "ONE" | "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
-export type GameGenreKey = "ACTION" | "PARTY" | "LOGICAL" | "COUCH" | "RIDDLE";
+export type GameGenreKey = "ACTION" | "PARTY" | "LOGICAL" | "COUCH" | "RIDDLE" | "CARD";
 
 export interface GameMetadata {
   id: string;
@@ -94,7 +94,7 @@ export const ALL_GAMES: GameMetadata[] = [
     color: "#0d9488",
     path: "/brandung/lobby",
     playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
-    genres: ["PARTY", "LOGICAL"],
+    genres: ["PARTY", "LOGICAL", "CARD"],
   },
   {
     id: "meermau",
@@ -104,8 +104,10 @@ export const ALL_GAMES: GameMetadata[] = [
     color: "#7c3aed",
     path: "/meermau/lobby",
     playerCounts: ["ONE_TWO", "TWO_FOUR"],
-    genres: ["PARTY", "LOGICAL"],
+    genres: ["PARTY", "LOGICAL", "CARD"],
   },
 ];
+
+export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

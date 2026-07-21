@@ -30,6 +30,8 @@ export default function HomeScreen() {
     .filter((g) => favoriteIds.includes(g.id))
     .sort((a, b) => a.title.localeCompare(b.title));
 
+  const cardGameCount = ALL_GAMES.filter((g) => g.genres.includes("CARD")).length;
+
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
 
@@ -120,6 +122,29 @@ export default function HomeScreen() {
               );
             })}
           </div>
+        </section>
+
+        {/* Kartenspiele */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Kartenspiele" emoji="🃏" />
+          <button
+            onClick={() => navigate("/card-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(124,58,237,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🃏</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Kartenspiele</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {cardGameCount} {cardGameCount === 1 ? "Spiel" : "Spiele"} · MeerMau, Brandung & mehr
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#7c3aed" }}>›</span>
+          </button>
         </section>
 
         {/* Alle Spiele */}
