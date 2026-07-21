@@ -105,6 +105,13 @@ function PlayingCard({
 
 // ── Local state types ─────────────────────────────────────────────────────────
 
+interface MoveLogEntry {
+  round: number;
+  playerName: string;
+  detail: string;
+  ts: number;
+}
+
 interface LocalPlayer {
   userId: string;
   displayName: string;
@@ -123,8 +130,11 @@ interface LocalState {
   direction: 1 | -1;
   drawPending: number;
   wishSuit: MSuit | null;
-  phase: "PLAYING" | "WISH" | "MAU_CHECK" | "ROUND_END" | "GAME_OVER";
+  phase: "PLAYING" | "WISH" | "ROUND_END" | "GAME_OVER";
   mauPlayerId: string | null;
+  pendingMau: string | null;
+  pendingMauMau: string | null;
+  mauMauReady: boolean;
   drawnCard: MCard | null;
   roundWinnerId: string | null;
   gameWinnerId: string | null;
@@ -135,6 +145,7 @@ interface LocalState {
   difficulty: MeerMauDifficulty;
   settings: MeerMauSettings;
   lastSkippedId: string | null;
+  moveLog: MoveLogEntry[];
 }
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
@@ -166,9 +177,49 @@ function nextIdx(from: number, dir: 1 | -1, players: LocalPlayer[], extraSkip = 
   return idx;
 }
 
+/**
+ * If a player played to 1 card but hasn't called MAU yet, and another player
+ * now takes an action, draw 1 penalty card for the forgetful player first.
+ */
+function applyPendingMauPenalty(st: LocalState): LocalState {
+  if (!st.pendingMau) return st;
+  // Don't penalise if it's still the pendingMau player's own turn
+  if (st.players[st.currentPlayerIndex]?.userId === st.pendingMau) return st;
+  const pidx = st.players.findIndex(p => p.userId === st.pendingMau);
+  if (pidx < 0) return { ...st, pendingMau: null };
+  const pp = st.players[pidx];
+  let [draw, discard] = reshuffleIfNeeded(st.drawPile, st.discardPile);
+  if (draw.length === 0) return { ...st, pendingMau: null };
+  const penaltyCard = draw[0];
+  draw = draw.slice(1);
+  const updatedPlayers = st.players.map((p, i) => i === pidx ? { ...p, hand: [...p.hand, penaltyCard] } : p);
+  const entry: MoveLogEntry = { round: st.round, playerName: pp.displayName, detail: `${pp.displayName} vergisst MAU — zieht 1 Strafkarte`, ts: Date.now() };
+  return { ...st, players: updatedPlayers, drawPile: draw, discardPile: discard, pendingMau: null, moveLog: [...st.moveLog, entry] };
+}
+
+/** Same as applyPendingMauPenalty but for forgotten MAU MAU (played last card, didn't call MAU MAU). */
+function applyPendingMauMauPenalty(st: LocalState): LocalState {
+  if (!st.pendingMauMau) return st;
+  if (st.players[st.currentPlayerIndex]?.userId === st.pendingMauMau) return st;
+  const pidx = st.players.findIndex(p => p.userId === st.pendingMauMau);
+  if (pidx < 0) return { ...st, pendingMauMau: null };
+  const pp = st.players[pidx];
+  let [draw, discard] = reshuffleIfNeeded(st.drawPile, st.discardPile);
+  if (draw.length === 0) return { ...st, pendingMauMau: null };
+  const penaltyCard = draw[0];
+  draw = draw.slice(1);
+  const updatedPlayers = st.players.map((p, i) => i === pidx ? { ...p, hand: [...p.hand, penaltyCard] } : p);
+  const entry: MoveLogEntry = { round: st.round, playerName: pp.displayName, detail: `${pp.displayName} vergisst MAU MAU — zieht 1 Strafkarte`, ts: Date.now() };
+  return { ...st, players: updatedPlayers, drawPile: draw, discardPile: discard, pendingMauMau: null, moveLog: [...st.moveLog, entry] };
+}
+
 function doPlayCard(
   st: LocalState, playerIdx: number, cardId: string, wishSuit?: MSuit,
 ): LocalState {
+  // Apply any pending MAU / MAU MAU penalties before the new action
+  st = applyPendingMauPenalty(st);
+  st = applyPendingMauMauPenalty(st);
+
   const player = st.players[playerIdx];
   const card = player.hand.find(c => c.id === cardId);
   if (!card) return st;
@@ -208,30 +259,47 @@ function doPlayCard(
     } else {
       // Need wish — return WISH phase (human player path)
       const updated = st.players.map((p, i) => i === playerIdx ? { ...p, hand: newHand } : p);
-      return { ...st, players: updated, discardPile: newDiscard, phase: "WISH", drawnCard: null, aiThinking: false };
+      const wishEntry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: txt, ts: Date.now() };
+      return { ...st, players: updated, discardPile: newDiscard, phase: "WISH", drawnCard: null, aiThinking: false, moveLog: [...st.moveLog, wishEntry] };
     }
   } else {
     ws = null;
   }
 
   const updated = st.players.map((p, i) => i === playerIdx ? { ...p, hand: newHand } : p);
-
-  // Round win
-  if (newHand.length === 0) {
-    return resolveRound({ ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending: 0, wishSuit: null, direction: dir, roundWinnerId: player.userId, lastActionText: `🏆 ${player.displayName} gewinnt die Runde!`, aiThinking: false, lastSkippedId: null });
-  }
-
+  const entry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: txt, ts: Date.now() };
   const nextPlayer = nextIdx(playerIdx, dir, updated, extraSkip);
 
-  // Mau check
-  if (newHand.length === 1 && st.mauPlayerId !== player.userId) {
-    return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending, wishSuit: ws, direction: dir, currentPlayerIndex: nextPlayer, phase: "MAU_CHECK", mauPlayerId: player.userId, drawnCard: null, lastActionText: txt, aiThinking: false, lastSkippedId };
+  // 0 cards: AI auto-wins; human wins only if they pre-declared MAU MAU, otherwise pendingMauMau
+  if (newHand.length === 0) {
+    if (playerIdx !== 0 || st.mauMauReady) {
+      return resolveRound({ ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending: 0, wishSuit: null, direction: dir, roundWinnerId: player.userId, lastActionText: `🏆 ${player.displayName} gewinnt die Runde!`, aiThinking: false, lastSkippedId: null, mauMauReady: false, pendingMauMau: null, moveLog: [...st.moveLog, entry] });
+    } else {
+      // Human played last card without pressing MAU MAU — set pending, move to next player
+      return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending: 0, wishSuit: null, direction: dir, currentPlayerIndex: nextPlayer, phase: "PLAYING", pendingMauMau: player.userId, mauMauReady: false, drawnCard: null, lastActionText: `${player.displayName} spielt letzte Karte!`, aiThinking: false, lastSkippedId: null, moveLog: [...st.moveLog, entry] };
+    }
   }
 
-  return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending, wishSuit: ws, direction: dir, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: txt, aiThinking: false, lastSkippedId };
+  // 1 card left: AI auto-calls MAU; human must press the button
+  if (newHand.length === 1) {
+    if (playerIdx !== 0 || st.mauPlayerId === player.userId) {
+      // AI always auto-calls MAU; human auto-passes if they already declared before playing
+      const aiMauTxt = `${player.displayName}: MAU!`;
+      const mauEntry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: aiMauTxt, ts: Date.now() + 1 };
+      const logs = playerIdx !== 0 ? [...st.moveLog, entry, mauEntry] : [...st.moveLog, entry];
+      return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending, wishSuit: ws, direction: dir, currentPlayerIndex: nextPlayer, phase: "PLAYING", mauPlayerId: player.userId, pendingMau: null, drawnCard: null, lastActionText: aiMauTxt, aiThinking: false, lastSkippedId, moveLog: logs };
+    } else {
+      // Human must press MAU before next player acts
+      return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending, wishSuit: ws, direction: dir, currentPlayerIndex: nextPlayer, phase: "PLAYING", mauPlayerId: null, pendingMau: player.userId, drawnCard: null, lastActionText: txt, aiThinking: false, lastSkippedId, moveLog: [...st.moveLog, entry] };
+    }
+  }
+
+  return { ...st, players: updated, discardPile: newDiscard, drawPile: draw, drawPending, wishSuit: ws, direction: dir, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: txt, aiThinking: false, lastSkippedId, moveLog: [...st.moveLog, entry] };
 }
 
 function doDrawCard(st: LocalState, playerIdx: number): LocalState {
+  st = applyPendingMauPenalty(st);
+  st = applyPendingMauMauPenalty(st);
   const player = st.players[playerIdx];
   const count = st.drawPending > 0 ? st.drawPending : 1;
   let [draw, discard] = reshuffleIfNeeded(st.drawPile, st.discardPile);
@@ -248,11 +316,15 @@ function doDrawCard(st: LocalState, playerIdx: number): LocalState {
 
   const newHand = [...player.hand, ...drawn];
   const updated = st.players.map((p, i) => i === playerIdx ? { ...p, hand: newHand } : p);
+  // If this player had said Mau but now draws cards, reset the Mau declaration
+  const newMauPlayerId = st.mauPlayerId === player.userId ? null : st.mauPlayerId;
 
   // Penalty draw → advance turn
   if (st.drawPending > 0) {
     const nextPlayer = nextIdx(playerIdx, st.direction, updated);
-    return { ...st, players: updated, drawPile: draw, discardPile: discard, drawPending: 0, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: `${player.displayName} zieht ${drawn.length} Karten (Strafe)`, aiThinking: false };
+    const penaltyTxt = `${player.displayName} zieht ${drawn.length} Karten (Strafe)`;
+    const penaltyEntry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: penaltyTxt, ts: Date.now() };
+    return { ...st, players: updated, drawPile: draw, discardPile: discard, drawPending: 0, mauPlayerId: newMauPlayerId, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: penaltyTxt, aiThinking: false, moveLog: [...st.moveLog, penaltyEntry] };
   }
 
   // Normal draw — offer to play if possible
@@ -262,10 +334,14 @@ function doDrawCard(st: LocalState, playerIdx: number): LocalState {
 
   if (!canPlay || !dc) {
     const nextPlayer = nextIdx(playerIdx, st.direction, updated);
-    return { ...st, players: updated, drawPile: draw, discardPile: discard, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: `${player.displayName} zieht eine Karte`, aiThinking: false };
+    const drawTxt = `${player.displayName} zieht eine Karte`;
+    const drawEntry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: drawTxt, ts: Date.now() };
+    return { ...st, players: updated, drawPile: draw, discardPile: discard, mauPlayerId: newMauPlayerId, currentPlayerIndex: nextPlayer, phase: "PLAYING", drawnCard: null, lastActionText: drawTxt, aiThinking: false, moveLog: [...st.moveLog, drawEntry] };
   }
 
-  return { ...st, players: updated, drawPile: draw, discardPile: discard, drawnCard: dc, lastActionText: `${player.displayName} zieht ${dc.rank}${dc.suit} — spielen?`, aiThinking: false };
+  const offerTxt = `${player.displayName} zieht ${dc.rank}${dc.suit} — spielen?`;
+  const offerEntry: MoveLogEntry = { round: st.round, playerName: player.displayName, detail: offerTxt, ts: Date.now() };
+  return { ...st, players: updated, drawPile: draw, discardPile: discard, mauPlayerId: newMauPlayerId, drawnCard: dc, lastActionText: offerTxt, aiThinking: false, moveLog: [...st.moveLog, offerEntry] };
 }
 
 function resolveRound(st: LocalState): LocalState {
@@ -302,9 +378,10 @@ function doStartNewRound(st: LocalState): LocalState {
   return {
     ...st, players: updated, drawPile, discardPile: [topCard],
     currentPlayerIndex: 0, direction: 1, drawPending: 0, wishSuit: null,
-    phase: "PLAYING", mauPlayerId: null, drawnCard: null,
+    phase: "PLAYING", mauPlayerId: null, pendingMau: null, pendingMauMau: null, mauMauReady: false, drawnCard: null,
     roundWinnerId: null, roundScores: {},
     round: st.round + 1, lastActionText: "Neue Runde!", aiThinking: false, lastSkippedId: null,
+    moveLog: [...st.moveLog, { round: st.round + 1, playerName: "System", detail: `── Runde ${st.round + 1} beginnt ──`, ts: Date.now() }],
   };
 }
 
@@ -331,6 +408,7 @@ export default function MeermauGameScreen() {
   const [localState, setLocalState] = useState<LocalState | null>(null);
   const [_onlineGame, setOnlineGame] = useState<MeermauGame | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
   // ── Init AI game ────────────────────────────────────────────────────────────
@@ -351,10 +429,10 @@ export default function MeermauGameScreen() {
       setLocalState({
         players, drawPile, discardPile: [topCard],
         currentPlayerIndex: 0, direction: 1, drawPending: 0,
-        wishSuit: null, phase: "PLAYING", mauPlayerId: null, drawnCard: null,
+        wishSuit: null, phase: "PLAYING", mauPlayerId: null, pendingMau: null, pendingMauMau: null, mauMauReady: false, drawnCard: null,
         roundWinnerId: null, gameWinnerId: null, roundScores: {},
         round: 1, lastActionText: "Dein Zug!", aiThinking: false,
-        difficulty, settings: initSettings, lastSkippedId: null,
+        difficulty, settings: initSettings, lastSkippedId: null, moveLog: [],
       });
     });
     return () => { unsubRef.current?.(); };
@@ -438,22 +516,6 @@ export default function MeermauGameScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localState?.drawnCard]);
 
-  // ── AI MAU auto-declare ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!localState || localState.phase !== "MAU_CHECK") return;
-    const mauPlayer = localState.players.find(p => p.userId === localState.mauPlayerId);
-    if (!mauPlayer?.isAI) return;
-
-    const t = setTimeout(() => {
-      setLocalState(prev => {
-        if (!prev || prev.phase !== "MAU_CHECK") return prev;
-        const mp = prev.players.find(p => p.userId === prev.mauPlayerId);
-        return { ...prev, phase: "PLAYING", lastActionText: `${mp?.displayName ?? ""}: Mau!` };
-      });
-    }, 700);
-    return () => clearTimeout(t);
-  }, [localState?.phase, localState?.mauPlayerId]);
-
   // ── Save result on game over ────────────────────────────────────────────────
   useEffect(() => {
     if (!localState || localState.phase !== "GAME_OVER" || !uid) return;
@@ -485,16 +547,35 @@ export default function MeermauGameScreen() {
     if (!st || !isMyTurn || st.phase !== "PLAYING") return;
     if (!playableIds.has(cardId)) { setSelectedCardId(prev => prev === cardId ? null : cardId); return; }
     if (selectedCardId !== cardId) { setSelectedCardId(cardId); return; }
-    // Second click → play
+    // Second click → play (all cards including last — MAU MAU can be pressed separately)
     const card = humanPlayer?.hand.find(c => c.id === cardId);
     if (!card) return;
-    const needsWish = card.rank === "J" || (st.settings.wildOn10 && card.rank === "10");
-    if (needsWish) {
-      setLocalState(prev => prev ? doPlayCard(prev, 0, cardId) : prev); // enters WISH phase
-    } else {
-      setLocalState(prev => prev ? doPlayCard(prev, 0, cardId) : prev);
-      setSelectedCardId(null);
+    setLocalState(prev => prev ? doPlayCard(prev, 0, cardId) : prev);
+    if (card.rank !== "J" && !(st.settings.wildOn10 && card.rank === "10")) setSelectedCardId(null);
+  }
+
+  function handleMauMau() {
+    if (!st) return;
+    // Post-play: human played last card, now pressing MAU MAU → win
+    if (st.pendingMauMau === uid) {
+      setLocalState(prev => {
+        if (!prev || prev.pendingMauMau !== uid) return prev;
+        const ph = prev.players.find(p => p.userId === uid);
+        if (!ph || ph.hand.length !== 0) return prev;
+        const entry: MoveLogEntry = { round: prev.round, playerName: ph.displayName, detail: `🏆 ${ph.displayName}: MAU MAU!`, ts: Date.now() };
+        const result = resolveRound({ ...prev, pendingMauMau: null, roundWinnerId: uid, lastActionText: `🏆 ${ph.displayName}: MAU MAU!` });
+        return { ...result, moveLog: [...result.moveLog, entry] };
+      });
+      return;
     }
+    // Pre-play: declare MAU MAU before playing the last card
+    if (!isMyTurn || st.phase !== "PLAYING" || humanPlayer?.hand.length !== 1 || playableIds.size === 0) return;
+    const mp = st.players[0];
+    setLocalState(prev => {
+      if (!prev) return prev;
+      const entry: MoveLogEntry = { round: prev.round, playerName: mp.displayName, detail: `${mp.displayName}: MAU MAU! (bereit)`, ts: Date.now() };
+      return { ...prev, mauMauReady: true, moveLog: [...prev.moveLog, entry] };
+    });
   }
 
   function handleDraw() {
@@ -530,9 +611,13 @@ export default function MeermauGameScreen() {
       if (!prev || prev.phase !== "WISH") return prev;
       const h = prev.players[0];
       if (h.hand.length === 0) {
-        return resolveRound({ ...prev, wishSuit: suit, roundWinnerId: h.userId, lastActionText: `🏆 ${h.displayName} gewinnt die Runde!` });
-      } else if (h.hand.length === 1 && prev.mauPlayerId !== h.userId) {
-        return { ...prev, wishSuit: suit, phase: "MAU_CHECK", mauPlayerId: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+        if (prev.mauMauReady) {
+          return resolveRound({ ...prev, wishSuit: suit, roundWinnerId: h.userId, mauMauReady: false, lastActionText: `🏆 ${h.displayName} gewinnt die Runde!` });
+        }
+        return { ...prev, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, pendingMauMau: h.userId, mauMauReady: false, lastActionText: `${h.displayName} spielt letzte Karte!` };
+      } else if (h.hand.length === 1) {
+        // Played J as second-to-last card → must call MAU
+        return { ...prev, wishSuit: suit, phase: "PLAYING", mauPlayerId: null, pendingMau: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
       }
       return { ...prev, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
     });
@@ -541,9 +626,18 @@ export default function MeermauGameScreen() {
   }
 
   function handleMau() {
-    if (!st || st.phase !== "MAU_CHECK" || st.mauPlayerId !== uid) return;
-    const mp = st.players.find(p => p.userId === uid);
-    setLocalState(prev => prev ? { ...prev, phase: "PLAYING", lastActionText: `${mp?.displayName ?? "Du"}: Mau!` } : prev);
+    if (!st) return;
+    const mp = st.players[0];
+    // Valid when: pendingMau is set (post-play) OR it's your turn with 2 cards (pre-play)
+    const postPlay = st.pendingMau === uid;
+    const prePlay = isMyTurn && st.phase === "PLAYING" && humanPlayer?.hand.length === 2 && !!selectedCardId && playableIds.has(selectedCardId);
+    if (!postPlay && !prePlay) return;
+    const mauTxt = `${mp?.displayName ?? "Du"}: MAU!`;
+    setLocalState(prev => {
+      if (!prev) return prev;
+      const entry: MoveLogEntry = { round: prev.round, playerName: mp?.displayName ?? "Du", detail: mauTxt, ts: Date.now() };
+      return { ...prev, pendingMau: null, mauPlayerId: uid, lastActionText: mauTxt, moveLog: [...prev.moveLog, entry] };
+    });
   }
 
   // ── Online move handlers ─────────────────────────────────────────────────────
@@ -551,8 +645,8 @@ export default function MeermauGameScreen() {
   const statusText = (() => {
     if (!st) return "Lädt…";
     if (st.aiThinking) return "KI denkt…";
-    if (st.phase === "MAU_CHECK" && st.mauPlayerId === uid) return "Drücke MAU!";
-    if (st.phase === "MAU_CHECK") return `${st.players.find(p => p.userId === st.mauPlayerId)?.displayName ?? ""} sagt Mau…`;
+    if (st.pendingMauMau === uid) return "⚡ Schnell MAU MAU drücken!";
+    if (st.pendingMau === uid) return "⚡ Schnell MAU drücken!";
     if (st.drawnCard && isMyTurn) return `${st.drawnCard.rank}${st.drawnCard.suit} gezogen — spielen?`;
     if (isMyTurn) return "Du bist dran";
     return `${cp?.displayName ?? ""} ist dran…`;
@@ -577,6 +671,22 @@ export default function MeermauGameScreen() {
             {st.direction === 1 ? "↻" : "↺"}
           </div>
         )}
+        <button
+          className="btn btn-outline btn-sm"
+          style={{ width: 36, padding: 0, fontSize: 16, position: "relative" }}
+          onClick={() => setShowHistory(true)}
+          title="Spielverlauf"
+        >
+          📋
+          {st && st.moveLog.length > 0 && (
+            <span style={{
+              position: "absolute", top: -4, right: -4,
+              background: VIOLET, color: "white", borderRadius: "50%",
+              width: 14, height: 14, fontSize: 8, fontWeight: 900,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>{st.moveLog.length > 99 ? "99+" : st.moveLog.length}</span>
+          )}
+        </button>
       </div>
 
       {st ? (
@@ -715,12 +825,14 @@ export default function MeermauGameScreen() {
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+            {/* Draw button */}
             {isMyTurn && st.phase === "PLAYING" && !st.drawnCard && (
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={handleDraw}>
                 {st.drawPending > 0 ? `${st.drawPending} Karten ziehen` : "Karte ziehen"}
               </button>
             )}
+            {/* Drawn-card offer buttons */}
             {st.drawnCard && isMyTurn && (
               <>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={handleDrawnCardPass}>
@@ -734,17 +846,34 @@ export default function MeermauGameScreen() {
                 )}
               </>
             )}
-            {st.phase === "MAU_CHECK" && st.mauPlayerId === uid && (
-              <button className="btn" style={{ flex: 1, background: VIOLET, color: "white", fontWeight: 900, fontSize: 20, padding: "14px" }}
-                onClick={handleMau}>
-                🂠 MAU!
-              </button>
-            )}
+            {/* Regular Spielen — for all cases (including last card) */}
             {selectedCardId && isMyTurn && st.phase === "PLAYING" && playableIds.has(selectedCardId) && !st.drawnCard && (
               <button className="btn" style={{ flex: 1, background: VIOLET, color: "white", fontWeight: 700 }}
                 onClick={() => handleCardClick(selectedCardId)}>
                 Spielen
               </button>
+            )}
+            {/* MAU button: shown next to Spielen when hand=2 & card selected, OR post-play (pendingMau) */}
+            {((isMyTurn && st.phase === "PLAYING" && humanPlayer?.hand.length === 2 && !!selectedCardId && playableIds.has(selectedCardId) && !st.drawnCard)
+              || st.pendingMau === uid) && (
+              <button className="btn" style={{ flex: 1, background: "#e67e22", color: "white", fontWeight: 900, fontSize: 16 }}
+                onClick={handleMau}>
+                🂠 MAU!
+              </button>
+            )}
+            {/* MAU MAU button: shown next to Spielen when hand=1, OR post-play (pendingMauMau) */}
+            {((isMyTurn && st.phase === "PLAYING" && !st.drawnCard && humanPlayer?.hand.length === 1 && playableIds.size > 0 && !st.mauMauReady)
+              || st.pendingMauMau === uid) && (
+              <button className="btn" style={{ flex: 1, background: "#27ae60", color: "white", fontWeight: 900, fontSize: 16 }}
+                onClick={handleMauMau}>
+                🏆 MAU MAU!
+              </button>
+            )}
+            {/* Indicator when MAU MAU already pre-declared */}
+            {st.mauMauReady && isMyTurn && st.phase === "PLAYING" && humanPlayer?.hand.length === 1 && (
+              <div style={{ flex: 1, background: "#27ae6022", border: "1px solid #27ae60", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, color: "#27ae60", textAlign: "center", alignSelf: "center" }}>
+                ✓ MAU MAU gerufen!
+              </div>
             )}
           </div>
         </div>
@@ -752,6 +881,66 @@ export default function MeermauGameScreen() {
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 48 }}>🂠</div>
           <div style={{ color: "var(--text-sub)" }}>Karten werden gemischt…</div>
+        </div>
+      )}
+
+      {/* ── Spielverlauf-Modal ── */}
+      {showHistory && st && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)",
+          display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300,
+        }} onClick={() => setShowHistory(false)}>
+          <div style={{
+            background: "var(--surface)", borderRadius: "20px 20px 0 0",
+            padding: "20px 16px", width: "100%", maxWidth: 480,
+            display: "flex", flexDirection: "column", gap: 12,
+            borderTop: `3px solid ${VIOLET}`, maxHeight: "80vh",
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>📋 Spielverlauf</div>
+              <button className="btn btn-outline btn-sm" style={{ width: 32, padding: 0, fontSize: 14 }}
+                onClick={() => setShowHistory(false)}>✕</button>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              {st.moveLog.length === 0 ? (
+                <div style={{ color: "var(--text-sub)", textAlign: "center", padding: "20px 0", fontSize: 13 }}>
+                  Noch keine Spielzüge
+                </div>
+              ) : [...st.moveLog].reverse().map((entry, i) => {
+                const isSystem = entry.playerName === "System";
+                const isMAU = entry.detail.includes("MAU!");
+                const isDraw = entry.detail.includes("zieht");
+                const isWin = entry.detail.includes("gewinnt");
+                const bgColor = isSystem ? "transparent"
+                  : isWin ? `${VIOLET}22`
+                  : isMAU ? `${VIOLET}15`
+                  : isDraw ? "rgba(239,68,68,0.08)"
+                  : "var(--surface2)";
+                const textColor = isMAU || isWin ? VIOLET : isDraw ? "#ef4444" : "var(--text)";
+                return (
+                  <div key={i} style={{
+                    padding: isSystem ? "6px 0" : "8px 10px",
+                    background: bgColor,
+                    borderRadius: 8,
+                    borderLeft: isSystem ? "none" : `3px solid ${isMAU || isWin ? VIOLET : isDraw ? "#ef4444" : "var(--border)"}`,
+                  }}>
+                    {isSystem ? (
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", fontWeight: 600 }}>
+                        {entry.detail}
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: textColor }}>{entry.detail}</div>
+                        <div style={{ fontSize: 10, color: "var(--text-sub)", marginTop: 2 }}>
+                          Runde {entry.round} · {new Date(entry.ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
