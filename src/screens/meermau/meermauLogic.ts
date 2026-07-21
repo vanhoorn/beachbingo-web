@@ -66,7 +66,7 @@ export function canPlayMCard(
     if (settings.wildOn10 && card.rank === "10") return true;
     return card.suit === wishSuit;
   }
-  return card.suit === topCard.suit || card.rank === topCard.rank;
+  return card.rank === "J" || card.suit === topCard.suit || card.rank === topCard.rank;
 }
 
 /** Sum of point values for a hand. */
