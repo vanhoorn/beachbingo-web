@@ -232,6 +232,19 @@ export default function BrandungGameScreen() {
   const { mode, aiCount = 2, difficulty = "SNIPER", settings: initSettings, gameId } = (location.state ?? {}) as LocationState;
   const uid = auth.currentUser?.uid ?? "";
 
+  // Responsive card sizing (same mechanism as MeerMau)
+  const [winW, setWinW] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setWinW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const cardScale = Math.min(Math.max(winW / 390, 1), 2.0);
+  const CARD_W = Math.round(58 * cardScale);
+  const CARD_H = Math.round(84 * cardScale);
+  const SMALL_W = Math.round(30 * cardScale);
+  const SMALL_H = Math.round(44 * cardScale);
+
   // ── AI mode: local state ────────────────────────────────────────────────
   const [local, setLocal] = useState<LocalState | null>(null);
   // ── Online mode: firestore ──────────────────────────────────────────────
@@ -708,90 +721,122 @@ export default function BrandungGameScreen() {
         }}>✕</button>
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 0, padding: "10px 12px", boxSizing: "border-box" }}>
         {/* Opponents */}
-        <div style={{ padding: "10px 12px", background: "var(--surface)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, marginBottom: 10 }}>
           {opponents.map(opp => {
             const isCurrentTurn = curPlayer?.userId === opp.userId;
             const lives = opp.lives;
+            const showFaceUp = gs.phase === "ROUND_END" || gs.phase === "GAME_OVER";
+            const fanCount = showFaceUp ? 0 : 3;
+            const fanSpread = Math.round(SMALL_W * 0.45);
             return (
               <div key={opp.userId} style={{
+                flex: 1,
                 background: opp.eliminated ? "rgba(239,68,68,0.08)" : isCurrentTurn ? "rgba(13,148,136,0.15)" : "var(--surface2)",
                 border: `1px solid ${isCurrentTurn ? TEAL : opp.eliminated ? "#ef4444" : "var(--border)"}`,
-                borderRadius: 10, padding: "8px 12px",
-                display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
+                borderRadius: 10, padding: "8px 10px",
+                display: "flex", flexDirection: "column", gap: 6,
+                opacity: opp.eliminated ? 0.5 : 1,
               }}>
-                <span style={{ fontSize: 20, opacity: opp.eliminated ? 0.4 : 1 }}>{opp.avatarUrl}</span>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: opp.eliminated ? "var(--text-muted)" : "var(--text)" }}>
-                    {opp.displayName}{isCurrentTurn ? " ⟵" : ""}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 18 }}>{opp.avatarUrl}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: opp.eliminated ? "var(--text-muted)" : "var(--text)" }}>
+                      {opp.displayName}{isCurrentTurn ? " ⟵" : ""}
+                    </div>
+                    <div style={{ fontSize: 10, color: TEAL, letterSpacing: 0.5 }}>
+                      {opp.eliminated ? "❌ aus" : Array(lives).fill("🌊").join("") + Array(LIVES_START - lives).fill("🤍").join("")}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 10, color: TEAL, letterSpacing: 0.5 }}>
-                    {opp.eliminated ? "❌ aus" : Array(lives).fill("🌊").join("") + Array(LIVES_START - lives).fill("🤍").join("")}
+                  {showFaceUp && gs.roundScores[opp.userId] !== undefined && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: gs.roundLosers.includes(opp.userId) ? "#ef4444" : TEAL }}>
+                      {formatScore(gs.roundScores[opp.userId])}P
+                    </span>
+                  )}
+                </div>
+                {/* Fan or face-up cards */}
+                {showFaceUp ? (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {opp.hand.map((c, i) => (
+                      <PlayingCard key={i} card={c} faceUp style={{ width: SMALL_W, height: SMALL_H }} />
+                    ))}
                   </div>
-                </div>
-                {/* Opponent's face-down cards */}
-                <div style={{ display: "flex", gap: 3 }}>
-                  {gs.phase === "ROUND_END" || gs.phase === "GAME_OVER"
-                    ? opp.hand.map((c, i) => <PlayingCard key={i} card={c} faceUp style={{ width: 32, height: 46, fontSize: "0.6em" }} />)
-                    : [0, 1, 2].map(i => <PlayingCard key={i} faceUp={false} style={{ width: 28, height: 40 }} />)
-                  }
-                </div>
-                {(gs.phase === "ROUND_END" || gs.phase === "GAME_OVER") && gs.roundScores[opp.userId] !== undefined && (
-                  <span style={{ fontSize: 12, fontWeight: 700, color: gs.roundLosers.includes(opp.userId) ? "#ef4444" : TEAL }}>
-                    {formatScore(gs.roundScores[opp.userId])}P
-                  </span>
+                ) : (
+                  <div style={{ position: "relative", height: SMALL_H + 6, width: SMALL_W + fanSpread * (fanCount - 1) }}>
+                    {Array.from({ length: fanCount }).map((_, ci) => {
+                      const mid = (fanCount - 1) / 2;
+                      const angle = (ci - mid) * 10;
+                      return (
+                        <div key={ci} style={{
+                          position: "absolute", left: ci * fanSpread,
+                          top: Math.abs(ci - mid) * 2,
+                          transform: `rotate(${angle}deg)`,
+                          transformOrigin: "bottom center",
+                        }}>
+                          <PlayingCard faceUp={false} style={{ width: SMALL_W, height: SMALL_H }} />
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Table */}
-        <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>
-            Tischmitte — antippen zum Tauschen
-          </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            {gs.tableCards.map((c, i) => (
-              <PlayingCard key={i} card={c} faceUp
+        {/* Table – green oval like MeerMau */}
+        <div style={{
+          background: "#1a5c2e", borderRadius: Math.round(50 * cardScale),
+          border: "4px solid #8B7355",
+          padding: `${Math.round(14 * cardScale)}px ${Math.round(24 * cardScale)}px`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          gap: Math.round(16 * cardScale), flexShrink: 0, marginBottom: 8,
+        }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", position: "absolute", display: "none" }}>Tischmitte</div>
+          {gs.tableCards.map((c, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <PlayingCard card={c} faceUp
                 selectable={isMyTurn && gs.phase === "TURN"}
                 selected={selectedTableIdx === i}
                 onClick={() => handleTableCard(i)}
+                style={{ width: CARD_W, height: CARD_H }}
               />
-            ))}
-            {/* Deck */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <PlayingCard faceUp={false} style={{ width: 44, height: 62 }} />
-              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{deckCount} 🂠</div>
+              {isMyTurn && gs.phase === "TURN" && selectedHandIdx !== null && (
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", textAlign: "center" }}>antippen</div>
+              )}
             </div>
+          ))}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <PlayingCard faceUp={false} style={{ width: Math.round(44 * cardScale), height: Math.round(62 * cardScale) }} />
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>{deckCount} 🂠</div>
           </div>
         </div>
 
         {/* My hand */}
         <div style={{
-          padding: "12px 16px", background: "var(--surface)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+          background: "var(--surface)", borderRadius: 12,
+          padding: `${Math.round(8 * cardScale)}px ${Math.round(8 * cardScale)}px`,
+          border: `1px solid ${isMyTurn && gs.phase === "TURN" ? TEAL + "55" : "var(--border)"}`,
+          flexShrink: 0, marginBottom: 8,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>
-              {myPlayer?.displayName} — {myPlayer?.eliminated ? "❌ Ausgeschieden" : Array(myPlayer?.lives ?? 0).fill("🌊").join("") + Array(LIVES_START - (myPlayer?.lives ?? 0)).fill("🤍").join("")}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: myScore >= 25 ? TEAL : "var(--text-sub)" }}>
-              {formatScore(myScore)} P
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: Math.round(12 * cardScale), justifyContent: "center" }}>
             {(myPlayer?.hand ?? []).map((c, i) => (
               <PlayingCard key={i} card={c} faceUp
                 selectable={isMyTurn && gs.phase === "TURN"}
                 selected={selectedHandIdx === i}
                 onClick={() => handleHandCard(i)}
+                style={{ width: CARD_W, height: CARD_H }}
               />
             ))}
           </div>
+          <div style={{ fontSize: 10, color: "var(--text-sub)", textAlign: "center", marginTop: 6 }}>
+            {myPlayer?.displayName} · {myPlayer?.eliminated ? "❌ Ausgeschieden" : `${Array(myPlayer?.lives ?? 0).fill("🌊").join("")}${Array(LIVES_START - (myPlayer?.lives ?? 0)).fill("🤍").join("")}`}
+            {" · "}
+            <span style={{ color: myScore >= 25 ? TEAL : "var(--text-sub)", fontWeight: 700 }}>{formatScore(myScore)} P</span>
+          </div>
           {isMyTurn && gs.phase === "TURN" && selectedHandIdx !== null && (
-            <div style={{ fontSize: 12, color: TEAL }}>
+            <div style={{ fontSize: 12, color: TEAL, textAlign: "center", marginTop: 4 }}>
               Jetzt eine Tischkarte antippen zum Tauschen
             </div>
           )}
@@ -799,7 +844,7 @@ export default function BrandungGameScreen() {
 
         {/* Action Buttons */}
         {!myPlayer?.eliminated && (
-          <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
             {isMyTurn && gs.phase === "TURN" && !gs.aiThinking ? (
               <>
                 <div style={{ display: "flex", gap: 8 }}>

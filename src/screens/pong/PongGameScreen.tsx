@@ -772,7 +772,7 @@ export default function PongGameScreen() {
   const winnerSides = loser ? activeSidesList.filter((s) => s !== loser) : [];
 
   return (
-    <div style={{ background: "#0a1628", minHeight: "100vh", display: "flex", flexDirection: "column", userSelect: "none" }}>
+    <div style={{ background: "#0a1628", height: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none" }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", padding: "12px 16px 8px", borderBottom: "1px solid #1e3050", flexShrink: 0, gap: 8 }}>
@@ -801,15 +801,15 @@ export default function PongGameScreen() {
       </div>
 
       {/* Canvas */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 4 }}>
         <canvas
           ref={canvasRef}
           width={CW} height={CH}
           style={{
-            width: is2P ? "auto" : "min(100%, calc(100vh - 80px))",
-            height: is2P ? "100%" : "min(100%, calc(100vh - 80px))",
+            width: is2P ? "auto" : "min(100%, calc(100dvh - 120px))",
+            height: is2P ? "calc(100dvh - 120px)" : "min(100%, calc(100dvh - 120px))",
             maxWidth: is2P ? CW : undefined,
-            maxHeight: is2P ? CH : undefined,
+            maxHeight: is2P ? "100%" : undefined,
             touchAction: "none", display: "block",
           }}
         />

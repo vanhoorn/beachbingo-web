@@ -374,15 +374,23 @@ export default function VierGameScreen() {
     else handleDropOnline(col);
   }
 
-  // Piece size based on viewport (mobile-first: max 340px board / 7 cols)
-  const CELL = 46;
-  const PIECE = 38;
+  // Dynamic cell size: fill available screen width
+  const [winW, setWinW] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setWinW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  // Available inner width: screen width minus screen padding (16*2) minus board padding (10*2) minus col gaps (6*4)
+  const availableW = Math.min(winW, 520) - 32;
+  const CELL = Math.max(42, Math.floor((availableW - 44) / 7));
+  const PIECE = Math.round(CELL * 0.82);
 
   return (
     <div className="screen" style={{ gap: 16, alignItems: "center" }}>
 
       {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", maxWidth: 360 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
         <button className="btn btn-outline btn-sm" onClick={() => navigate("/vier/lobby")}>
           ‹ Lobby
         </button>
@@ -392,7 +400,7 @@ export default function VierGameScreen() {
       </div>
 
       {/* Player indicators */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", maxWidth: 360 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
         <PlayerBar
           drinkId={myDrinkId}
           label="Du"

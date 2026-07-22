@@ -333,10 +333,10 @@ export default function WormGameScreen() {
   };
 
   return (
-    <div className="screen" style={{ gap: 0, padding: 0, alignItems: "center" }}>
-      {/* Canvas wrapper */}
+    <div className="screen" style={{ gap: 0, padding: 0, paddingTop: 10, alignItems: "center" }}>
+      {/* Canvas wrapper – allow canvas to grow on larger screens */}
       <div
-        style={{ position: "relative", width: CW, maxWidth: "100%" }}
+        style={{ position: "relative", width: "min(100%, 580px)", maxWidth: "100%" }}
         onTouchStart={controlMode === "SWIPE" ? onTouchStart : undefined}
         onTouchEnd={controlMode === "SWIPE" ? onTouchEnd : undefined}
       >

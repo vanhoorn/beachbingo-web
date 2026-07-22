@@ -427,6 +427,13 @@ export default function MeermauGameScreen() {
   const SMALL_W = Math.round(36 * cardScale);
   const SMALL_H = Math.round(52 * cardScale);
 
+  // Player hand: clamp so 5 cards always fit without scrolling
+  const HAND_GAP = Math.round(5 * cardScale);
+  const handContainerW = winW - 24 - Math.round(16 * cardScale); // outer 12*2 + inner padding
+  const maxHandCardW = Math.floor((handContainerW - HAND_GAP * 4) / 5);
+  const HAND_W = Math.min(CARD_W, maxHandCardW);
+  const HAND_H = Math.round(CARD_H * HAND_W / CARD_W);
+
   // ── Init AI game ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (mode !== "ai") return;
@@ -721,6 +728,9 @@ export default function MeermauGameScreen() {
               const oppIdx = st.players.indexOf(opp);
               const isCurrent = oppIdx === st.currentPlayerIndex;
               const isMau = opp.userId === st.mauPlayerId;
+              const fanCount = Math.min(opp.hand.length, 12);
+              const fanSpread = fanCount > 1 ? Math.min(14, Math.round(SMALL_W * 0.55)) : 0;
+              const fanWidth = fanCount > 0 ? SMALL_W + fanSpread * (fanCount - 1) : SMALL_W;
               return (
                 <div key={opp.userId} style={{
                   flex: 1, background: isCurrent ? `${VIOLET}1a` : "var(--surface2)",
@@ -740,12 +750,28 @@ export default function MeermauGameScreen() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: Math.round(2 * cardScale), flexWrap: "wrap" }}>
-                    {opp.hand.slice(0, 9).map((_, ci) => (
-                      <PlayingCard key={ci} faceUp={false} small w={SMALL_W} h={SMALL_H} />
-                    ))}
-                    {opp.hand.length > 9 && (
-                      <span style={{ fontSize: Math.round(9 * cardScale), color: "var(--text-sub)", alignSelf: "center" }}>+{opp.hand.length - 9}</span>
+                  {/* Fan display */}
+                  <div style={{ position: "relative", height: SMALL_H + 8, width: Math.min(fanWidth, 160), flexShrink: 0 }}>
+                    {Array.from({ length: fanCount }).map((_, ci) => {
+                      const midIdx = (fanCount - 1) / 2;
+                      const angle = (ci - midIdx) * (fanCount > 1 ? Math.min(8, 40 / fanCount) : 0);
+                      const xOff = ci * fanSpread;
+                      const yOff = Math.abs(ci - midIdx) * 1.5;
+                      return (
+                        <div key={ci} style={{
+                          position: "absolute", left: xOff, top: yOff,
+                          transform: `rotate(${angle}deg)`,
+                          transformOrigin: "bottom center",
+                        }}>
+                          <PlayingCard faceUp={false} small w={SMALL_W} h={SMALL_H} />
+                        </div>
+                      );
+                    })}
+                    {opp.hand.length > 12 && (
+                      <span style={{
+                        position: "absolute", right: -18, top: "50%", transform: "translateY(-50%)",
+                        fontSize: Math.round(9 * cardScale), color: "var(--text-sub)", fontWeight: 700,
+                      }}>+{opp.hand.length - 12}</span>
                     )}
                   </div>
                 </div>
@@ -814,35 +840,35 @@ export default function MeermauGameScreen() {
 
           {/* Human hand */}
           <div style={{
-            background: "var(--surface)", borderRadius: 12, padding: `${Math.round(10 * cardScale)}px ${Math.round(8 * cardScale)}px`,
+            background: "var(--surface)", borderRadius: 12, padding: `${Math.round(8 * cardScale)}px ${Math.round(8 * cardScale)}px`,
             border: `1px solid ${isMyTurn && st.phase === "PLAYING" ? VIOLET + "55" : "var(--border)"}`,
             flexShrink: 0,
           }}>
-            <div style={{ display: "flex", gap: Math.round(5 * cardScale), overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+            <div style={{ display: "flex", gap: HAND_GAP, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
               {humanPlayer?.hand.map(card => (
                 <PlayingCard
                   key={card.id} card={card} faceUp
                   selected={selectedCardId === card.id}
                   playable={isMyTurn && st.phase === "PLAYING" && playableIds.has(card.id)}
                   onClick={() => handleCardClick(card.id)}
-                  w={CARD_W} h={CARD_H}
+                  w={HAND_W} h={HAND_H}
                 />
               ))}
               {/* Drawn card offer */}
               {st.drawnCard && isMyTurn && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: Math.round(6 * cardScale) }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: Math.round(6 * cardScale), flexShrink: 0 }}>
                   <div style={{ fontSize: Math.round(9 * cardScale), color: VIOLET, marginBottom: 3, fontWeight: 700 }}>GEZOGEN</div>
                   <PlayingCard
                     card={st.drawnCard} faceUp
                     playable={!!topCard && canPlayMCard(st.drawnCard, topCard, st.wishSuit, 0, st.settings)}
                     style={{ border: `2px dashed ${VIOLET}` }}
                     onClick={handleDrawnCardPlay}
-                    w={CARD_W} h={CARD_H}
+                    w={HAND_W} h={HAND_H}
                   />
                 </div>
               )}
             </div>
-            <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)", textAlign: "center", marginTop: 6 }}>
+            <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)", textAlign: "center", marginTop: 4 }}>
               Du · {humanPlayer?.hand.length ?? 0} Karten · {humanPlayer?.totalScore ?? 0} Punkte
             </div>
           </div>
