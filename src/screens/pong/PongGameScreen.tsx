@@ -14,6 +14,7 @@ interface PongSettings {
   gameId?: string;
   isHost?: boolean;
   mySide?: PongSide;
+  guestSides?: PongSide[];
 }
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ export default function PongGameScreen() {
     totalPaddles: 2, humanCount: 1, difficulty: "ROOKIE", scoreLimit: 7,
   };
   const { totalPaddles, humanCount, difficulty, scoreLimit, gameId, isHost, mySide = "left" } = settings;
+  const guestSidesRef = useRef<PongSide[]>(settings.guestSides ?? []);
   const uid = auth.currentUser?.uid ?? "";
 
   const is2P = totalPaddles === 2;
@@ -233,10 +235,15 @@ export default function PongGameScreen() {
   const writeHost = useCallback(() => {
     if (!gameId) return;
     const g = gsRef.current;
+    // Only write paddles the host owns (own + AI) — never overwrite guest paddles.
+    const paddleFields: Record<string, number> = {};
+    ALL_SIDES.forEach((s) => {
+      if (!guestSidesRef.current.includes(s))
+        paddleFields[`paddle${cap(s)}`] = g.paddles[s];
+    });
     updateDoc(doc(db, "pongGames", gameId), {
       ballX: g.bx, ballY: g.by, ballVX: g.bvx, ballVY: g.bvy, speed: g.speed,
-      paddleLeft: g.paddles.left, paddleRight: g.paddles.right,
-      paddleTop: g.paddles.top, paddleBottom: g.paddles.bottom,
+      ...paddleFields,
       scoreLeft: g.scores.left, scoreRight: g.scores.right,
       scoreTop: g.scores.top, scoreBottom: g.scores.bottom,
       paused: g.paused, pauseTimer: g.pauseTimer,
@@ -293,8 +300,8 @@ export default function PongGameScreen() {
         // Run AI for all non-human, non-wall sides
         if (!g.paused) {
           activeSides.forEach((side) => {
-            const isMyHumanSide = (humanCount === 1 && side === mySide) || (humanCount > 1 && side === mySide);
-            const isGuestSide   = humanCount > 1 && side !== mySide;
+            const isMyHumanSide = side === mySide;
+            const isGuestSide   = guestSidesRef.current.includes(side);
             if (!isMyHumanSide && !isGuestSide) {
               // Pure AI paddle
               const isVert  = side === "left" || side === "right";

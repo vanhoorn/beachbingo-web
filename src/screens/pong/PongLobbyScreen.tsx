@@ -108,6 +108,7 @@ export default function PongLobbyScreen() {
       gameId:       game.gameId,
       isHost:       asHost,
       mySide:       me?.side ?? "left",
+      guestSides:   game.players.filter((p) => p.userId !== uid).map((p) => p.side),
     };
   }
 

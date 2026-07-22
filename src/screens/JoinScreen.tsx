@@ -197,6 +197,7 @@ export default function JoinScreen() {
       totalPaddles: game.totalPaddles, humanCount: game.humanCount,
       difficulty: game.difficulty, scoreLimit: game.scoreLimit,
       gameId: game.gameId, isHost: asHost, mySide: me?.side ?? "right",
+      guestSides: game.players.filter((p) => p.userId !== uid).map((p) => p.side),
     };
   }
 
