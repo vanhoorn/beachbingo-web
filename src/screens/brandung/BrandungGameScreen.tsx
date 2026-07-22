@@ -757,12 +757,13 @@ export default function BrandungGameScreen() {
                 </div>
                 {/* Fan or face-up cards */}
                 {showFaceUp ? (
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                     {opp.hand.map((c, i) => (
                       <PlayingCard key={i} card={c} faceUp style={{ width: SMALL_W, height: SMALL_H }} />
                     ))}
                   </div>
                 ) : (
+                  <div style={{ display: "flex", justifyContent: "center" }}>
                   <div style={{ position: "relative", height: SMALL_H + 6, width: SMALL_W + fanSpread * (fanCount - 1) }}>
                     {Array.from({ length: fanCount }).map((_, ci) => {
                       const mid = (fanCount - 1) / 2;
@@ -779,6 +780,7 @@ export default function BrandungGameScreen() {
                       );
                     })}
                   </div>
+                  </div>
                 )}
               </div>
             );
@@ -787,9 +789,9 @@ export default function BrandungGameScreen() {
 
         {/* Table – green oval like MeerMau */}
         <div style={{
-          background: "#1a5c2e", borderRadius: Math.round(50 * cardScale),
+          background: "#1a5c2e", borderRadius: Math.round(22 * cardScale),
           border: "4px solid #8B7355",
-          padding: `${Math.round(14 * cardScale)}px ${Math.round(24 * cardScale)}px`,
+          padding: `${Math.round(20 * cardScale)}px ${Math.round(24 * cardScale)}px`,
           display: "flex", alignItems: "center", justifyContent: "center",
           gap: Math.round(16 * cardScale), flexShrink: 0, marginBottom: 8,
         }}>
