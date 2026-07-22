@@ -83,6 +83,31 @@ export default function MeermauLobbyScreen() {
     return () => { unsubRef.current?.(); };
   }, [uid]);
 
+  // Handle ?join= deep-link (QR scan in browser)
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("join");
+    if (!code || !uid) return;
+    const join = async () => {
+      const [userSnap, gameSnap] = await Promise.all([
+        getDoc(doc(db, "users", uid)),
+        getDoc(doc(db, "meermauGames", code)),
+      ]);
+      if (!userSnap.exists() || !gameSnap.exists()) return;
+      const user = userSnap.data() as User;
+      const game = { gameId: code, ...gameSnap.data() } as MeermauGame;
+      if (game.status === "FINISHED" || game.status === "RUNNING") return;
+      if (!game.playerIds.includes(uid)) {
+        if (game.playerIds.length >= 4) return;
+        await updateDoc(doc(db, "meermauGames", code), {
+          playerIds: arrayUnion(uid),
+          [`players.${uid}`]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, hand: [], totalScore: 0, eliminated: false, isAI: false },
+        });
+      }
+      navigate("/meermau/game", { state: { mode: "online", gameId: code } });
+    };
+    join();
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function toggleFavorite() {
     const next = !isFavorite;
     setIsFavorite(next);

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import jsQR from "jsqr";
 import { auth, db } from "../firebase";
-import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User } from "../types";
+import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame } from "../types";
 import { DRINK_ICONS } from "./vier/drinkIcons";
 
 // ── helpers to generate a bingo card (same as LobbyScreen) ──────────────────
@@ -130,11 +130,13 @@ export default function JoinScreen() {
     setScanState("loading");
     setErrorMsg("");
 
-    // Try all three collections in parallel
-    const [bingoSnap, pongSnap, vierSnap] = await Promise.all([
-      getDoc(doc(db, "games",     rawCode)),
-      getDoc(doc(db, "pongGames", rawCode)),
-      getDoc(doc(db, "vierGames", rawCode)),
+    // Try all collections in parallel
+    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap] = await Promise.all([
+      getDoc(doc(db, "games",         rawCode)),
+      getDoc(doc(db, "pongGames",     rawCode)),
+      getDoc(doc(db, "vierGames",     rawCode)),
+      getDoc(doc(db, "brandungGames", rawCode)),
+      getDoc(doc(db, "meermauGames",  rawCode)),
     ]);
 
     try {
@@ -144,6 +146,10 @@ export default function JoinScreen() {
         await joinPong(rawCode, { gameId: pongSnap.id, ...pongSnap.data() } as PongGame, user);
       } else if (vierSnap.exists()) {
         await joinVier(rawCode, { gameId: vierSnap.id, ...vierSnap.data() } as VierGame, user);
+      } else if (brandungSnap.exists()) {
+        await joinBrandung(rawCode, { gameId: rawCode, ...brandungSnap.data() } as BrandungGame, user);
+      } else if (meermauSnap.exists()) {
+        await joinMeerMau(rawCode, { gameId: rawCode, ...meermauSnap.data() } as MeermauGame, user);
       } else {
         setErrorMsg("Kein Spiel mit diesem Code gefunden.");
         setScanState("error");
@@ -192,6 +198,29 @@ export default function JoinScreen() {
       difficulty: game.difficulty, scoreLimit: game.scoreLimit,
       gameId: game.gameId, isHost: asHost, mySide: me?.side ?? "right",
     };
+  }
+
+  async function joinBrandung(code: string, game: BrandungGame, user: User) {
+    if (game.status === "FINISHED") { setErrorMsg("Dieses Spiel ist bereits beendet."); setScanState("error"); return; }
+    if (game.playerIds.includes(uid)) { navigate("/brandung/game", { state: { mode: "online", gameId: code } }); return; }
+    if (Object.keys(game.players).length >= 6) { setErrorMsg("Das Spiel ist voll (max. 6 Spieler)."); setScanState("error"); return; }
+    await updateDoc(doc(db, "brandungGames", code), {
+      playerIds: arrayUnion(uid),
+      [`players.${uid}`]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, hand: [], lives: 3, eliminated: false, isAI: false },
+    });
+    navigate("/brandung/game", { state: { mode: "online", gameId: code } });
+  }
+
+  async function joinMeerMau(code: string, game: MeermauGame, user: User) {
+    if (game.status === "FINISHED") { setErrorMsg("Dieses Spiel ist bereits beendet."); setScanState("error"); return; }
+    if (game.status === "RUNNING")  { setErrorMsg("Das Spiel läuft bereits."); setScanState("error"); return; }
+    if (game.playerIds.includes(uid)) { navigate("/meermau/game", { state: { mode: "online", gameId: code } }); return; }
+    if (game.playerIds.length >= 4) { setErrorMsg("Das Spiel ist voll (max. 4 Spieler)."); setScanState("error"); return; }
+    await updateDoc(doc(db, "meermauGames", code), {
+      playerIds: arrayUnion(uid),
+      [`players.${uid}`]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, hand: [], totalScore: 0, eliminated: false, isAI: false as const },
+    });
+    navigate("/meermau/game", { state: { mode: "online", gameId: code } });
   }
 
   async function joinVier(code: string, game: VierGame, user: User) {

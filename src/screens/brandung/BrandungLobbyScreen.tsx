@@ -82,6 +82,31 @@ export default function BrandungLobbyScreen() {
     return () => { unsubRef.current?.(); };
   }, [uid]);
 
+  // Handle ?join= deep-link (QR scan in browser)
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("join");
+    if (!code || !uid) return;
+    const join = async () => {
+      const [userSnap, gameSnap] = await Promise.all([
+        getDoc(doc(db, "users", uid)),
+        getDoc(doc(db, "brandungGames", code)),
+      ]);
+      if (!userSnap.exists() || !gameSnap.exists()) return;
+      const user = userSnap.data() as User;
+      const game = { gameId: code, ...gameSnap.data() } as BrandungGame;
+      if (game.status === "FINISHED") return;
+      if (!game.playerIds.includes(uid)) {
+        if (Object.keys(game.players).length >= 6) return;
+        await updateDoc(doc(db, "brandungGames", code), {
+          playerIds: arrayUnion(uid),
+          [`players.${uid}`]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, hand: [], lives: 3, eliminated: false, isAI: false },
+        });
+      }
+      navigate("/brandung/game", { state: { mode: "online", gameId: code } });
+    };
+    join();
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function toggleFavorite() {
     const next = !isFavorite;
     setIsFavorite(next);
