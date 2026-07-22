@@ -239,7 +239,7 @@ export default function BrandungGameScreen() {
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
-  const cardScale = Math.min(Math.max(winW / 390, 1), 2.0);
+  const cardScale = Math.min(Math.max(Math.min(winW, 520) / 390, 1), 2.0);
   const CARD_W = Math.round(58 * cardScale);
   const CARD_H = Math.round(84 * cardScale);
   const SMALL_W = Math.round(30 * cardScale);
@@ -757,7 +757,7 @@ export default function BrandungGameScreen() {
                 </div>
                 {/* Fan or face-up cards */}
                 {showFaceUp ? (
-                  <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                  <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap" }}>
                     {opp.hand.map((c, i) => (
                       <PlayingCard key={i} card={c} faceUp style={{ width: SMALL_W, height: SMALL_H }} />
                     ))}

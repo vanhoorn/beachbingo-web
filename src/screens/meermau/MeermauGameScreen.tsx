@@ -421,7 +421,8 @@ export default function MeermauGameScreen() {
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
-  const cardScale = Math.min(Math.max(winW / 390, 1), 2.2);
+  const effectiveW = Math.min(winW, 520);
+  const cardScale = Math.min(Math.max(effectiveW / 390, 1), 2.2);
   const CARD_W = Math.round(58 * cardScale);
   const CARD_H = Math.round(84 * cardScale);
   const SMALL_W = Math.round(36 * cardScale);
@@ -429,7 +430,7 @@ export default function MeermauGameScreen() {
 
   // Player hand: clamp so 5 cards always fit without scrolling
   const HAND_GAP = Math.round(5 * cardScale);
-  const handContainerW = winW - 24 - Math.round(16 * cardScale); // outer 12*2 + inner padding
+  const handContainerW = effectiveW - 24 - Math.round(16 * cardScale); // outer 12*2 + inner padding
   const maxHandCardW = Math.floor((handContainerW - HAND_GAP * 4) / 5);
   const HAND_W = Math.min(CARD_W, maxHandCardW);
   const HAND_H = Math.round(CARD_H * HAND_W / CARD_W);
@@ -751,7 +752,7 @@ export default function MeermauGameScreen() {
                     </div>
                   </div>
                   {/* Fan display */}
-                  <div style={{ position: "relative", height: SMALL_H + 8, width: Math.min(fanWidth, 160), flexShrink: 0 }}>
+                  <div style={{ position: "relative", height: SMALL_H + 8, width: Math.min(fanWidth, 160), flexShrink: 0, alignSelf: "center" }}>
                     {Array.from({ length: fanCount }).map((_, ci) => {
                       const midIdx = (fanCount - 1) / 2;
                       const angle = (ci - midIdx) * (fanCount > 1 ? Math.min(8, 40 / fanCount) : 0);
