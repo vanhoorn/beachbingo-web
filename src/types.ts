@@ -216,7 +216,7 @@ export interface MeermauGame {
 
 // BeachVolley
 export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";
-export type PongStatus    = "LOBBY" | "RUNNING" | "FINISHED";
+export type PongStatus    = "LOBBY" | "RUNNING" | "IN_PROGRESS" | "FINISHED";
 export type PongSide      = "left" | "right" | "top" | "bottom";
 
 export interface PongPlayer {

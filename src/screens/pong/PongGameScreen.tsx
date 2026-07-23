@@ -51,7 +51,6 @@ interface GS {
 
 const ALL_SIDES: PongSide[] = ["left", "right", "top", "bottom"];
 
-function randomSide(): PongSide { return ALL_SIDES[Math.floor(Math.random() * 4)]; }
 
 function sidesForPaddles(total: number, wall: PongSide | null): PongSide[] {
   if (total === 2) return ["left", "right"];
@@ -74,11 +73,14 @@ function makeBall(cw: number, ch: number): Pick<GS, "bx"|"by"|"bvx"|"bvy"|"speed
   };
 }
 
-function initGS(totalPaddles: number): GS {
+function initGS(totalPaddles: number, humanCount: number): GS {
   const is2P  = totalPaddles === 2;
   const cw    = is2P ? W2 : SQ;
   const ch    = is2P ? H2 : SQ;
-  const wall  = totalPaddles === 3 ? randomSide() : null;
+  // Wall must not collide with human-assigned sides (left/right/top are used first)
+  const humanSides = (["left", "right", "top", "bottom"] as PongSide[]).slice(0, humanCount);
+  const wallCandidates = (["left", "right", "top", "bottom"] as PongSide[]).filter(s => !humanSides.includes(s));
+  const wall: PongSide | null = totalPaddles === 3 ? wallCandidates[Math.floor(Math.random() * wallCandidates.length)] : null;
   return {
     ...makeBall(cw, ch),
     paddles: { left: ch / 2, right: ch / 2, top: cw / 2, bottom: cw / 2 },
@@ -111,7 +113,7 @@ export default function PongGameScreen() {
   const CH   = is2P ? H2 : SQ;
 
   const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const gsRef       = useRef<GS>(initGS(totalPaddles));
+  const gsRef       = useRef<GS>(initGS(totalPaddles, humanCount));
   const rafRef      = useRef<number>(0);
   const frameRef    = useRef(0);
   const remoteRef   = useRef<Partial<GS & { paddleLeft: number; paddleRight: number; paddleTop: number; paddleBottom: number; scoreLeft: number; scoreRight: number; scoreTop: number; scoreBottom: number }> | null>(null);
@@ -196,6 +198,16 @@ export default function PongGameScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getScale, mySide, CW, CH]);
 
+  // ── Host: mark game as running so guests can activate ─────────────────────
+  useEffect(() => {
+    if (!gameId || !isHost) return;
+    updateDoc(doc(db, "pongGames", gameId), {
+      status: "IN_PROGRESS",
+      wallSide: gsRef.current.wallSide ?? null,
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId, isHost]);
+
   // ── Firestore sync ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!gameId) return;
@@ -209,6 +221,10 @@ export default function PongGameScreen() {
       setOpponentNames(names);
 
       if (!isHost) {
+        // Sync wallSide from host so both devices render the same paddles
+        if (data.wallSide && gsRef.current.wallSide !== data.wallSide) {
+          gsRef.current.wallSide = data.wallSide as PongSide;
+        }
         remoteRef.current = {
           bx: data.ballX, by: data.ballY, bvx: data.ballVX, bvy: data.ballVY,
           paddleLeft: data.paddleLeft, paddleRight: data.paddleRight,
@@ -243,6 +259,7 @@ export default function PongGameScreen() {
     });
     updateDoc(doc(db, "pongGames", gameId), {
       ballX: g.bx, ballY: g.by, ballVX: g.bvx, ballVY: g.bvy, speed: g.speed,
+      wallSide: g.wallSide ?? null,
       ...paddleFields,
       scoreLeft: g.scores.left, scoreRight: g.scores.right,
       scoreTop: g.scores.top, scoreBottom: g.scores.bottom,
@@ -365,6 +382,7 @@ export default function PongGameScreen() {
           g.bx  = lerp(g.bx, r.bx ?? g.bx, 0.3);
           g.by  = lerp(g.by, r.by ?? g.by, 0.3);
           ALL_SIDES.forEach((s) => {
+            if (s === mySide) return; // never lerp own paddle — user input wins
             const key = `paddle${cap(s)}` as keyof typeof r;
             if (r[key] !== undefined) g.paddles[s] = lerp(g.paddles[s], r[key] as number, 0.4);
           });
@@ -759,7 +777,7 @@ export default function PongGameScreen() {
 
   // ── Restart ──────────────────────────────────────────────────────────────────
   function handleRestart() {
-    gsRef.current = initGS(totalPaddles);
+    gsRef.current = initGS(totalPaddles, humanCount);
     setScores({ left: 0, right: 0, top: 0, bottom: 0 });
     setLoser(null);
     frameRef.current = 0;
