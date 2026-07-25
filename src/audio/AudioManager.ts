@@ -19,9 +19,13 @@ export type SoundId =
   | "card_place"
   | "card_knock"
   | "card_select"
-  | "card_feuer";
+  | "card_feuer"
+  | "card_shuffle"
+  | "pair_discard"
+  | "turn_ping"
+  | "sp_gameover";
 
-export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier" | "brandung";
+export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier" | "brandung" | "strandraeuber";
 
 type SoundDef = (ctx: AudioContext) => void;
 
@@ -232,6 +236,57 @@ const SOUNDS: Record<SoundId, SoundDef> = {
       osc.start(t); osc.stop(t + 0.2);
     });
   },
+
+  card_shuffle: (ctx) => {
+    // White-noise burst filtered to bandpass — sounds like cards being shuffled
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.3), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) * 0.4;
+    const src = ctx.createBufferSource();
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 0.8;
+    const g = ctx.createGain();
+    src.buffer = buf; src.connect(f); f.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.5, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    src.start(ctx.currentTime);
+  },
+
+  pair_discard: (ctx) => {
+    // Ascending 2-tone chord — success sound
+    [523, 659].forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = "triangle"; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.08;
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.start(t); osc.stop(t + 0.35);
+    });
+  },
+
+  turn_ping: (ctx) => {
+    // Short high ping — your turn!
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "sine"; osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+  },
+
+  sp_gameover: (ctx) => {
+    // Dramatic descending — you lost with the Strandräuber
+    [440, 392, 349, 294, 261, 196, 146].forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = "square"; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.15;
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      osc.start(t); osc.stop(t + 0.22);
+    });
+  },
 };
 
 // Note sequences: [frequency_hz, duration_seconds], 0 = rest
@@ -387,6 +442,37 @@ const TRACKS: Record<TrackId, TrackConfig> = {
       ],
       wave: "triangle",
       gain: 0.035,
+    },
+  },
+
+  // Detektiv / Mystery style, A minor, ~88 BPM — staccato triangle wave, sneaky chromatic line
+  strandraeuber: {
+    notes: [
+      [440, 0.14], [0, 0.09], [466, 0.14], [0, 0.09], [440, 0.14], [0, 0.09], [415, 0.14], [0, 0.09],
+      [440, 0.28], [0, 0.18],
+      [392, 0.14], [0, 0.09], [349, 0.14], [0, 0.09], [330, 0.14], [0, 0.09],
+      [349, 0.14], [0, 0.09], [392, 0.28], [0, 0.18],
+      [440, 0.14], [0, 0.09], [523, 0.14], [0, 0.09], [494, 0.14], [0, 0.09], [466, 0.28], [0, 0.18],
+      [440, 0.14], [0, 0.09], [415, 0.14], [0, 0.09], [392, 0.14], [0, 0.09], [349, 0.56], [0, 0.28],
+      [330, 0.14], [0, 0.09], [349, 0.14], [0, 0.09], [370, 0.14], [0, 0.09], [392, 0.14], [0, 0.09],
+      [415, 0.14], [0, 0.09], [440, 0.42], [0, 0.28],
+    ],
+    wave: "triangle",
+    gain: 0.045,
+    bass: {
+      notes: [
+        [110, 0.56], [0, 0.28], [165, 0.28], [0, 0.28],
+        [130, 0.28], [0, 0.28], [146, 0.28], [0, 0.28],
+        [110, 0.56], [0, 0.28], [98,  0.28], [0, 0.28],
+        [82,  0.28], [0, 0.28], [110, 0.84], [0, 0.28],
+        [147, 0.56], [0, 0.28], [165, 0.28], [0, 0.28],
+        [130, 0.28], [0, 0.28], [117, 0.28], [0, 0.28],
+        [110, 0.84], [0, 0.28],
+        [98,  0.28], [0, 0.28], [110, 0.28], [0, 0.28],
+        [82,  0.56], [0, 0.56],
+      ],
+      wave: "sine",
+      gain: 0.030,
     },
   },
 

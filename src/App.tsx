@@ -43,6 +43,10 @@ import MeermauLobbyScreen from "./screens/meermau/MeermauLobbyScreen";
 import MeermauGameScreen from "./screens/meermau/MeermauGameScreen";
 import MeermauSettingsScreen from "./screens/meermau/MeermauSettingsScreen";
 import MeermauResultsScreen from "./screens/meermau/MeermauResultsScreen";
+import StrandraeuberLobbyScreen from "./screens/strandraeuber/StrandraeuberLobbyScreen";
+import StrandraeuberGameScreen from "./screens/strandraeuber/StrandraeuberGameScreen";
+import StrandraeuberSettingsScreen from "./screens/strandraeuber/StrandraeuberSettingsScreen";
+import StrandraeuberResultsScreen from "./screens/strandraeuber/StrandraeuberResultsScreen";
 import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
@@ -117,6 +121,10 @@ function App() {
         <Route path="/meermau/game"     element={loggedIn ? <MeermauGameScreen />     : <Navigate to="/login" />} />
         <Route path="/meermau/settings" element={loggedIn ? <MeermauSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="/meermau/results"  element={loggedIn ? <MeermauResultsScreen />  : <Navigate to="/login" />} />
+        <Route path="/strandraeuber/lobby"    element={loggedIn ? <StrandraeuberLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/strandraeuber/game"     element={loggedIn ? <StrandraeuberGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/strandraeuber/settings" element={loggedIn ? <StrandraeuberSettingsScreen /> : <Navigate to="/login" />} />
+        <Route path="/strandraeuber/results"  element={loggedIn ? <StrandraeuberResultsScreen />  : <Navigate to="/login" />} />
         <Route path="/join"          element={loggedIn ? <JoinScreen />         : <Navigate to="/login" />} />
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />

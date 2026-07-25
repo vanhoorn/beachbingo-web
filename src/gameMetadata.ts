@@ -106,6 +106,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO", "TWO_FOUR"],
     genres: ["PARTY", "LOGICAL", "CARD"],
   },
+  {
+    id: "strandraeuber",
+    emoji: "🦹",
+    title: "Strandräuber",
+    description: "Wer hält am Ende den Strandräuber? Paare ablegen, Schwarzen Peter vermeiden!",
+    color: "#e11d48",
+    path: "/strandraeuber/lobby",
+    playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
+    genres: ["PARTY", "CARD"],
+  },
 ];
 
 export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));

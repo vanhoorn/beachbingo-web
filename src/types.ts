@@ -34,6 +34,9 @@ export interface User {
   // Brandung preferences
   brandungNewCardsOnAllPass?: boolean;
   brandungPassingForbidden?: boolean;
+  // Strandräuber preferences
+  preferredStrandraeuberDifficulty?: string;
+  preferredStrandraeuberRounds?: number;
   // MeerMau preferences
   meermauReverseOn9?: boolean;
   meermauStopperOn8?: boolean;
@@ -213,6 +216,44 @@ export interface MeermauGame {
   lastActionText: string;
   createdAt: number;
 }
+
+// Strandräuber (Schwarzer-Peter-Klon)
+export interface SpCard {
+  id: string;      // e.g. "krabbe_1", "strandraeuber"
+  pairId: string;  // e.g. "krabbe", "strandraeuber"
+  emoji: string;
+  name: string;
+}
+
+export interface SpOnlinePlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  hand: SpCard[];
+  cardCount: number;
+  roundScore: number;
+  isAI: boolean;
+}
+
+export interface SpOnlineGame {
+  gameId: string;
+  adminId: string;
+  status: "LOBBY" | "RUNNING" | "FINISHED";
+  players: Record<string, SpOnlinePlayer>;
+  playerIds: string[];
+  activePlayerIds: string[];
+  turnIndex: number;
+  phase: "PLAYING" | "SHUFFLING" | "ROUND_END";
+  roundNumber: number;
+  totalRounds: number;
+  loserId: string | null;
+  loserName: string | null;
+  loserAvatar: string | null;
+  scores: Record<string, number>;
+  createdAt: number;
+}
+
+// Strandräuber user preferences (added to User interface below in preferredStrandraeuberDifficulty / preferredStrandraeuberRounds)
 
 // BeachVolley
 export type PongDifficulty = "ROOKIE" | "SNIPER" | "BOSS_LEVEL";

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import jsQR from "jsqr";
 import { auth, db } from "../firebase";
-import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame } from "../types";
+import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame, SpOnlineGame, SpOnlinePlayer } from "../types";
 import { DRINK_ICONS } from "./vier/drinkIcons";
 
 // ── helpers to generate a bingo card (same as LobbyScreen) ──────────────────
@@ -131,12 +131,13 @@ export default function JoinScreen() {
     setErrorMsg("");
 
     // Try all collections in parallel
-    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap] = await Promise.all([
-      getDoc(doc(db, "games",         rawCode)),
-      getDoc(doc(db, "pongGames",     rawCode)),
-      getDoc(doc(db, "vierGames",     rawCode)),
-      getDoc(doc(db, "brandungGames", rawCode)),
-      getDoc(doc(db, "meermauGames",  rawCode)),
+    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap, strandraeuberSnap] = await Promise.all([
+      getDoc(doc(db, "games",               rawCode)),
+      getDoc(doc(db, "pongGames",           rawCode)),
+      getDoc(doc(db, "vierGames",           rawCode)),
+      getDoc(doc(db, "brandungGames",       rawCode)),
+      getDoc(doc(db, "meermauGames",        rawCode)),
+      getDoc(doc(db, "strandraeuberGames",  rawCode)),
     ]);
 
     try {
@@ -150,6 +151,8 @@ export default function JoinScreen() {
         await joinBrandung(rawCode, { gameId: rawCode, ...brandungSnap.data() } as BrandungGame, user);
       } else if (meermauSnap.exists()) {
         await joinMeerMau(rawCode, { gameId: rawCode, ...meermauSnap.data() } as MeermauGame, user);
+      } else if (strandraeuberSnap.exists()) {
+        await joinStrandraeuber(rawCode, { gameId: rawCode, ...strandraeuberSnap.data() } as SpOnlineGame, user);
       } else {
         setErrorMsg("Kein Spiel mit diesem Code gefunden.");
         setScanState("error");
@@ -222,6 +225,28 @@ export default function JoinScreen() {
       [`players.${uid}`]: { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, hand: [], totalScore: 0, eliminated: false, isAI: false as const },
     });
     navigate("/meermau/game", { state: { mode: "online", gameId: code } });
+  }
+
+  async function joinStrandraeuber(code: string, game: SpOnlineGame, user: User) {
+    if (game.status === "FINISHED") { setErrorMsg("Dieses Spiel ist bereits beendet."); setScanState("error"); return; }
+    if (game.status === "RUNNING")  { setErrorMsg("Das Spiel läuft bereits."); setScanState("error"); return; }
+    if (game.playerIds.includes(uid)) {
+      sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: code }));
+      navigate("/strandraeuber/game");
+      return;
+    }
+    if (game.playerIds.length >= 6) { setErrorMsg("Das Spiel ist voll (max. 6 Spieler)."); setScanState("error"); return; }
+    const me: SpOnlinePlayer = {
+      userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl,
+      hand: [], cardCount: 0, roundScore: 0, isAI: false,
+    };
+    await updateDoc(doc(db, "strandraeuberGames", code), {
+      playerIds:       arrayUnion(uid),
+      activePlayerIds: arrayUnion(uid),
+      [`players.${uid}`]: me,
+    });
+    sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: code }));
+    navigate("/strandraeuber/game");
   }
 
   async function joinVier(code: string, game: VierGame, user: User) {

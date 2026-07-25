@@ -120,6 +120,23 @@ export const GAME_RULES: Record<string, GameRule> = {
     ],
     proTip: "\"Klopfen\" zu früh ist wie zu früh \"BINGO\" zu rufen. Klappt manchmal. Meistens endet es in kollektivem Augenrollen.",
   },
+  strandraeuber: {
+    id: "strandraeuber",
+    title: "Strandräuber",
+    emoji: "🦹",
+    color: "#e11d48",
+    tagline: "Einer hält am Ende den Strandräuber — und verliert.",
+    goal: "Alle Paare ablegen und bloß nicht als Letzter mit dem Strandräuber dastehen!",
+    rules: [
+      "37 Karten werden gleichmäßig ausgeteilt (18 Paare + 1 Strandräuber).",
+      "Sofort alle Paare aus der Starthand offen ablegen.",
+      "Reihum: eine verdeckte Karte vom Vorspieler ziehen.",
+      "Entsteht ein Paar? Sofort ablegen!",
+      "Spieler ohne Karten scheiden erfolgreich aus.",
+      "Wer am Ende als Einziger noch Karten hält, hat den Strandräuber — und verliert.",
+    ],
+    proTip: "Mische deine Karten, bevor der nächste Spieler zieht — so kann niemand den Strandräuber anhand seiner Position erkennen.",
+  },
   meermau: {
     id: "meermau",
     title: "MeerMau",
