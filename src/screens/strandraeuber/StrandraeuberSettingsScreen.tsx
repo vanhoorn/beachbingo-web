@@ -92,20 +92,6 @@ export default function StrandraeuberSettingsScreen() {
           </div>
         </div>
 
-        {/* Info box */}
-        <div className="card" style={{ padding: 16, background: SP_DIM, border: `1px solid ${SP_COLOR}33` }}>
-          <div style={{ fontSize: 12, color: SP_COLOR, fontWeight: 600, marginBottom: 6 }}>Spielziel</div>
-          <div style={{ fontSize: 12, color: "var(--text-sub)", lineHeight: 1.6 }}>
-            37 Karten werden ausgeteilt (18 Paare + 1 Strandräuber). Alle legen sofort ihre
-            Anfangspaare ab. Reihum zieht man eine verdeckte Karte vom Vorspieler.
-            Wer am Ende als Einziger noch Karten hält, hat den Strandräuber — und verliert.
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-sub)", marginTop: 8, lineHeight: 1.6 }}>
-            Bei mehreren Runden sammeln Verlierer Punkte. Wer am Ende die meisten 🦹-Punkte hat,
-            verliert das Gesamtspiel.
-          </div>
-        </div>
-
         {/* Audio hint */}
         <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
           Musik & Soundeffekte →{" "}

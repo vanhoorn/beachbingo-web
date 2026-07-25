@@ -266,7 +266,7 @@ export default function StrandraeuberLobbyScreen() {
         <div style={{ fontSize: 44 }}>🦹</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Strandräuber</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>Schwarzer Peter</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>Karten ziehen & Paare ablegen</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-outline btn-sm"

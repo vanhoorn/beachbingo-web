@@ -32,6 +32,8 @@ interface SpGameStateLocal {
   phase: "PLAYING" | "PAIR_REVEAL" | "ROUND_END" | "GAME_OVER";
   /** Pairs just discarded, shown briefly before clearing. */
   pairRevealInfo: { playerIdx: number; pairs: [SpCard, SpCard][] } | null;
+  /** All pairs discarded so far this round (accumulated). */
+  discardedPairs: [SpCard, SpCard][];
   roundScores: Record<string, number>; // userId → Strandräuber points
   loserUserId: string | null;
   roundNumber: number;
@@ -53,11 +55,10 @@ function OpponentFan({
   selectedCardIndex: number | null;
   onCardSelected: (i: number) => void;
 }) {
-  const fanW = Math.max(80, Math.min(cardCount * 22, 180));
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
-      minWidth: 80, flex: "0 0 auto",
+      minWidth: 80, flex: "1 1 auto",
       opacity: isOut ? 0.45 : 1,
       transition: "opacity 0.3s",
     }}>
@@ -72,45 +73,38 @@ function OpponentFan({
         {player.displayName}{isDrawer ? " 🎯" : ""}
       </div>
 
-      {/* Fan */}
+      {/* Cards row */}
       {isOut ? (
         <div style={{ marginTop: 8, fontSize: 20 }}>✅</div>
       ) : (
         <div style={{
-          position: "relative",
-          height: 90,
-          width: fanW,
-          marginTop: 6,
+          display: "flex", flexWrap: "wrap", gap: 4,
+          justifyContent: "center", marginTop: 6,
         }}>
           {Array.from({ length: cardCount }).map((_, i) => {
-            const mid = (cardCount - 1) / 2;
-            const rotation = (i - mid) * Math.min(10, 60 / Math.max(cardCount, 1));
-            const translateX = (i - mid) * Math.min(18, 120 / Math.max(cardCount, 1));
             const isSelected = selectedCardIndex === i;
             return (
               <div
                 key={i}
                 onClick={() => isTarget && onCardSelected(i)}
                 style={{
-                  position: "absolute", left: "50%", bottom: 0,
-                  width: 48, height: 72,
-                  transform: `translateX(calc(-50% + ${translateX}px)) rotate(${rotation}deg) ${isSelected ? "translateY(-10px)" : ""}`,
-                  transformOrigin: "bottom center",
+                  width: 34, height: 50,
                   background: "linear-gradient(135deg, #1a3a6b, #0d2040)",
                   border: isSelected
                     ? "2px solid gold"
                     : isTarget
                       ? `1.5px solid ${SP_COLOR}88`
                       : "1.5px solid rgba(255,255,255,0.18)",
-                  borderRadius: 6,
+                  borderRadius: 5,
                   cursor: isTarget ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18,
+                  fontSize: 14,
                   transition: "transform 0.15s, border 0.15s, box-shadow 0.15s",
+                  transform: isSelected ? "translateY(-8px)" : "none",
                   boxShadow: isTarget
-                    ? `0 0 8px ${SP_COLOR}44`
-                    : "0 2px 6px rgba(0,0,0,0.4)",
-                  zIndex: i,
+                    ? `0 0 6px ${SP_COLOR}44`
+                    : "0 2px 4px rgba(0,0,0,0.4)",
+                  flexShrink: 0,
                 }}
               >
                 <span style={{ opacity: 0.25 }}>🦹</span>
@@ -200,6 +194,11 @@ function applyDrawCard(
     (pi) => updatedPlayers[pi].hand.length > 0,
   );
 
+  const newDiscardedPairs: [SpCard, SpCard][] = [
+    ...state.discardedPairs,
+    ...discarded,
+  ];
+
   // Game over?
   if (newActive.length <= 1) {
     const loserIdx = newActive[0];
@@ -213,6 +212,7 @@ function applyDrawCard(
       turnIndex: 0,
       phase: discarded.length > 0 ? "PAIR_REVEAL" : "GAME_OVER",
       pairRevealInfo: discarded.length > 0 ? { playerIdx: drawerPlayerIdx, pairs: discarded } : null,
+      discardedPairs: newDiscardedPairs,
       roundScores: newScores,
       loserUserId: loserId,
       lastActionText: `${loserName} hält den Strandräuber! 🦹`,
@@ -232,6 +232,7 @@ function applyDrawCard(
       turnIndex: newTurnIndex,
       phase: "PAIR_REVEAL",
       pairRevealInfo: { playerIdx: drawerPlayerIdx, pairs: discarded },
+      discardedPairs: newDiscardedPairs,
       lastActionText: `${drawerName} legt ${discarded.length} Paar${discarded.length > 1 ? "e" : ""} ab!`,
     };
   }
@@ -242,6 +243,7 @@ function applyDrawCard(
     turnIndex: newTurnIndex,
     phase: "PLAYING",
     pairRevealInfo: null,
+    discardedPairs: newDiscardedPairs,
     lastActionText: `${drawerName} zieht eine Karte.`,
   };
 }
@@ -249,8 +251,10 @@ function applyDrawCard(
 function startNextRound(state: SpGameStateLocal): SpGameStateLocal {
   const playerCount = state.players.length;
   const hands = dealCards(playerCount);
+  let initialPairs: [SpCard, SpCard][] = [];
   const updatedPlayers: SpPlayerLocal[] = state.players.map((p, i) => {
-    const { remaining } = discardPairs(hands[i]);
+    const { remaining, discarded } = discardPairs(hands[i]);
+    initialPairs = [...initialPairs, ...discarded];
     return { ...p, hand: remaining };
   });
   const newActive = updatedPlayers.map((_, i) => i).filter(i => updatedPlayers[i].hand.length > 0);
@@ -262,6 +266,7 @@ function startNextRound(state: SpGameStateLocal): SpGameStateLocal {
     turnIndex: startTurnIdx,
     phase: "PLAYING",
     pairRevealInfo: null,
+    discardedPairs: initialPairs,
     loserUserId: null,
     roundNumber: state.roundNumber + 1,
     lastActionText: `Runde ${state.roundNumber + 1} beginnt!`,
@@ -312,8 +317,10 @@ export default function StrandraeuberGameScreen() {
 
     const playerCount = aiCount + 1;
     const hands = dealCards(playerCount);
+    let initialPairs: [SpCard, SpCard][] = [];
     const players: SpPlayerLocal[] = Array.from({ length: playerCount }, (_, i) => {
-      const { remaining } = discardPairs(hands[i]);
+      const { remaining, discarded } = discardPairs(hands[i]);
+      initialPairs = [...initialPairs, ...discarded];
       return {
         userId:      i === 0 ? uid || "human" : `ai_${i - 1}`,
         displayName: i === 0 ? myName : AI_NAMES[i - 1] ?? `KI ${i}`,
@@ -329,6 +336,7 @@ export default function StrandraeuberGameScreen() {
       turnIndex: startTurnIdx,
       phase: "PLAYING",
       pairRevealInfo: null,
+      discardedPairs: initialPairs,
       roundScores: {},
       loserUserId: null,
       roundNumber: 1,
@@ -678,8 +686,14 @@ export default function StrandraeuberGameScreen() {
               selectedCardIndex={isTarget ? selectedFanIndex : null}
               onCardSelected={(i) => {
                 if (!isTarget) return;
-                setSelectedFanIndex(i);
-                handleHumanDraw(i);
+                if (selectedFanIndex === i) {
+                  // Second click on same card → draw
+                  handleHumanDraw(i);
+                  setSelectedFanIndex(null);
+                } else {
+                  // First click → mark/select
+                  setSelectedFanIndex(i);
+                }
               }}
             />
           );
@@ -694,7 +708,9 @@ export default function StrandraeuberGameScreen() {
         flexShrink: 0,
       }}>
         {isHumansTurn && gs.phase === "PLAYING"
-          ? <span style={{ color: SP_COLOR, fontWeight: 700 }}>Du ziehst! Tippe auf eine verdeckte Karte.</span>
+          ? selectedFanIndex !== null
+            ? <span style={{ color: "#f59e0b", fontWeight: 700 }}>Karte {selectedFanIndex + 1} markiert — nochmals antippen zum Ziehen.</span>
+            : <span style={{ color: SP_COLOR, fontWeight: 700 }}>Du ziehst! Tippe auf eine verdeckte Karte.</span>
           : isHumanTarget && gs.phase === "PLAYING"
             ? <span style={{ color: "#f59e0b" }}>
                 {drawer?.displayName} will ziehen.
@@ -710,6 +726,32 @@ export default function StrandraeuberGameScreen() {
                 ? `🎉 Paar abgelegt!`
                 : null}
       </div>
+
+      {/* ── Abgelegte Paare ── */}
+      {gs.discardedPairs.length > 0 && (
+        <div style={{
+          padding: "8px 12px",
+          background: "var(--surface2)",
+          borderTop: "1px solid var(--border)",
+          flexShrink: 0,
+        }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 5, letterSpacing: 0.5 }}>
+            ✅ ABGELEGTE PAARE ({gs.discardedPairs.length})
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {gs.discardedPairs.map(([a], idx) => (
+              <div key={idx} style={{
+                background: "rgba(34,197,94,0.12)",
+                border: "1px solid rgba(34,197,94,0.3)",
+                borderRadius: 6, padding: "3px 7px",
+                fontSize: 16, lineHeight: 1,
+              }}>
+                {a.emoji}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Own cards ── */}
       <div style={{
