@@ -135,7 +135,7 @@ export default function StrandraeuberLobbyScreen() {
         playerIds: [uid],
         activePlayerIds: [uid],
         turnIndex: 0,
-        phase: "PLAYING",
+        phase: "LOBBY",
         roundNumber: 1,
         totalRounds,
         loserId: null, loserName: null, loserAvatar: null,
@@ -390,10 +390,14 @@ export default function StrandraeuberLobbyScreen() {
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={cancelWaiting}>Abbrechen</button>
-                {isAdmin && waitingPlayers.length >= 2 && (
-                  <button className="btn" style={{ flex: 2, background: SP_COLOR, color: "white", fontWeight: 700 }}
-                    onClick={startOnlineGame}>
-                    🃏 Spiel starten!
+                {isAdmin && (
+                  <button
+                    className="btn"
+                    style={{ flex: 2, background: waitingPlayers.length >= 2 ? SP_COLOR : "var(--surface-2)", color: "white", fontWeight: 700, opacity: waitingPlayers.length >= 2 ? 1 : 0.5, cursor: waitingPlayers.length >= 2 ? "pointer" : "not-allowed" }}
+                    onClick={waitingPlayers.length >= 2 ? startOnlineGame : undefined}
+                    title={waitingPlayers.length < 2 ? "Mindestens 2 Spieler benötigt" : undefined}
+                  >
+                    {waitingPlayers.length >= 2 ? "🃏 Spiel starten!" : `⏳ Warte auf Spieler (${waitingPlayers.length}/2)`}
                   </button>
                 )}
                 {!isAdmin && (

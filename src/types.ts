@@ -243,7 +243,7 @@ export interface SpOnlineGame {
   playerIds: string[];
   activePlayerIds: string[];
   turnIndex: number;
-  phase: "PLAYING" | "SHUFFLING" | "ROUND_END";
+  phase: "LOBBY" | "DEALING" | "PLAYING" | "SHUFFLING" | "ROUND_END";
   roundNumber: number;
   totalRounds: number;
   loserId: string | null;
