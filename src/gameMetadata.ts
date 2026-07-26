@@ -1,5 +1,6 @@
 export type PlayerCountKey = "ONE" | "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
 export type GameGenreKey = "ACTION" | "PARTY" | "LOGICAL" | "COUCH" | "RIDDLE" | "CARD";
+export type PuzzleDifficulty = "leicht" | "mittel" | "schwer" | "experte";
 
 export interface GameMetadata {
   id: string;
@@ -116,8 +117,60 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
     genres: ["PARTY", "CARD"],
   },
+  // ── Rätsel-Spiele ──────────────────────────────────────────────────────────
+  {
+    id: "strandoku",
+    emoji: "🔢",
+    title: "Strandoku",
+    description: "Das meistgespielte Logikrätsel der Welt — 6 Varianten von Classic bis Samurai.",
+    color: "#38bdf8",
+    path: "/raetsel/strandoku",
+    playerCounts: ["ONE"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
+  {
+    id: "wellensumme",
+    emoji: "➕",
+    title: "WellenSumme",
+    description: "Kreuzworträtsel mit Zahlen — Blöcke addieren sich zur angegebenen Summe.",
+    color: "#c084fc",
+    path: "/raetsel/wellensumme",
+    playerCounts: ["ONE"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
+  {
+    id: "kuestenkrieg",
+    emoji: "⚓",
+    title: "Küstenkrieg",
+    description: "Solo-Logik-Rätsel oder klassisches 2-Spieler-Duell — Flotten versenken!",
+    color: "#fb7185",
+    path: "/raetsel/kuestenkrieg",
+    playerCounts: ["ONE", "ONE_TWO"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
+  {
+    id: "duenenschatten",
+    emoji: "◼",
+    title: "DünenSchatten",
+    description: "Schwärze Felder ein — das japanische Zahlen-Ausschluss-Rätsel.",
+    color: "#fbbf24",
+    path: "/raetsel/duenenschatten",
+    playerCounts: ["ONE"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
+  {
+    id: "inselbruecke",
+    emoji: "🌉",
+    title: "Inselbrücke",
+    description: "Verbinde alle Inseln mit Brücken — das japanische Hashi-Rätsel.",
+    color: "#4ade80",
+    path: "/raetsel/inselbruecke",
+    playerCounts: ["ONE"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
 ];
 
 export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
+export const RIDDLE_GAMES = ALL_GAMES.filter((g) => g.genres.includes("RIDDLE"));
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

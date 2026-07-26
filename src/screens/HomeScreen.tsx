@@ -3,7 +3,8 @@ import { collection, doc, getDoc, getDocs, query, where } from "firebase/firesto
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
-import { ALL_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, type PlayerCountKey } from "../gameMetadata";
+import { ALL_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, RIDDLE_GAMES, type PlayerCountKey } from "../gameMetadata";
+import { getPuzzleSaves, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave } from "../puzzleSave";
 
 interface ActiveGameInfo {
   type: string;
@@ -17,8 +18,13 @@ export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [activeGame, setActiveGame] = useState<ActiveGameInfo | null>(null);
+  const [savedPuzzles, setSavedPuzzles] = useState<PuzzleSave[]>([]);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
+
+  useEffect(() => {
+    setSavedPuzzles(getPuzzleSaves());
+  }, []);
 
   useEffect(() => {
     if (!uid) return;
@@ -62,6 +68,7 @@ export default function HomeScreen() {
     .sort((a, b) => a.title.localeCompare(b.title));
 
   const cardGameCount = ALL_GAMES.filter((g) => g.genres.includes("CARD")).length;
+  const riddleCount = RIDDLE_GAMES.length;
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
@@ -193,6 +200,29 @@ export default function HomeScreen() {
           </div>
         </section>
 
+        {/* Rätsel */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Rätsel" emoji="🧩" />
+          <button
+            onClick={() => navigate("/raetsel")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(56,189,248,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🧩</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Rätsel</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {riddleCount} Rätsel · Strandoku, WellenSumme & mehr
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#38bdf8" }}>›</span>
+          </button>
+        </section>
+
         {/* Kartenspiele */}
         <section style={{ padding: "24px 20px 0" }}>
           <SectionHeader title="Kartenspiele" emoji="🃏" />
@@ -215,6 +245,30 @@ export default function HomeScreen() {
             <span style={{ fontSize: 20, color: "#7c3aed" }}>›</span>
           </button>
         </section>
+
+        {/* Gespeicherte Spiele */}
+        {savedPuzzles.length > 0 && (
+          <section style={{ padding: "24px 20px 0" }}>
+            <SectionHeader title="Gespeicherte Spiele" emoji="💾" />
+            <div style={{
+              display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4,
+              scrollbarWidth: "none",
+            }}>
+              {savedPuzzles.map((save) => {
+                const info = PUZZLE_GAME_INFO[save.gameType];
+                if (!info) return null;
+                return (
+                  <SavedPuzzleCard
+                    key={save.id}
+                    save={save}
+                    info={info}
+                    onClick={() => navigate(`/raetsel/${save.gameType}`, { state: { resumeSaveId: save.id } })}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Alle Spiele */}
         <section style={{ padding: "24px 20px 0" }}>
@@ -311,6 +365,43 @@ function CategoryTile({
       </div>
       <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3 }}>
         {gameCount} {gameCount === 1 ? "Spiel" : "Spiele"}
+      </div>
+    </button>
+  );
+}
+
+function SavedPuzzleCard({
+  save, info, onClick,
+}: {
+  save: PuzzleSave;
+  info: { title: string; emoji: string; color: string };
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const diffLabel = PUZZLE_DIFFICULTY_LABELS[save.difficulty] ?? save.difficulty;
+  const elapsed = formatElapsed(save.elapsedSeconds);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flexShrink: 0, width: 140, padding: "14px 12px 12px",
+        background: hovered ? "var(--surface2)" : "var(--surface)",
+        border: `1.5px solid ${hovered ? info.color : info.color + "55"}`,
+        borderRadius: 14, cursor: "pointer", textAlign: "left",
+        transition: "all 0.15s",
+      }}
+    >
+      <div style={{ fontSize: 26, marginBottom: 6 }}>{info.emoji}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1.3, marginBottom: 2 }}>
+        {info.title}
+      </div>
+      <div style={{ fontSize: 10, color: info.color, fontWeight: 700, marginBottom: 4 }}>
+        {diffLabel} · {save.variant}
+      </div>
+      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+        ⏱ {elapsed}
       </div>
     </button>
   );

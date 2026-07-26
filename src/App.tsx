@@ -51,6 +51,7 @@ import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
 import CardGamesScreen from "./screens/CardGamesScreen";
+import RaetselScreen from "./screens/RaetselScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -129,6 +130,7 @@ function App() {
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />
         <Route path="/card-games"    element={loggedIn ? <CardGamesScreen />   : <Navigate to="/login" />} />
+        <Route path="/raetsel"       element={loggedIn ? <RaetselScreen />     : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>
