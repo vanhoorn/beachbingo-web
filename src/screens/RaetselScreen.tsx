@@ -50,7 +50,6 @@ export default function RaetselScreen() {
       }}>
         🧠 Logik-Rätsel für Solo-Spieler — von Sudoku bis Schiffe Versenken. Tippe auf{" "}
         <strong style={{ color: "var(--text)" }}>ℹ</strong> für die Anleitung.
-        Die Spiele werden in den nächsten Updates freigeschaltet.
       </div>
 
       {/* Game list */}
@@ -59,6 +58,7 @@ export default function RaetselScreen() {
           <RaetselRow
             key={game.id}
             game={game}
+            onPlay={() => navigate(`/raetsel/${game.id}/lobby`)}
             onInfo={() => setRulesGameId(game.id)}
           />
         ))}
@@ -73,22 +73,25 @@ export default function RaetselScreen() {
 
 function RaetselRow({
   game,
+  onPlay,
   onInfo,
 }: {
   game: GameMetadata;
+  onPlay: () => void;
   onInfo: () => void;
 }) {
   const [infoHovered, setInfoHovered] = useState(false);
 
   return (
     <div
+      onClick={onPlay}
       style={{
         display: "flex", alignItems: "center", gap: 16, padding: 20,
         background: "var(--surface)",
         border: `1.5px solid ${game.color}59`,
         borderRadius: 16,
         textAlign: "left",
-        opacity: 1,
+        cursor: "pointer",
       }}
     >
       {/* Emoji icon */}
@@ -106,17 +109,6 @@ function RaetselRow({
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text)" }}>
             {game.title}
-          </span>
-          <span style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: 1,
-            textTransform: "uppercase", padding: "2px 8px",
-            background: game.color + "20",
-            color: game.color,
-            borderRadius: 6,
-            border: `1px solid ${game.color}44`,
-            whiteSpace: "nowrap",
-          }}>
-            Bald verfügbar
           </span>
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4 }}>

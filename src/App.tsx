@@ -52,6 +52,16 @@ import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
 import CardGamesScreen from "./screens/CardGamesScreen";
 import RaetselScreen from "./screens/RaetselScreen";
+import DuenenschattenLobbyScreen from "./screens/raetsel/duenenschatten/DuenenschattenLobbyScreen";
+import DuenenschattenGameScreen from "./screens/raetsel/duenenschatten/DuenenschattenGameScreen";
+import InselbrueckeLobbyScreen from "./screens/raetsel/inselbruecke/InselbrueckeLobbyScreen";
+import InselbrueckeGameScreen from "./screens/raetsel/inselbruecke/InselbrueckeGameScreen";
+import StrandokuLobbyScreen from "./screens/raetsel/strandoku/StrandokuLobbyScreen";
+import StrandokuGameScreen from "./screens/raetsel/strandoku/StrandokuGameScreen";
+import WellensummeLobbyScreen from "./screens/raetsel/wellensumme/WellensummeLobbyScreen";
+import WellensummeGameScreen from "./screens/raetsel/wellensumme/WellensummeGameScreen";
+import KuestenkriegLobbyScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegLobbyScreen";
+import KuestenkriegGameScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegGameScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -131,6 +141,16 @@ function App() {
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />
         <Route path="/card-games"    element={loggedIn ? <CardGamesScreen />   : <Navigate to="/login" />} />
         <Route path="/raetsel"       element={loggedIn ? <RaetselScreen />     : <Navigate to="/login" />} />
+        <Route path="/raetsel/duenenschatten/lobby" element={loggedIn ? <DuenenschattenLobbyScreen /> : <Navigate to="/login" />} />
+        <Route path="/raetsel/duenenschatten/game"  element={loggedIn ? <DuenenschattenGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/raetsel/inselbruecke/lobby" element={loggedIn ? <InselbrueckeLobbyScreen /> : <Navigate to="/login" />} />
+        <Route path="/raetsel/inselbruecke/game"  element={loggedIn ? <InselbrueckeGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/raetsel/strandoku/lobby" element={loggedIn ? <StrandokuLobbyScreen /> : <Navigate to="/login" />} />
+        <Route path="/raetsel/strandoku/game"  element={loggedIn ? <StrandokuGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/raetsel/wellensumme/lobby" element={loggedIn ? <WellensummeLobbyScreen /> : <Navigate to="/login" />} />
+        <Route path="/raetsel/wellensumme/game"  element={loggedIn ? <WellensummeGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/raetsel/kuestenkrieg/lobby" element={loggedIn ? <KuestenkriegLobbyScreen /> : <Navigate to="/login" />} />
+        <Route path="/raetsel/kuestenkrieg/game"  element={loggedIn ? <KuestenkriegGameScreen />  : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>
