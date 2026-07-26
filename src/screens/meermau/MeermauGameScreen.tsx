@@ -412,6 +412,7 @@ export default function MeermauGameScreen() {
   const [_onlineGame, setOnlineGame] = useState<MeermauGame | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showQuit, setShowQuit] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
   // Responsive card sizing for tablets
@@ -692,7 +693,7 @@ export default function MeermauGameScreen() {
         background: "var(--surface)", borderBottom: "1px solid var(--border)", flexShrink: 0,
       }}>
         <button className="btn btn-outline btn-sm" style={{ width: 36, padding: 0, fontSize: 16 }}
-          onClick={() => navigate("/meermau/lobby")}>‹</button>
+          onClick={() => mode === "online" ? setShowQuit(true) : navigate("/meermau/lobby")}>‹</button>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 800, fontSize: 17, color: VIOLET }}>MeerMau</div>
           <div style={{ fontSize: 11, color: "var(--text-sub)" }}>Runde {st?.round ?? 1}</div>
@@ -1090,6 +1091,28 @@ export default function MeermauGameScreen() {
                 Weiter →
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Quit dialog ── */}
+      {showQuit && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(10,22,40,0.9)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
+        }}>
+          <div style={{
+            background: "var(--surface)", borderRadius: 16, padding: 24,
+            maxWidth: 300, width: "90%", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 36 }}>🏳️</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Spiel verlassen?</div>
+            <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>Du kannst über den Code wieder beitreten.</div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Bleiben</button>
+              <button className="btn" style={{ flex: 1, background: VIOLET, color: "white" }}
+                onClick={() => navigate("/meermau/lobby")}>Verlassen</button>
+            </div>
           </div>
         </div>
       )}

@@ -222,7 +222,16 @@ export default function StrandraeuberLobbyScreen() {
     if (!gameSnap.exists()) { setError("Spiel nicht gefunden."); return; }
     if (!userSnap.exists()) return;
     const g = { gameId: code, ...gameSnap.data() } as SpOnlineGame;
-    if (g.status !== "LOBBY") { setError("Spiel läuft bereits."); return; }
+    if (g.status === "FINISHED") { setError("Dieses Spiel ist bereits beendet."); return; }
+    if (g.status === "RUNNING") {
+      if (g.playerIds.includes(uid)) {
+        sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: code }));
+        navigate("/strandraeuber/game");
+        return;
+      }
+      setError("Das Spiel läuft bereits.");
+      return;
+    }
     const user = userSnap.data() as User;
     const me: SpOnlinePlayer = {
       userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl,

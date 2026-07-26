@@ -226,7 +226,15 @@ export default function MeermauLobbyScreen() {
     const snap = await getDoc(doc(db, "meermauGames", code));
     if (!snap.exists()) { setError("Spiel nicht gefunden."); return; }
     const g = { gameId: snap.id, ...snap.data() } as MeermauGame;
-    if (g.status !== "LOBBY") { setError("Spiel läuft bereits."); return; }
+    if (g.status === "FINISHED") { setError("Dieses Spiel ist bereits beendet."); return; }
+    if (g.status === "RUNNING") {
+      if (g.playerIds.includes(uid)) {
+        navigate("/meermau/game", { state: { mode: "online", gameId: code } });
+        return;
+      }
+      setError("Das Spiel läuft bereits.");
+      return;
+    }
     if (Object.keys(g.players).length >= 4) { setError("Spiel ist voll (max. 4 Spieler)."); return; }
     const userSnap = await getDoc(doc(db, "users", uid));
     if (!userSnap.exists()) return;

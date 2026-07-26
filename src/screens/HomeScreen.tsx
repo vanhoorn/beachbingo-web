@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
 import { ALL_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, type PlayerCountKey } from "../gameMetadata";
 
+interface ActiveGameInfo {
+  type: string;
+  gameId: string;
+  name: string;
+  emoji: string;
+  path: string;
+}
+
 export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [activeGame, setActiveGame] = useState<ActiveGameInfo | null>(null);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -20,6 +29,28 @@ export default function HomeScreen() {
         setFavoriteIds(data.favoriteGames ?? []);
       }
     });
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const GAME_COLLECTIONS = [
+      { type: "strandraeuber", col: "strandraeuberGames", name: "Strandräuber", emoji: "🦹", path: "/strandraeuber/game" },
+      { type: "meermau",       col: "meermauGames",       name: "MeerMau",       emoji: "🃏", path: "/meermau/game" },
+      { type: "brandung",      col: "brandungGames",      name: "Brandung",      emoji: "🌊", path: "/brandung/game" },
+      { type: "bingo",         col: "games",              name: "Bingo",         emoji: "🎱", path: "/game" },
+    ];
+    (async () => {
+      for (const { type, col, name, emoji, path } of GAME_COLLECTIONS) {
+        try {
+          const q = query(collection(db, col), where("status", "==", "RUNNING"), where("playerIds", "array-contains", uid));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            setActiveGame({ type, gameId: snap.docs[0].id, name, emoji, path });
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+    })();
   }, [uid]);
 
   function handleGameClick(_gameId: string, path: string) {
@@ -79,6 +110,44 @@ export default function HomeScreen() {
       </div>
 
       <div style={{ paddingBottom: 32 }}>
+
+        {/* Aktives Spiel Banner */}
+        {activeGame && (
+          <div style={{
+            margin: "16px 20px 0",
+            background: "var(--surface)",
+            border: "1.5px solid rgba(14,165,233,0.5)",
+            borderRadius: 14, padding: "14px 16px",
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#0ea5e9", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
+              Aktives Spiel
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 24 }}>{activeGame.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text)" }}>{activeGame.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Code: {activeGame.gameId}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+              <button
+                className="btn btn-outline"
+                style={{ flex: 1, fontSize: 13, padding: "8px" }}
+                onClick={() => setActiveGame(null)}
+              >Ignorieren</button>
+              <button
+                className="btn"
+                style={{ flex: 1, fontSize: 13, padding: "8px", background: "#0ea5e9", color: "white" }}
+                onClick={() => {
+                  if (activeGame.type === "strandraeuber") {
+                    sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: activeGame.gameId }));
+                  }
+                  navigate(activeGame.path);
+                }}
+              >Weiterspielen →</button>
+            </div>
+          </div>
+        )}
 
         {/* Favoriten */}
         {favoriteGames.length > 0 && (
