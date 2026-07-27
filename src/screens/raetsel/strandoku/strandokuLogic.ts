@@ -309,6 +309,24 @@ function generateKillerCages(solution: number[][], size: number, rng: () => numb
   return cages;
 }
 
+// ── Samurai helpers ───────────────────────────────────────────────────────────
+
+// Sub-grid offsets (row, col) for [TL, TR, CENTER, BL, BR]
+const SAMURAI_OFFSETS: [number, number][] = [[0,0],[0,12],[6,6],[12,0],[12,12]];
+
+// Number of givens to show per difficulty for Samurai (out of ~369 valid cells)
+const SAMURAI_GIVENS: Record<StrandokuDifficulty, number> = {
+  leicht: 135, mittel: 105, schwer: 80, experte: 60,
+};
+
+// Returns local [row, col] within the first matching 9×9 sub-grid, or null for gap cells
+export function getSamuraiLocalPos(r: number, c: number): [number, number] | null {
+  for (const [or, oc] of SAMURAI_OFFSETS) {
+    if (r >= or && r < or + 9 && c >= oc && c < oc + 9) return [r - or, c - oc];
+  }
+  return null;
+}
+
 // ── Main generator ────────────────────────────────────────────────────────────
 
 export function generateStrandoku(variant: StrandokuVariant, difficulty: StrandokuDifficulty, seed: number): StrandokuPuzzle {
@@ -341,61 +359,66 @@ export function generateStrandoku(variant: StrandokuVariant, difficulty: Strando
   return { variant, size, grid, solution, given, cages, regions };
 }
 
-// Samurai: 5 overlapping 9×9 grids
-// Layout: TL, TR, CENTER, BL, BR
-// Center shares rows 3-5 cols 3-5 with TL/TR/BL/BR
+// Samurai: 5 overlapping 9×9 grids in a 21×21 canvas
+// Layout (offsets row,col): TL(0,0) TR(0,12) CENTER(6,6) BL(12,0) BR(12,12)
+// Overlap corners (each 3×3):
+//   TL bottom-right (rows 6-8, cols 6-8) = CENTER top-left (rows 0-2, cols 0-2)
+//   TR bottom-left  (rows 6-8, cols 0-2) = CENTER top-right (rows 0-2, cols 6-8)
+//   BL top-right    (rows 0-2, cols 6-8) = CENTER bottom-left (rows 6-8, cols 0-2)
+//   BR top-left     (rows 0-2, cols 0-2) = CENTER bottom-right (rows 6-8, cols 6-8)
 function generateSamurai(difficulty: StrandokuDifficulty, seed: number): StrandokuPuzzle {
-  // For simplicity, generate a single 21×21 board with 5 overlapping 9×9 puzzles
-  // Represented as a 21×21 grid where cells outside the 5 puzzles are -1
   const rng = mulberry32(seed);
   const FULL = 21;
 
-  // We'll store all 5 solutions and combine them
-  const solutions: number[][][] = [];
-  const offsets: [number, number][] = [[0, 0], [0, 12], [6, 6], [12, 0], [12, 12]];
+  // 1. Generate CENTER first
+  const center: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  fillBoard(center, 9, rng);
 
-  for (const [_or, _oc] of offsets) {
-    const sol: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
-    fillBoard(sol, 9, rng);
-    solutions.push(sol);
-  }
+  // 2. TL: seed bottom-right 3×3 from CENTER top-left 3×3
+  const tl: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) tl[6+i][6+j] = center[i][j];
+  fillBoard(tl, 9, rng);
 
-  // Build 21×21 grid
-  const fullGrid: number[][] = Array.from({ length: FULL }, () => Array(FULL).fill(-1));
+  // 3. TR: seed bottom-left 3×3 from CENTER top-right 3×3
+  const tr: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) tr[6+i][j] = center[i][6+j];
+  fillBoard(tr, 9, rng);
+
+  // 4. BL: seed top-right 3×3 from CENTER bottom-left 3×3
+  const bl: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) bl[i][6+j] = center[6+i][j];
+  fillBoard(bl, 9, rng);
+
+  // 5. BR: seed top-left 3×3 from CENTER bottom-right 3×3
+  const br: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) br[i][j] = center[6+i][6+j];
+  fillBoard(br, 9, rng);
+
+  // Build 21×21 solution — overlap cells are written by both grids but always agree
+  const subGrids = [tl, tr, center, bl, br]; // same order as SAMURAI_OFFSETS
   const fullSolution: number[][] = Array.from({ length: FULL }, () => Array(FULL).fill(-1));
-  const fullGiven: boolean[][] = Array.from({ length: FULL }, () => Array(FULL).fill(false));
-
-  solutions.forEach((sol, idx) => {
-    const [or, oc] = offsets[idx];
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        fullSolution[or + r][oc + c] = sol[r][c];
-      }
-    }
+  subGrids.forEach((sol, idx) => {
+    const [or, oc] = SAMURAI_OFFSETS[idx];
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) fullSolution[or+r][oc+c] = sol[r][c];
   });
 
-  // Remove clues (only from valid cells)
-  const removeCount = REMOVE_COUNT[difficulty] * 5;
+  // Player grid: 0 for empty valid cells, -1 for gap cells
+  const fullGrid: number[][] = fullSolution.map(row => row.map(v => v === -1 ? -1 : 0));
+  const fullGiven: boolean[][] = Array.from({ length: FULL }, () => Array(FULL).fill(false));
+
+  // Collect valid positions and show a random subset as givens
   const validCells: [number, number][] = [];
-  for (let r = 0; r < FULL; r++) {
-    for (let c = 0; c < FULL; c++) {
+  for (let r = 0; r < FULL; r++)
+    for (let c = 0; c < FULL; c++)
       if (fullSolution[r][c] !== -1) validCells.push([r, c]);
-    }
-  }
-  const toShow = shuffle(validCells, rng).slice(0, validCells.length - removeCount);
+
+  const toShow = shuffle(validCells, rng).slice(0, SAMURAI_GIVENS[difficulty]);
   toShow.forEach(([r, c]) => {
     fullGrid[r][c] = fullSolution[r][c];
     fullGiven[r][c] = true;
   });
 
-  return {
-    variant: "samurai",
-    size: FULL,
-    grid: fullGrid,
-    solution: fullSolution,
-    given: fullGiven,
-    isSamurai: true,
-  };
+  return { variant: "samurai", size: FULL, grid: fullGrid, solution: fullSolution, given: fullGiven, isSamurai: true };
 }
 
 // ── State management ──────────────────────────────────────────────────────────

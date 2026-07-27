@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   generateStrandoku, createStrandokuState, selectCell, enterNumber, eraseCell,
   getStrandokuHint, serializeStrandokuState, deserializeStrandokuState,
-  getBoxDimensions, sameBox, getCageForCell, getRegionColor,
+  getBoxDimensions, sameBox, getCageForCell, getRegionColor, getSamuraiLocalPos,
   type StrandokuVariant, type StrandokuDifficulty, type StrandokuState, type StrandokuPuzzle,
 } from "./strandokuLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
@@ -111,12 +111,19 @@ export default function StrandokuGameScreen() {
 
   const { size } = puzzle;
   const isSamurai = puzzle.isSamurai;
-  const maxBoardW = isSamurai ? 380 : Math.min(window.innerWidth - 32, 460);
-  const cellPx = Math.floor(maxBoardW / size);
+
+  // Cell size: for Samurai use min(available-width, available-height) to fill the screen
+  const cellPx = isSamurai
+    ? Math.max(14, Math.floor(Math.min(window.innerWidth - 8, window.innerHeight - 210) / size))
+    : Math.floor(Math.min(window.innerWidth - 32, window.innerHeight - 210, 460) / size);
+
   const { bw, bh } = getBoxDimensions(size);
-  const numPad = size <= 9 ? Array.from({ length: size }, (_, i) => i + 1) :
-    size === 12 ? [1,2,3,4,5,6,7,8,9,10,11,12] :
-    Array.from({ length: size }, (_, i) => i + 1);
+  // Samurai uses values 1-9 regardless of grid size (21×21 canvas, but 9×9 sub-grids)
+  const numPad = isSamurai
+    ? [1,2,3,4,5,6,7,8,9]
+    : size <= 9 ? Array.from({ length: size }, (_, i) => i + 1)
+    : size === 12 ? [1,2,3,4,5,6,7,8,9,10,11,12]
+    : Array.from({ length: size }, (_, i) => i + 1);
 
   const sel = gs.selected;
 
@@ -184,9 +191,16 @@ export default function StrandokuGameScreen() {
                 const cage = getCageForCell(puzzle, r, c);
                 const cellNotes = gs.notes[r][c];
 
-                // Border logic: thicker at box boundaries
-                const borderRight = !isSamurai && (c + 1) % bw === 0 && c < size - 1 ? "2px solid var(--text-muted)" : "1px solid var(--border)";
-                const borderBottom = !isSamurai && (r + 1) % bh === 0 && r < size - 1 ? "2px solid var(--text-muted)" : "1px solid var(--border)";
+                // Border logic: thicker at box boundaries; for Samurai use local sub-grid position
+                const samLoc = isSamurai ? getSamuraiLocalPos(r, c) : null;
+                const borderRight = isSamurai
+                  ? (samLoc ? ((samLoc[1] + 1) % 3 === 0 ? "2px solid var(--text-muted)" : "1px solid var(--border)") : "none")
+                  : ((c + 1) % bw === 0 && c < size - 1 ? "2px solid var(--text-muted)" : "1px solid var(--border)");
+                const borderBottom = isSamurai
+                  ? (samLoc ? ((samLoc[0] + 1) % 3 === 0 ? "2px solid var(--text-muted)" : "1px solid var(--border)") : "none")
+                  : ((r + 1) % bh === 0 && r < size - 1 ? "2px solid var(--text-muted)" : "1px solid var(--border)");
+                const borderLeft = isSamurai && samLoc && samLoc[1] === 0 ? "2px solid var(--text-muted)" : undefined;
+                const borderTop  = isSamurai && samLoc && samLoc[0] === 0 ? "2px solid var(--text-muted)" : undefined;
 
                 let bg = "var(--surface)";
                 if (puzzle.variant === "irregular" && puzzle.regions) {
@@ -210,7 +224,7 @@ export default function StrandokuGameScreen() {
                     style={{
                       width: cellPx, height: cellPx,
                       background: bg,
-                      borderRight, borderBottom,
+                      borderRight, borderBottom, borderLeft, borderTop,
                       position: "relative",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       cursor: "pointer",
@@ -236,13 +250,13 @@ export default function StrandokuGameScreen() {
                     ) : cellNotes.size > 0 ? (
                       <div style={{
                         display: "grid",
-                        gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(size))}, 1fr)`,
+                        gridTemplateColumns: `repeat(${isSamurai || size <= 9 ? 3 : Math.ceil(Math.sqrt(size))}, 1fr)`,
                         width: "100%", height: "100%",
                         padding: 1,
                       }}>
-                        {Array.from({ length: size }, (_, i) => (
+                        {Array.from({ length: isSamurai ? 9 : size }, (_, i) => (
                           <span key={i} style={{
-                            fontSize: Math.max(cellPx / size * 1.2, 5),
+                            fontSize: Math.max(cellPx / (isSamurai ? 9 : size) * 1.2, 5),
                             color: cellNotes.has(i + 1) ? ACCENT : "transparent",
                             textAlign: "center", lineHeight: 1.1,
                           }}>{i + 1}</span>
@@ -268,7 +282,7 @@ export default function StrandokuGameScreen() {
               key={n}
               onClick={() => handleNumber(n)}
               style={{
-                width: Math.min(Math.floor((window.innerWidth - 48) / (size <= 9 ? 9 : size <= 12 ? 12 : 8)), 44),
+                width: Math.min(Math.floor((window.innerWidth - 48) / numPad.length), 44),
                 height: 42,
                 background: "var(--surface2)",
                 border: "1px solid var(--border)",
@@ -276,7 +290,7 @@ export default function StrandokuGameScreen() {
                 fontSize: 16, fontWeight: 700, color: "var(--text)",
               }}
             >
-              {size <= 9 ? n : n <= 9 ? n : String.fromCharCode(64 + n - 9)}
+              {isSamurai || size <= 9 ? n : n <= 9 ? n : String.fromCharCode(64 + n - 9)}
             </button>
           ))}
         </div>
@@ -318,11 +332,11 @@ export default function StrandokuGameScreen() {
         <div style={overlayStyle}>
           <div style={dialogStyle}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🏖️</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Spiel beenden?</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Fortschritt wird gespeichert.</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...ctrlBtn("var(--surface2)"), flex: 1 }}>Weiterspielen</button>
-              <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--danger)"), flex: 1 }}>Beenden</button>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>Spiel beenden?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...ctrlBtn("var(--surface2)"), padding: "13px 0" }}>Weiterspielen</button>
+              <button onClick={() => navigate(-1)} style={{ ...ctrlBtn(ACCENT), padding: "13px 0" }}>💾 Speichern & Beenden</button>
+              <button onClick={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }} style={{ ...ctrlBtn("var(--danger)"), padding: "13px 0" }}>✕ Beenden ohne Speichern</button>
             </div>
           </div>
         </div>

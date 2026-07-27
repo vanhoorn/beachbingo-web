@@ -148,11 +148,12 @@ export function playerShoot(state: BattleState, r: number, c: number): BattleSta
   }
 
   const allSunk = aiFleet.every(s => s.sunk);
+  const wasHit = !!hitShip;
   return {
     ...state,
     aiGrid,
     aiFleet,
-    turn: allSunk ? "player" : "ai",
+    turn: allSunk || wasHit ? "player" : "ai",
     gameOver: allSunk,
     winner: allSunk ? "player" : null,
   };

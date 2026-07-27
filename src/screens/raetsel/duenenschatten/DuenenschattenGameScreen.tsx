@@ -226,16 +226,16 @@ export default function DuenenschattenGameScreen() {
         <div style={overlayStyle}>
           <div style={dialogStyle}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🏖️</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Spiel beenden?</div>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              Der Fortschritt wird gespeichert.
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...controlBtnStyle("var(--surface2)"), flex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>Spiel beenden?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...controlBtnStyle("var(--surface2)"), padding: "13px 0" }}>
                 Weiterspielen
               </button>
-              <button onClick={() => navigate(-1)} style={{ ...controlBtnStyle("var(--danger)"), flex: 1 }}>
-                Beenden
+              <button onClick={() => navigate(-1)} style={{ ...controlBtnStyle(ACCENT), padding: "13px 0" }}>
+                💾 Speichern & Beenden
+              </button>
+              <button onClick={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }} style={{ ...controlBtnStyle("var(--danger)"), padding: "13px 0" }}>
+                ✕ Beenden ohne Speichern
               </button>
             </div>
           </div>

@@ -107,6 +107,22 @@ function crossesExisting(
   return false;
 }
 
+// Check if a position would fall on any existing bridge path (used during generation)
+function isOnExistingBridgePath(nr: number, nc: number, islands: Island[], bridges: Bridge[]): boolean {
+  for (const b of bridges) {
+    const ia = islands.find(i => i.id === b.from)!;
+    const ib = islands.find(i => i.id === b.to)!;
+    if (ia.row === ib.row && nr === ia.row) {
+      const minC = Math.min(ia.col, ib.col), maxC = Math.max(ia.col, ib.col);
+      if (nc > minC && nc < maxC) return true;
+    } else if (ia.col === ib.col && nc === ia.col) {
+      const minR = Math.min(ia.row, ib.row), maxR = Math.max(ia.row, ib.row);
+      if (nr > minR && nr < maxR) return true;
+    }
+  }
+  return false;
+}
+
 // Check if all islands are connected (via bridges, ignoring counts)
 function isFullyConnected(islands: Island[], bridges: Bridge[]): boolean {
   if (islands.length === 0) return true;
@@ -179,6 +195,9 @@ function tryGenerate(gridSize: number, targetIslands: number, rng: () => number)
 
       // Check the bridge wouldn't cross anything
       if (crossesExisting(srcIsland.row, srcIsland.col, nr, nc, islands, solutionBridges)) continue;
+
+      // Check the new island position doesn't sit on an existing bridge path
+      if (isOnExistingBridgePath(nr, nc, islands, solutionBridges)) continue;
 
       // Add island and bridge
       const newIsland: Island = { id: nextId++, row: nr, col: nc, value: 0 };
@@ -334,6 +353,40 @@ export function getHashiHint(state: HashiState): { from: number; to: number } | 
     }
   }
   return null;
+}
+
+// Apply one hint step directly: removes conflicting player bridges, then adds one solution bridge
+export function applyHint(state: HashiState): HashiState {
+  const { puzzle, bridges } = state;
+  for (const sb of puzzle.solution) {
+    const current = findBridge(bridges, sb.from, sb.to);
+    if (current && current.count >= sb.count) continue;
+
+    const ia = puzzle.islands.find(i => i.id === sb.from)!;
+    const ib = puzzle.islands.find(i => i.id === sb.to)!;
+
+    // Remove any player bridges that cross the solution bridge
+    const clearedBridges = bridges.filter(b => {
+      if ((b.from === sb.from && b.to === sb.to) || (b.from === sb.to && b.to === sb.from)) return true;
+      return !crossesExisting(ia.row, ia.col, ib.row, ib.col, puzzle.islands, [b]);
+    });
+
+    // Add one step of the solution bridge
+    const clearedCurrent = findBridge(clearedBridges, sb.from, sb.to);
+    const newCount = (clearedCurrent?.count ?? 0) + 1;
+    let newBridges: Bridge[];
+    if (clearedCurrent) {
+      newBridges = clearedBridges.map(b =>
+        ((b.from === sb.from && b.to === sb.to) || (b.from === sb.to && b.to === sb.from))
+          ? { ...b, count: newCount } : b
+      );
+    } else {
+      newBridges = [...clearedBridges, { from: sb.from, to: sb.to, count: newCount }];
+    }
+
+    return { ...state, bridges: newBridges, solved: checkHashiSolved(newBridges, puzzle) };
+  }
+  return state;
 }
 
 // Bridge count between two islands in current state
