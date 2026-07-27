@@ -42,6 +42,7 @@ export default function KuestenkriegGameScreen() {
   const [running, setRunning] = useState(true);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   // active mark tool: "ship" or "water"
   const [tool, setTool] = useState<"ship" | "water">("ship");
   const bestTime = getBestTime("kuestenkrieg", "standard", difficulty);
@@ -245,6 +246,7 @@ export default function KuestenkriegGameScreen() {
 
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
           <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡 Hinweis</button>
+          <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
           <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>
           <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>
         </div>
@@ -260,6 +262,25 @@ export default function KuestenkriegGameScreen() {
               {bestTime && elapsed < bestTime && <span style={{ color: "var(--success)", marginLeft: 8 }}>⭐ Neue Bestzeit!</span>}
             </div>
             <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>Zurück zur Lobby</button>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div style={overlayStyle}>
+          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
+            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>⚓ Schlachtschiff-Rätsel</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Küstenkrieg — Regeln</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              <div>🚢 Finde alle Schiffe im Gitter anhand der Zahlen am Rand.</div>
+              <div>🔢 Die Zahlen zeigen, wie viele Schiffszellen in der jeweiligen Zeile bzw. Spalte liegen.</div>
+              <div>🚫 Schiffe berühren sich nicht — auch nicht diagonal.</div>
+              <div>🌊 Felder ohne Schiff sind Wasser.</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippen = Schiff markieren. Zweites Werkzeug = Wasser markieren. Gehalten halten wechselt automatisch.</div>
+            </div>
+            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
+              Verstanden!
+            </button>
           </div>
         </div>
       )}

@@ -38,6 +38,7 @@ export default function WellensummeGameScreen() {
   const [running, setRunning] = useState(true);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const bestTime = getBestTime("wellensumme", "standard", difficulty);
 
   useEffect(() => {
@@ -169,6 +170,7 @@ export default function WellensummeGameScreen() {
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
           <button onClick={() => setGs(prev => eraseKakuroCell(prev))} style={ctrlBtn("var(--text-muted)")}>⌫ Löschen</button>
           <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡 Hinweis</button>
+          <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
           <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>
           <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>
         </div>
@@ -184,6 +186,24 @@ export default function WellensummeGameScreen() {
               {bestTime && elapsed < bestTime && <span style={{ color: "var(--success)", marginLeft: 8 }}>⭐ Neue Bestzeit!</span>}
             </div>
             <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>Zurück zur Lobby</button>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div style={overlayStyle}>
+          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
+            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>🌊 Kakuro</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Wellensumme — Regeln</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              <div>🔢 Fülle alle weißen Zellen mit Zahlen von 1–9.</div>
+              <div>➕ Jeder Zahlenblock muss genau die angegebene Summe ergeben — die schwarzen Felder zeigen sie an (oben = vertikal, unten = horizontal).</div>
+              <div>🚫 Innerhalb eines Blocks darf jede Zahl nur einmal vorkommen.</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippe eine Zelle → dann eine Zahl (1–9). Leertaste/0 löscht die Zelle.</div>
+            </div>
+            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
+              Verstanden!
+            </button>
           </div>
         </div>
       )}

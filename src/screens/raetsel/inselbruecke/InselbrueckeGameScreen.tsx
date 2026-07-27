@@ -38,6 +38,7 @@ export default function InselbrueckeGameScreen() {
   const [running, setRunning] = useState(true);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const bestTime = getBestTime("inselbruecke", "standard", difficulty);
 
@@ -214,6 +215,7 @@ export default function InselbrueckeGameScreen() {
           {running ? "⏸ Pause" : "▶ Weiter"}
         </button>
         <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡 Hinweis</button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>? Regeln</button>
         <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕ Abbruch</button>
       </div>
 
@@ -228,6 +230,27 @@ export default function InselbrueckeGameScreen() {
             </div>
             <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>
               Zurück zur Lobby
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div style={overlayStyle}>
+          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
+            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>🌉 Hashiwokakero</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Inselbrücke — Regeln</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              <div>🏝️ Verbinde alle Inseln mit Brücken, sodass jede Insel genau so viele Brücken hat wie ihre Zahl anzeigt.</div>
+              <div>🔀 Brücken verlaufen nur horizontal oder vertikal und dürfen sich nicht kreuzen.</div>
+              <div>2️⃣ Zwischen zwei Inseln sind maximal 2 Brücken erlaubt.</div>
+              <div>🔗 Am Ende müssen alle Inseln miteinander verbunden sein.</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, color: "var(--text-muted)", fontSize: 12 }}>
+                Tippe eine Insel → dann eine zweite = 1 Brücke. Nochmals = 2 Brücken. Dreimal = entfernen.
+              </div>
+            </div>
+            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
+              Verstanden!
             </button>
           </div>
         </div>

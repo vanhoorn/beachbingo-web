@@ -53,6 +53,7 @@ export default function StrandokuGameScreen() {
   const [noteMode, setNoteMode] = useState(false);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const bestTime = getBestTime(gameType, variant, difficulty);
 
   useEffect(() => {
@@ -305,6 +306,7 @@ export default function StrandokuGameScreen() {
             ✏️ {noteMode ? "Notiz AN" : "Notiz"}
           </button>
           <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡</button>
+          <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
           <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>
             {running ? "⏸" : "▶"}
           </button>
@@ -323,6 +325,26 @@ export default function StrandokuGameScreen() {
             </div>
             <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>
               Zurück zur Lobby
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div style={overlayStyle}>
+          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
+            <div style={{ fontSize: 24, marginBottom: 4, textAlign: "center" }}>🔢 Strandoku</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: ACCENT, marginBottom: 12, textAlign: "center" }}>{variant === "samurai" ? "Samurai-Sudoku" : variant === "killer" ? "Killer-Sudoku" : variant === "diagonal" ? "Diagonal-Sudoku" : variant === "irregular" ? "Irregular-Sudoku" : variant === "mega12" ? "12×12 Sudoku" : variant === "mega16" ? "16×16 Sudoku" : "Classic Sudoku"}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              <div>🔢 Fülle das Gitter so, dass jede Zeile, Spalte {variant === "classic" || variant === "diagonal" || variant === "killer" || variant === "irregular" ? "und jedes 3×3-Feld" : variant === "mega12" ? "und jedes 3×4-Feld" : variant === "mega16" ? "und jedes 4×4-Feld" : "und jedes Sub-Gitter"} jede Zahl genau einmal enthält.</div>
+              {variant === "killer" && <div>➕ Die Zahlen in jedem Käfig müssen die angegebene Summe ergeben. Keine Zahl darf sich im Käfig wiederholen.</div>}
+              {variant === "diagonal" && <div>↗ Zusätzlich müssen auch beide Hauptdiagonalen jede Zahl einmal enthalten.</div>}
+              {variant === "irregular" && <div>🔷 Statt quadratischer Boxen gibt es unregelmäßig geformte Regionen — jede Region muss jede Zahl einmal enthalten.</div>}
+              {variant === "samurai" && <div>🏯 Fünf überlappende 9×9-Sudokus. Die Ecken teilen sich gemeinsame 3×3-Felder.</div>}
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippe eine Zelle → dann eine Zahl. Hinweis-Modus: Notizen für mehrere Kandidaten eintragen.</div>
+            </div>
+            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
+              Verstanden!
             </button>
           </div>
         </div>

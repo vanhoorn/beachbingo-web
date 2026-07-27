@@ -40,6 +40,7 @@ export default function DuenenschattenGameScreen() {
   const [running, setRunning] = useState(true);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [hintCell, setHintCell] = useState<[number, number] | null>(null);
   const bestTime = getBestTime("duenenschatten", "standard", difficulty);
 
@@ -197,6 +198,9 @@ export default function DuenenschattenGameScreen() {
         <button onClick={handleHint} style={controlBtnStyle(ACCENT)}>
           💡 Hinweis
         </button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle("var(--text-muted)")}>
+          ? Regeln
+        </button>
         <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle("var(--danger)")}>
           ✕ Abbruch
         </button>
@@ -216,6 +220,24 @@ export default function DuenenschattenGameScreen() {
             </div>
             <button onClick={() => navigate(-1)} style={{ ...controlBtnStyle("var(--primary)"), width: "100%", padding: "14px 0" }}>
               Zurück zur Lobby
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div style={overlayStyle}>
+          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
+            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>🏖️ Hitori</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Dünenschatten — Regeln</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              <div>⬛ Schwärze Zellen so, dass jede Zahl in jeder Zeile und Spalte maximal einmal vorkommt.</div>
+              <div>🚫 Zwei schwarze Zellen dürfen nicht waagerecht oder senkrecht nebeneinander stehen.</div>
+              <div>🔗 Alle weißen Zellen müssen ein zusammenhängendes Gebiet bilden.</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippen = schwärzen / weiß lassen. Gehalten halten = als weiß markieren (Kreis).</div>
+            </div>
+            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...controlBtnStyle(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
+              Verstanden!
             </button>
           </div>
         </div>
