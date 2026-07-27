@@ -64,6 +64,7 @@ import KuestenkriegLobbyScreen from "./screens/raetsel/kuestenkrieg/Kuestenkrieg
 import KuestenkriegGameScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegGameScreen";
 import KuestenkriegPlacementScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegPlacementScreen";
 import KuestenkriegBattleScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegBattleScreen";
+import KuestenkriegOnlineBattleScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegOnlineBattleScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -154,7 +155,8 @@ function App() {
         <Route path="/raetsel/kuestenkrieg/lobby"     element={loggedIn ? <KuestenkriegLobbyScreen />     : <Navigate to="/login" />} />
         <Route path="/raetsel/kuestenkrieg/game"      element={loggedIn ? <KuestenkriegGameScreen />      : <Navigate to="/login" />} />
         <Route path="/raetsel/kuestenkrieg/placement" element={loggedIn ? <KuestenkriegPlacementScreen /> : <Navigate to="/login" />} />
-        <Route path="/raetsel/kuestenkrieg/battle"    element={loggedIn ? <KuestenkriegBattleScreen />    : <Navigate to="/login" />} />
+        <Route path="/raetsel/kuestenkrieg/battle"        element={loggedIn ? <KuestenkriegBattleScreen />       : <Navigate to="/login" />} />
+        <Route path="/raetsel/kuestenkrieg/online-battle" element={loggedIn ? <KuestenkriegOnlineBattleScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

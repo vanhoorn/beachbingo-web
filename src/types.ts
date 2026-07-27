@@ -253,6 +253,38 @@ export interface SpOnlineGame {
   createdAt: number;
 }
 
+// Küstenkrieg Online Multiplayer
+export type KriegOnlineStatus = "LOBBY" | "PLACEMENT" | "RUNNING" | "FINISHED";
+
+export interface KriegShip {
+  id: number;
+  size: number;
+  row: number;
+  col: number;
+  horiz: boolean;
+  sunk: boolean;
+}
+
+export interface KriegOnlinePlayer {
+  userId: string;
+  displayName: string;
+  avatarUrl: string;
+  fleet: KriegShip[];
+  fleetReady: boolean;
+}
+
+export interface KriegOnlineGame {
+  gameId: string;
+  adminId: string;
+  status: KriegOnlineStatus;
+  playerIds: string[];
+  players: { [uid: string]: KriegOnlinePlayer };
+  shots: { [uid: string]: string[] };  // flat 100-element array: "unknown"|"miss"|"hit"|"sunk"
+  turn: string;      // uid of player whose turn it is
+  winner: string | null;
+  createdAt: number;
+}
+
 // Strandräuber user preferences (added to User interface below in preferredStrandraeuberDifficulty / preferredStrandraeuberRounds)
 
 // BeachVolley

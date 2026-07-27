@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import jsQR from "jsqr";
 import { auth, db } from "../firebase";
-import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame, SpOnlineGame, SpOnlinePlayer } from "../types";
+import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame, SpOnlineGame, SpOnlinePlayer, KriegOnlineGame, KriegOnlinePlayer } from "../types";
 import { DRINK_ICONS } from "./vier/drinkIcons";
 
 // ── helpers to generate a bingo card (same as LobbyScreen) ──────────────────
@@ -131,13 +131,14 @@ export default function JoinScreen() {
     setErrorMsg("");
 
     // Try all collections in parallel
-    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap, strandraeuberSnap] = await Promise.all([
+    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap, strandraeuberSnap, kriegSnap] = await Promise.all([
       getDoc(doc(db, "games",               rawCode)),
       getDoc(doc(db, "pongGames",           rawCode)),
       getDoc(doc(db, "vierGames",           rawCode)),
       getDoc(doc(db, "brandungGames",       rawCode)),
       getDoc(doc(db, "meermauGames",        rawCode)),
       getDoc(doc(db, "strandraeuberGames",  rawCode)),
+      getDoc(doc(db, "kuestenkriegGames",   rawCode)),
     ]);
 
     try {
@@ -153,6 +154,8 @@ export default function JoinScreen() {
         await joinMeerMau(rawCode, { gameId: rawCode, ...meermauSnap.data() } as MeermauGame, user);
       } else if (strandraeuberSnap.exists()) {
         await joinStrandraeuber(rawCode, { gameId: rawCode, ...strandraeuberSnap.data() } as SpOnlineGame, user);
+      } else if (kriegSnap.exists()) {
+        await joinKuestenkrieg(rawCode, { gameId: rawCode, ...kriegSnap.data() } as KriegOnlineGame, user);
       } else {
         setErrorMsg("Kein Spiel mit diesem Code gefunden.");
         setScanState("error");
@@ -247,6 +250,24 @@ export default function JoinScreen() {
     });
     sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: code }));
     navigate("/strandraeuber/game");
+  }
+
+  async function joinKuestenkrieg(code: string, game: KriegOnlineGame, user: User) {
+    if (game.status === "FINISHED") { setErrorMsg("Dieses Spiel ist bereits beendet."); setScanState("error"); return; }
+    if (game.playerIds.includes(uid)) {
+      navigate("/raetsel/kuestenkrieg/lobby?join=" + code);
+      return;
+    }
+    if (game.playerIds.length >= 2) { setErrorMsg("Das Spiel ist voll (2 Spieler)."); setScanState("error"); return; }
+    const me: KriegOnlinePlayer = {
+      userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl,
+      fleet: [], fleetReady: false,
+    };
+    await updateDoc(doc(db, "kuestenkriegGames", code), {
+      [`players.${uid}`]: me,
+      playerIds: [...game.playerIds, uid],
+    });
+    navigate("/raetsel/kuestenkrieg/lobby?join=" + code);
   }
 
   async function joinVier(code: string, game: VierGame, user: User) {
@@ -411,7 +432,7 @@ export default function JoinScreen() {
           <span style={{ fontSize: 20 }}>💡</span>
           <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
             Der Gastgeber findet den Einladungscode und QR-Code in der Spiellobby.
-            Du kannst an BeachBingo, BeachVolley und Vier4Bier beitreten.
+            Du kannst an BeachBingo, BeachVolley, Vier4Bier, Strandräuber und Küstenkrieg beitreten.
           </div>
         </div>
 
