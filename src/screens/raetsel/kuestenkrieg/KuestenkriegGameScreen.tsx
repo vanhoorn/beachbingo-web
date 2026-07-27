@@ -118,7 +118,8 @@ export default function KuestenkriegGameScreen() {
 
   const { size } = puzzle;
   const LABEL_SIZE = 24;
-  const maxBoardW = Math.min(window.innerWidth - 32, 480);
+  const availH = Math.max(200, window.innerHeight - 230);
+  const maxBoardW = Math.min(Math.min(window.innerWidth, 520) - 48, availH); // .screen 16px + container 8px each side
   const cellPx = Math.floor((maxBoardW - LABEL_SIZE) / size);
   const boardPx = cellPx * size + LABEL_SIZE;
 

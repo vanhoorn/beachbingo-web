@@ -72,7 +72,8 @@ export default function WellensummeGameScreen() {
   };
 
   const { size, cells } = puzzle;
-  const maxW = Math.min(window.innerWidth - 32, 480);
+  const availH = Math.max(200, window.innerHeight - 230);
+  const maxW = Math.min(Math.min(window.innerWidth, 520) - 48, availH); // .screen 16px + container 8px each side
   const cellPx = Math.floor(maxW / size);
   const fontSize = Math.max(cellPx * 0.28, 8);
 

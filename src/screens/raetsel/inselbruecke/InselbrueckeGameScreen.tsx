@@ -15,7 +15,6 @@ interface LocationState {
 }
 
 const ACCENT = "#4ade80";
-const CELL_SIZE = 44; // pixels per grid cell
 
 export default function InselbrueckeGameScreen() {
   const navigate = useNavigate();
@@ -84,6 +83,9 @@ export default function InselbrueckeGameScreen() {
   };
 
   const { gridSize, islands } = puzzle;
+  const availH = Math.max(200, window.innerHeight - 220);
+  const availW = Math.min(window.innerWidth, 520) - 64; // .screen 16px + container 16px each side
+  const CELL_SIZE = Math.max(28, Math.floor(Math.min(availW, availH) / gridSize));
   const svgSize = gridSize * CELL_SIZE;
 
   // Build bridge SVG lines
@@ -117,7 +119,7 @@ export default function InselbrueckeGameScreen() {
     }
   });
 
-  const containerWidth = Math.min(window.innerWidth - 32, svgSize + 8);
+  const containerWidth = Math.min(availW, svgSize);
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none" }}>

@@ -1,4 +1,4 @@
-export type PlayerCountKey = "ONE" | "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
+export type PlayerCountKey = "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
 export type GameGenreKey = "ACTION" | "PARTY" | "LOGICAL" | "COUCH" | "RIDDLE" | "CARD";
 export type PuzzleDifficulty = "leicht" | "mittel" | "schwer" | "experte";
 
@@ -20,7 +20,6 @@ export interface PlayerCountInfo {
 }
 
 export const PLAYER_COUNT_INFO: Record<PlayerCountKey, PlayerCountInfo> = {
-  ONE:      { label: "1 Spieler",   emoji: "👤", sublabel: "Solo" },
   ONE_TWO:  { label: "1-2 Spieler", emoji: "🤝", sublabel: "Solo oder zu zweit" },
   TWO_FOUR: { label: "2-4 Spieler", emoji: "👥", sublabel: "Kleine Gruppe" },
   FOUR_PLUS:{ label: "4+ Spieler",  emoji: "🎉", sublabel: "Große Runde" },
@@ -54,7 +53,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Vier in einer Reihe mit Beach-Twist.",
     color: "#f59e0b",
     path: "/vier/lobby",
-    playerCounts: ["ONE", "ONE_TWO"],
+    playerCounts: ["ONE_TWO"],
     genres: ["LOGICAL"],
   },
   {
@@ -64,7 +63,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Verteidige den Strand! Besiege Quallen, Muscheln und Fische.",
     color: "#a855f7",
     path: "/pirates/lobby",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["ACTION"],
   },
   {
@@ -74,7 +73,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Frisst Krabben, Muscheln und Fische. Werde nie die Grenzen! 🌊",
     color: "#22c55e",
     path: "/worm/lobby",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["ACTION"],
   },
   {
@@ -84,7 +83,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Klettere den Pier hoch, weiche Kokosnüssen aus — bis zum Gipfel!",
     color: "#dc2626",
     path: "/strandturm/lobby",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["ACTION"],
   },
   {
@@ -125,7 +124,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Das meistgespielte Logikrätsel der Welt — 6 Varianten von Classic bis Samurai.",
     color: "#38bdf8",
     path: "/raetsel/strandoku",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -135,7 +134,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Kreuzworträtsel mit Zahlen — Blöcke addieren sich zur angegebenen Summe.",
     color: "#c084fc",
     path: "/raetsel/wellensumme",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -145,7 +144,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Solo-Logik-Rätsel oder klassisches 2-Spieler-Duell — Flotten versenken!",
     color: "#fb7185",
     path: "/raetsel/kuestenkrieg",
-    playerCounts: ["ONE", "ONE_TWO"],
+    playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -155,7 +154,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Schwärze Felder ein — das japanische Zahlen-Ausschluss-Rätsel.",
     color: "#fbbf24",
     path: "/raetsel/duenenschatten",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -165,7 +164,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Verbinde alle Inseln mit Brücken — das japanische Hashi-Rätsel.",
     color: "#4ade80",
     path: "/raetsel/inselbruecke",
-    playerCounts: ["ONE"],
+    playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
 ];
@@ -173,4 +172,4 @@ export const ALL_GAMES: GameMetadata[] = [
 export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
 export const RIDDLE_GAMES = ALL_GAMES.filter((g) => g.genres.includes("RIDDLE"));
 
-export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];
+export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];
