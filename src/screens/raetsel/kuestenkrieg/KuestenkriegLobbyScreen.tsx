@@ -47,6 +47,7 @@ export default function KuestenkriegLobbyScreen() {
   const [gameCode, setGameCode] = useState("");
   const [waitingGame, setWaitingGame] = useState<KriegOnlineGame | null>(null);
   const [error, setError] = useState("");
+  const [joinInput, setJoinInput] = useState("");
   const unsubRef = useRef<(() => void) | null>(null);
   const [_myName, setMyName] = useState("Du");
 
@@ -289,13 +290,7 @@ export default function KuestenkriegLobbyScreen() {
                 ].map(m => (
                   <button
                     key={m.id}
-                    onClick={() => {
-                      setGameMode(m.id);
-                      if (m.id === "online") {
-                        createOnlineGame();
-                        setGameMode("online");
-                      }
-                    }}
+                    onClick={() => { setGameMode(m.id); setError(""); }}
                     style={{
                       padding: "14px 16px", textAlign: "left",
                       background: gameMode === m.id ? ACCENT + "22" : "var(--surface)",
@@ -391,6 +386,43 @@ export default function KuestenkriegLobbyScreen() {
                   Schiffe setzen →
                 </button>
               </>
+            )}
+
+            {/* Online options */}
+            {gameMode === "online" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {error && (
+                  <div style={{ background: "var(--danger)22", border: "1px solid var(--danger)55", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "var(--danger)" }}>{error}</div>
+                )}
+                <button
+                  onClick={createOnlineGame}
+                  disabled={creating}
+                  style={{ padding: "16px", background: creating ? ACCENT + "66" : ACCENT, border: "none", borderRadius: 14, cursor: creating ? "default" : "pointer", fontSize: 16, fontWeight: 800, color: "#0a1628", opacity: creating ? 0.7 : 1 }}
+                >
+                  {creating ? "Spiel wird erstellt…" : "Neues Spiel erstellen"}
+                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Oder Code eingeben</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={joinInput}
+                    onChange={e => { setJoinInput(e.target.value.toUpperCase().slice(0, 6)); setError(""); }}
+                    placeholder="ABCD12"
+                    maxLength={6}
+                    style={{ flex: 1, padding: "12px 14px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 16, fontFamily: "monospace", fontWeight: 700, color: "var(--text)", letterSpacing: 2, outline: "none" }}
+                  />
+                  <button
+                    onClick={() => joinExistingGame(joinInput.trim())}
+                    disabled={joinInput.trim().length < 4}
+                    style={{ padding: "12px 18px", background: joinInput.trim().length >= 4 ? "var(--surface2)" : "var(--surface)", border: `1px solid ${joinInput.trim().length >= 4 ? ACCENT : "var(--border)"}`, borderRadius: 12, cursor: joinInput.trim().length >= 4 ? "pointer" : "default", fontSize: 14, fontWeight: 800, color: joinInput.trim().length >= 4 ? ACCENT : "var(--text-muted)" }}
+                  >
+                    Beitreten
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* Saved puzzle games */}
