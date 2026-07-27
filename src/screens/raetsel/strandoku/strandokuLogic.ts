@@ -187,7 +187,7 @@ const REMOVE_COUNT_12: Record<StrandokuDifficulty, number> = {
   leicht: 60, mittel: 90, schwer: 110, experte: 128,
 };
 const REMOVE_COUNT_16: Record<StrandokuDifficulty, number> = {
-  leicht: 100, mittel: 160, schwer: 200, experte: 230,
+  leicht: 100, mittel: 130, schwer: 160, experte: 180,
 };
 
 function removeClues(solution: number[][], size: number, difficulty: StrandokuDifficulty, rng: () => number, diagonal = false, regions?: number[][]): { grid: number[][]; given: boolean[][] } {
@@ -221,23 +221,30 @@ function removeClues(solution: number[][], size: number, difficulty: StrandokuDi
 // ── Irregular regions generator ───────────────────────────────────────────────
 
 function generateIrregularRegions(size: number, rng: () => number): number[][] {
-  const regions: number[][] = Array.from({ length: size }, () => Array(size).fill(-1));
-  const regionCount = size; // one region per "number"
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const result = tryGenerateIrregularRegions(size, rng);
+    if (result !== null) return result;
+    rng(); // advance RNG so next attempt differs
+  }
+  // Fallback: rows as regions (guaranteed equal size, always valid)
+  return Array.from({ length: size }, (_, r) => Array(size).fill(r));
+}
 
-  for (let regionId = 0; regionId < regionCount; regionId++) {
-    let placed = 0;
-    // Find a starting cell
+function tryGenerateIrregularRegions(size: number, rng: () => number): number[][] | null {
+  const regions: number[][] = Array.from({ length: size }, () => Array(size).fill(-1));
+
+  for (let regionId = 0; regionId < size; regionId++) {
     let startR = -1, startC = -1;
-    for (let r = 0; r < size && startR === -1; r++) {
-      for (let c = 0; c < size && startR === -1; c++) {
-        if (regions[r][c] === -1) { startR = r; startC = c; }
+    outer: for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (regions[r][c] === -1) { startR = r; startC = c; break outer; }
       }
     }
     if (startR === -1) break;
 
     regions[startR][startC] = regionId;
-    placed++;
-    const frontier = [[startR, startC]] as [number, number][];
+    let placed = 1;
+    const frontier: [number, number][] = [[startR, startC]];
 
     while (placed < size && frontier.length > 0) {
       const idx = Math.floor(rng() * frontier.length);
@@ -256,13 +263,8 @@ function generateIrregularRegions(size: number, rng: () => number): number[][] {
       }
       if (!expanded) frontier.splice(idx, 1);
     }
-  }
 
-  // Fill remaining with last region id (shouldn't happen if algo is correct)
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (regions[r][c] === -1) regions[r][c] = regionCount - 1;
-    }
+    if (placed < size) return null; // region too small — retry entire generation
   }
   return regions;
 }

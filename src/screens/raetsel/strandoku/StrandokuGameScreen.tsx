@@ -4,7 +4,7 @@ import {
   generateStrandoku, createStrandokuState, selectCell, enterNumber, eraseCell,
   getStrandokuHint, serializeStrandokuState, deserializeStrandokuState,
   getBoxDimensions, sameBox, getCageForCell, getRegionColor,
-  type StrandokuVariant, type StrandokuDifficulty, type StrandokuState,
+  type StrandokuVariant, type StrandokuDifficulty, type StrandokuState, type StrandokuPuzzle,
 } from "./strandokuLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
 
@@ -35,61 +35,79 @@ export default function StrandokuGameScreen() {
   const saveIdRef = useRef<string>(locState.saveId ?? generateSaveId());
   const gameType = VARIANT_GAME_TYPES[variant];
 
-  const puzzleRef = useRef(generateStrandoku(variant, difficulty, seed));
-  const puzzle = puzzleRef.current;
-
-  const [gs, setGs] = useState<StrandokuState>(() => {
-    if (locState.savedState) return deserializeStrandokuState(puzzle, locState.savedState);
-    return createStrandokuState(puzzle);
-  });
-
+  const [puzzle, setPuzzle] = useState<StrandokuPuzzle | null>(null);
+  const [gs, setGs] = useState<StrandokuState | null>(null);
   const [elapsed, setElapsed] = useState(locState.elapsedSeconds ?? 0);
-  const [running, setRunning] = useState(true);
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    const p = generateStrandoku(variant, difficulty, seed);
+    const state = locState.savedState
+      ? deserializeStrandokuState(p, locState.savedState)
+      : createStrandokuState(p);
+    setPuzzle(p);
+    setGs(state);
+    setElapsed(locState.elapsedSeconds ?? 0);
+    setRunning(true);
+  }, [seed]);
   const [noteMode, setNoteMode] = useState(false);
   const [showWin, setShowWin] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
   const bestTime = getBestTime(gameType, variant, difficulty);
 
   useEffect(() => {
-    if (!running || gs.solved) return;
+    if (!running || gs?.solved) return;
     const id = setInterval(() => setElapsed(e => e + 1), 1000);
     return () => clearInterval(id);
-  }, [running, gs.solved]);
+  }, [running, gs?.solved]);
 
   useEffect(() => {
-    if (gs.solved && !showWin) {
+    if (gs?.solved && !showWin) {
       setRunning(false);
       recordBestTime(gameType, variant, difficulty, elapsed);
       deletePuzzleSave(saveIdRef.current);
       setShowWin(true);
     }
-  }, [gs.solved]);
+  }, [gs?.solved]);
 
   useEffect(() => {
-    if (gs.solved || showWin) return;
+    if (!gs || gs.solved || showWin) return;
     savePuzzle({
       id: saveIdRef.current, gameType: "strandoku", variant, difficulty, seed,
       puzzleState: serializeStrandokuState(gs), startedAt: Date.now(), elapsedSeconds: elapsed,
     });
-  }, [gs.board]);
+  }, [gs?.board]);
 
   const handleCellTap = useCallback((r: number, c: number) => {
-    setGs(prev => selectCell(prev, r, c));
+    setGs(prev => prev ? selectCell(prev, r, c) : prev);
   }, []);
 
   const handleNumber = useCallback((n: number) => {
-    setGs(prev => enterNumber(prev, n, noteMode));
+    setGs(prev => prev ? enterNumber(prev, n, noteMode) : prev);
   }, [noteMode]);
 
   const handleHint = () => {
+    if (!gs || !puzzle) return;
     const cell = getStrandokuHint(gs);
     if (!cell) return;
     const [r, c] = cell;
     setGs(prev => {
+      if (!prev) return prev;
       const s1 = selectCell(prev, r, c);
       return enterNumber(s1, puzzle.solution[r][c], false);
     });
   };
+
+  if (!puzzle || !gs) {
+    return (
+      <div className="screen" style={{ alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🔢</div>
+          <div style={{ fontSize: 14, color: "var(--text-muted)" }}>Rätsel wird generiert…</div>
+        </div>
+      </div>
+    );
+  }
 
   const { size } = puzzle;
   const isSamurai = puzzle.isSamurai;
@@ -312,7 +330,7 @@ export default function StrandokuGameScreen() {
     </div>
   );
 
-  function setGsErase() { setGs(prev => eraseCell(prev)); }
+  function setGsErase() { setGs(prev => prev ? eraseCell(prev) : prev); }
 }
 
 const backBtn: React.CSSProperties = {
