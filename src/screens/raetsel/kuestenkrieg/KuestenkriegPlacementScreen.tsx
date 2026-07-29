@@ -30,6 +30,7 @@ export default function KuestenkriegPlacementScreen() {
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
   const [waiting, setWaiting] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => { unsubRef.current?.(); }, []);
 
@@ -137,6 +138,15 @@ export default function KuestenkriegPlacementScreen() {
 
   const CELL = 32;
 
+  const cellFromTouch = (clientX: number, clientY: number): [number, number] | null => {
+    const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    if (!el) return null;
+    const raw = el.dataset.cell ?? el.parentElement?.dataset.cell;
+    if (!raw) return null;
+    const [r, c] = raw.split(",").map(Number);
+    return r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE ? [r, c] : null;
+  };
+
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
       <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -194,7 +204,12 @@ export default function KuestenkriegPlacementScreen() {
 
           {/* Grid */}
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <div>
+            <div
+              ref={gridRef}
+              onTouchMove={e => { if (allPlaced) return; const t = e.touches[0]; setHoverCell(cellFromTouch(t.clientX, t.clientY)); }}
+              onTouchEnd={() => setHoverCell(null)}
+              onTouchCancel={() => setHoverCell(null)}
+            >
               <div style={{ display: "flex", marginLeft: 22, marginBottom: 2 }}>
                 {Array.from({ length: GRID_SIZE }, (_, i) => (
                   <div key={i} style={{ width: CELL, fontSize: 10, color: "var(--text-muted)", textAlign: "center", fontWeight: 700 }}>
@@ -215,7 +230,9 @@ export default function KuestenkriegPlacementScreen() {
                     return (
                       <div
                         key={c}
+                        data-cell={`${r},${c}`}
                         onClick={() => handleCellClick(r, c)}
+                        onTouchStart={() => { if (!allPlaced) setHoverCell([r, c]); }}
                         onMouseEnter={() => setHoverCell([r, c])}
                         onMouseLeave={() => setHoverCell(null)}
                         style={{ width: CELL, height: CELL, background: bg, border: "1px solid var(--border)", cursor: allPlaced ? "default" : "pointer", boxSizing: "border-box" }}
