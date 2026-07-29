@@ -168,7 +168,7 @@ export default function StrandokuGameScreen() {
       </div>
 
       {/* Board */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 8px", overflowY: "auto" }}>
+      <div style={{ display: "flex", justifyContent: "center", padding: "8px 8px 0" }}>
         <div style={{ overflowX: "auto" }}>
           <div style={{
             display: "grid",
