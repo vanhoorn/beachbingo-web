@@ -116,7 +116,7 @@ export default function StrandokuGameScreen() {
   // Cell size: for Samurai use min(available-width, available-height) to fill the screen
   const cellPx = isSamurai
     ? Math.max(14, Math.floor(Math.min(window.innerWidth - 8, window.innerHeight - 210) / size))
-    : Math.floor(Math.min(window.innerWidth - 32, window.innerHeight - 210, 460) / size);
+    : Math.floor(Math.min(window.innerWidth - 32, window.innerHeight - 210) / size);
 
   const { bw, bh } = getBoxDimensions(size);
   // Samurai uses values 1-9 regardless of grid size (21×21 canvas, but 9×9 sub-grids)
@@ -257,7 +257,7 @@ export default function StrandokuGameScreen() {
                       }}>
                         {Array.from({ length: isSamurai ? 9 : size }, (_, i) => (
                           <span key={i} style={{
-                            fontSize: Math.max(cellPx / (isSamurai ? 9 : size) * 1.2, 5),
+                            fontSize: Math.max(Math.floor(cellPx * 0.30), 8),
                             color: cellNotes.has(i + 1) ? ACCENT : "transparent",
                             textAlign: "center", lineHeight: 1.1,
                           }}>{i + 1}</span>
