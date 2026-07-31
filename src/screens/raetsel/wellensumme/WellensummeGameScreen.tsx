@@ -98,7 +98,7 @@ export default function WellensummeGameScreen() {
       </div>
 
       {/* Grid */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 8px", overflowY: "auto" }}>
+      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 8px" }}>
         <div style={{ overflowX: "auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${size}, ${cellPx}px)`, border: "2px solid var(--text-muted)" }}>
             {cells.map((row, r) =>
@@ -160,7 +160,7 @@ export default function WellensummeGameScreen() {
       </div>
 
       {/* Number pad */}
-      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", padding: "10px 12px 24px" }}>
+      <div style={{ flexShrink: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", padding: "10px 12px 24px" }}>
         <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 8 }}>
           {[1,2,3,4,5,6,7,8,9].map(n => (
             <button key={n} onClick={() => setGs(prev => enterKakuroNumber(prev, n))} style={{ width: 40, height: 42, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>

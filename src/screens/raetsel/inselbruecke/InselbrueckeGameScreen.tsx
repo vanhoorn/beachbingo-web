@@ -149,7 +149,7 @@ export default function InselbrueckeGameScreen() {
       </div>
 
       {/* SVG Grid */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
         <div style={{ overflowX: "auto", maxWidth: "100%" }}>
           <svg
             width={Math.min(containerWidth, svgSize)}
@@ -210,6 +210,7 @@ export default function InselbrueckeGameScreen() {
 
       {/* Bottom controls */}
       <div style={{
+        flexShrink: 0,
         padding: "12px 16px 24px", display: "flex", gap: 10, justifyContent: "center",
         background: "var(--surface)", borderTop: "1px solid var(--border)",
       }}>

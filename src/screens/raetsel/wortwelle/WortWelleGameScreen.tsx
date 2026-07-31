@@ -269,9 +269,9 @@ export default function WortWelleGameScreen() {
 
       {/* Spielfeld — oben ausgerichtet */}
       <div style={{
-        flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "flex-start",
-        padding: "16px 20px 8px", gap: 6, overflow: "hidden",
+        flexShrink: 0, display: "flex", flexDirection: "column",
+        alignItems: "center",
+        padding: "16px 20px 8px", gap: 6,
       }}>
         {Array.from({ length: cfg.maxGuesses }, (_, row) => {
           const isSubmitted = row < gs.guesses.length;
@@ -342,6 +342,9 @@ export default function WortWelleGameScreen() {
         <div style={{ flex: 1 }} />
         <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle}>
           ? Regeln
+        </button>
+        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle}>
+          ✕ Aufgeben
         </button>
       </div>
 

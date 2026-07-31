@@ -134,7 +134,7 @@ export default function DuenenschattenGameScreen() {
       </div>
 
       {/* Grid */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px" }}>
+      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px" }}>
         <div style={{
           display: "grid",
           gridTemplateColumns: `repeat(${size}, ${cellSize}px)`,
@@ -190,6 +190,7 @@ export default function DuenenschattenGameScreen() {
 
       {/* Bottom controls */}
       <div style={{
+        flexShrink: 0,
         padding: "12px 16px 24px",
         display: "flex", gap: 10, justifyContent: "center",
         background: "var(--surface)", borderTop: "1px solid var(--border)",

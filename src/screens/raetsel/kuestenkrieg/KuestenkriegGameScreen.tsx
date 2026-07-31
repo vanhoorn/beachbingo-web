@@ -145,7 +145,7 @@ export default function KuestenkriegGameScreen() {
       </div>
 
       {/* Board area */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 8px", overflowY: "auto" }}>
+      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "12px 8px" }}>
         <div style={{ width: boardPx }}>
           {/* Column clues row */}
           <div style={{ display: "flex", marginLeft: LABEL_SIZE }}>
@@ -228,7 +228,7 @@ export default function KuestenkriegGameScreen() {
       </div>
 
       {/* Controls */}
-      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", padding: "10px 12px 24px" }}>
+      <div style={{ flexShrink: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", padding: "10px 12px 24px" }}>
         {/* Tool selector */}
         <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 8 }}>
           <button
