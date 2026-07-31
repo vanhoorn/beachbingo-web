@@ -337,7 +337,7 @@ export default function WortWelleGameScreen() {
         {mode !== "daily" && (
           <button onClick={handleQuitSave} style={ctrlBtn("var(--primary)")}>💾 Speichern</button>
         )}
-        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>? Regeln</button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
         <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>
         <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>
       </div>
