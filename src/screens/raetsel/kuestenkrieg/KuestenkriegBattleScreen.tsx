@@ -146,7 +146,7 @@ export default function KuestenkriegBattleScreen() {
         </div>
 
         {/* Fleet status */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
           {gs.aiFleet.map((ship, i) => (
             <div
               key={i}

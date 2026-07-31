@@ -113,10 +113,11 @@ export default function StrandokuGameScreen() {
   const { size } = puzzle;
   const isSamurai = puzzle.isSamurai;
 
-  // Cell size: for Samurai use min(available-width, available-height) to fill the screen
+  // Cell size: cap content width at 520px (.screen max-width) to prevent horizontal scrollbar
+  const MAX_CONTENT_W = Math.min(window.innerWidth, 520);
   const cellPx = isSamurai
-    ? Math.max(14, Math.floor(Math.min(window.innerWidth - 8, window.innerHeight - 210) / size))
-    : Math.floor(Math.min(window.innerWidth - 32, window.innerHeight - 210) / size);
+    ? Math.max(14, Math.floor(Math.min(MAX_CONTENT_W - 8, window.innerHeight - 210) / size))
+    : Math.floor(Math.min(MAX_CONTENT_W - 32, window.innerHeight - 210) / size);
 
   const { bw, bh } = getBoxDimensions(size);
   // Samurai uses values 1-9 regardless of grid size (21×21 canvas, but 9×9 sub-grids)
