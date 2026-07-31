@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
@@ -61,6 +61,20 @@ export default function HomeScreen() {
 
   function handleGameClick(_gameId: string, path: string) {
     navigate(path);
+  }
+
+  async function deleteActiveGame() {
+    if (!activeGame) return;
+    if (!confirm(`"${activeGame.name}" wirklich löschen? Das Spiel wird für alle Spieler beendet.`)) return;
+    const collectionByType: Record<string, string> = {
+      strandraeuber: "strandraeuberGames",
+      meermau: "meermauGames",
+      brandung: "brandungGames",
+      bingo: "games",
+    };
+    const col = collectionByType[activeGame.type];
+    if (col) await deleteDoc(doc(db, col, activeGame.gameId));
+    setActiveGame(null);
   }
 
   const favoriteGames = ALL_GAMES
@@ -136,15 +150,22 @@ export default function HomeScreen() {
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Code: {activeGame.gameId}</div>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-              <button
-                className="btn btn-outline"
-                style={{ flex: 1, fontSize: 13, padding: "8px" }}
-                onClick={() => setActiveGame(null)}
-              >Ignorieren</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-outline"
+                  style={{ flex: 1, fontSize: 13, padding: "8px" }}
+                  onClick={() => setActiveGame(null)}
+                >Ignorieren</button>
+                <button
+                  className="btn btn-outline"
+                  style={{ flex: 1, fontSize: 13, padding: "8px", borderColor: "#ef4444", color: "#ef4444" }}
+                  onClick={deleteActiveGame}
+                >🗑 Löschen</button>
+              </div>
               <button
                 className="btn"
-                style={{ flex: 1, fontSize: 13, padding: "8px", background: "#0ea5e9", color: "white" }}
+                style={{ width: "100%", fontSize: 13, padding: "8px", background: "#0ea5e9", color: "white" }}
                 onClick={() => {
                   if (activeGame.type === "strandraeuber") {
                     sessionStorage.setItem("spGame", JSON.stringify({ mode: "online", gameId: activeGame.gameId }));
