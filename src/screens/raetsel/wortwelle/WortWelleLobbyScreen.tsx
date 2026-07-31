@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DIFFICULTIES, DIFFICULTY_CONFIG, getDailyWord, hasDailyBeenPlayed,
-  getStats, type WortWelleDifficulty,
+  getStats, initWwWordLists, isWwReady, type WortWelleDifficulty,
 } from "./wortwelleLogic";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed } from "../../../puzzleSave";
 
@@ -23,10 +23,19 @@ export default function WortWelleLobbyScreen() {
   const [selected, setSelected] = useState<WortWelleDifficulty>("mittel");
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [wordBankReady, setWordBankReady] = useState(isWwReady);
   const saves = getPuzzleSaves().filter(s => s.gameType === "wortwelle");
 
-  const { word: dailyWord, dateStr } = getDailyWord(selected);
-  const dailyDone = hasDailyBeenPlayed(selected, dateStr);
+  useEffect(() => {
+    if (!isWwReady()) {
+      initWwWordLists().then(() => setWordBankReady(true));
+    }
+  }, []);
+
+  const { word: dailyWord, dateStr } = wordBankReady
+    ? getDailyWord(selected)
+    : { word: "", dateStr: "" };
+  const dailyDone = wordBankReady ? hasDailyBeenPlayed(selected, dateStr) : false;
 
   const startRandom = () => {
     navigate("/raetsel/wortwelle/game", { state: { difficulty: selected, mode: "random" } });
@@ -118,16 +127,16 @@ export default function WortWelleLobbyScreen() {
             </div>
             <button
               onClick={startDaily}
-              disabled={dailyDone}
+              disabled={!wordBankReady || dailyDone}
               style={{
                 padding: "10px 18px",
-                background: dailyDone ? "var(--surface2)" : ACCENT,
-                color: dailyDone ? "var(--text-muted)" : "#000",
-                border: "none", borderRadius: 10, cursor: dailyDone ? "default" : "pointer",
+                background: !wordBankReady || dailyDone ? "var(--surface2)" : ACCENT,
+                color: !wordBankReady || dailyDone ? "var(--text-muted)" : "#000",
+                border: "none", borderRadius: 10, cursor: (!wordBankReady || dailyDone) ? "default" : "pointer",
                 fontWeight: 700, fontSize: 14, flexShrink: 0,
               }}
             >
-              {dailyDone ? "Erledigt" : "Spielen"}
+              {!wordBankReady ? "Laden…" : dailyDone ? "Erledigt" : "Spielen"}
             </button>
           </div>
         </div>
@@ -135,13 +144,15 @@ export default function WortWelleLobbyScreen() {
         {/* Start Zufallsspiel */}
         <button
           onClick={startRandom}
+          disabled={!wordBankReady}
           style={{
-            padding: "16px", background: ACCENT, color: "#000",
-            border: "none", borderRadius: 14, cursor: "pointer",
+            padding: "16px", background: wordBankReady ? ACCENT : "var(--surface2)",
+            color: wordBankReady ? "#000" : "var(--text-muted)",
+            border: "none", borderRadius: 14, cursor: wordBankReady ? "pointer" : "default",
             fontWeight: 800, fontSize: 16,
           }}
         >
-          🌊 Zufälliges Spiel starten
+          {wordBankReady ? "🌊 Zufälliges Spiel starten" : "⏳ Wörter werden geladen…"}
         </button>
 
         {/* Gespeicherte Spiele */}

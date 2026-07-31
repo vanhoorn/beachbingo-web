@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   DIFFICULTY_CONFIG, computeStatuses, computeKeyStatuses, isValidGuess,
   validateHardMode, createInitialState, serializeState, deserializeState,
-  recordResult, getStats, getRandomWord,
+  recordResult, getStats, getRandomWord, initWwWordLists, isWwReady,
   type WortWelleDifficulty, type LetterStatus, type GameStatus,
 } from "./wortwelleLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
@@ -54,11 +54,22 @@ export default function WortWelleGameScreen() {
   const saveIdRef = useRef<string>(locState.saveId ?? generateSaveId());
   const resultRecordedRef = useRef(false);
 
-  const [targetWord] = useState<string>(() => {
+  const [targetWord, setTargetWord] = useState<string>(() => {
     if (locState.dailyWord) return locState.dailyWord;
     if (locState.savedState) return (JSON.parse(locState.savedState) as { targetWord: string }).targetWord;
-    return getRandomWord(difficulty);
+    if (isWwReady()) return getRandomWord(difficulty);
+    return "";
   });
+
+  // Safety-init: falls direkt zur GameScreen navigiert ohne Lobby-Init
+  useEffect(() => {
+    if (!isWwReady()) {
+      initWwWordLists().then(() => {
+        if (!targetWord) setTargetWord(getRandomWord(difficulty));
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [gs, setGs] = useState(() => {
     if (locState.savedState) return deserializeState(locState.savedState);
