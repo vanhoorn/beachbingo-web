@@ -240,21 +240,18 @@ export default function WortWelleGameScreen() {
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 20 }}>🌊</span>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>WortWelle</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>WortWelle</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>
               {DIFFICULTY_CONFIG[difficulty].label}
               {mode === "daily" ? " · Tageswort" : ""}
               {cfg.hardMode ? " · Hard Mode" : ""}
+              {" · "}{formatElapsed(elapsed)}
             </div>
           </div>
-        </div>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
-          {formatElapsed(elapsed)}
         </div>
         {bestTime !== null && (
           <div style={{ fontSize: 11, color: ACCENT }}>⏱ {formatElapsed(bestTime)}</div>
         )}
-        <button onClick={() => setShowHelp(true)} style={{ ...headerBtnStyle, color: ACCENT, border: `1px solid ${ACCENT}44` }}>?</button>
       </div>
 
       {/* Fehlermeldung */}
@@ -270,11 +267,11 @@ export default function WortWelleGameScreen() {
         </div>
       )}
 
-      {/* Spielfeld */}
+      {/* Spielfeld — oben ausgerichtet */}
       <div style={{
         flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        padding: "12px 20px", gap: 6, overflow: "hidden",
+        alignItems: "center", justifyContent: "flex-start",
+        padding: "16px 20px 8px", gap: 6, overflow: "hidden",
       }}>
         {Array.from({ length: cfg.maxGuesses }, (_, row) => {
           const isSubmitted = row < gs.guesses.length;
@@ -331,8 +328,25 @@ export default function WortWelleGameScreen() {
         })}
       </div>
 
+      {/* Controls-Leiste */}
+      <div style={{
+        flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
+        padding: "6px 12px", background: "var(--surface)",
+        borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)",
+      }}>
+        {mode !== "daily" && (
+          <button onClick={handleQuitSave} style={controlBtnStyle}>
+            💾 Speichern
+          </button>
+        )}
+        <div style={{ flex: 1 }} />
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle}>
+          ? Regeln
+        </button>
+      </div>
+
       {/* Tastatur */}
-      <div style={{ flexShrink: 0, padding: "8px 8px 16px", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+      <div style={{ flexShrink: 0, padding: "8px 8px 16px", background: "var(--surface)" }}>
         {KEYBOARD_ROWS.map((row, ri) => (
           <div key={ri} style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: ri < 2 ? 4 : 0 }}>
             {row.map(key => {
@@ -390,11 +404,11 @@ export default function WortWelleGameScreen() {
 
       {/* Hilfe-Dialog */}
       {showHelp && (
-        <div style={overlayStyle} onClick={() => setShowHelp(false)}>
+        <div style={overlayStyle} onClick={() => { setShowHelp(false); if (gs.gameStatus === "playing") setRunning(true); }}>
           <div style={{ ...dialogStyle, maxWidth: 380 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
               <span style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>Spielregeln</span>
-              <button onClick={() => setShowHelp(false)} style={closeBtnStyle}>✕</button>
+              <button onClick={() => { setShowHelp(false); if (gs.gameStatus === "playing") setRunning(true); }} style={closeBtnStyle}>✕</button>
             </div>
             {RULES_TEXT.map((r, i) => (
               <div key={i} style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 8 }}>{r}</div>
@@ -498,6 +512,13 @@ const headerBtnStyle: React.CSSProperties = {
   borderRadius: 10, cursor: "pointer", fontSize: 18,
   display: "flex", alignItems: "center", justifyContent: "center",
   color: "var(--text)",
+};
+
+const controlBtnStyle: React.CSSProperties = {
+  padding: "7px 14px", background: "var(--surface2)",
+  border: "1px solid var(--border)", borderRadius: 10,
+  cursor: "pointer", fontSize: 13, fontWeight: 700,
+  color: "var(--text)", display: "flex", alignItems: "center", gap: 6,
 };
 
 const overlayStyle: React.CSSProperties = {
