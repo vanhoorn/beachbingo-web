@@ -330,22 +330,15 @@ export default function WortWelleGameScreen() {
 
       {/* Controls-Leiste */}
       <div style={{
-        flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
-        padding: "6px 12px", background: "var(--surface)",
+        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        padding: "8px 12px", background: "var(--surface)",
         borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)",
       }}>
         {mode !== "daily" && (
-          <button onClick={handleQuitSave} style={controlBtnStyle}>
-            💾 Speichern
-          </button>
+          <button onClick={handleQuitSave} style={controlBtnStyle}>💾 Speichern</button>
         )}
-        <div style={{ flex: 1 }} />
-        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle}>
-          ? Regeln
-        </button>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle}>
-          ✕ Aufgeben
-        </button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle}>? Regeln</button>
+        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle}>✕ Aufgeben</button>
       </div>
 
       {/* Tastatur */}
