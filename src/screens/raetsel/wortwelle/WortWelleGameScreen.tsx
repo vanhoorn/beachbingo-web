@@ -335,10 +335,11 @@ export default function WortWelleGameScreen() {
         borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)",
       }}>
         {mode !== "daily" && (
-          <button onClick={handleQuitSave} style={controlBtnStyle}>💾 Speichern</button>
+          <button onClick={handleQuitSave} style={ctrlBtn("var(--primary)")}>💾 Speichern</button>
         )}
-        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle}>? Regeln</button>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle}>✕ Aufgeben</button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>? Regeln</button>
+        <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>
+        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>
       </div>
 
       {/* Tastatur */}
@@ -383,16 +384,14 @@ export default function WortWelleGameScreen() {
       {showQuit && (
         <div style={overlayStyle}>
           <div style={dialogStyle}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Spiel beenden?</div>
-            <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 20 }}>
-              Dein Fortschritt kann gespeichert werden.
-            </div>
+            <div style={{ fontSize: 36, marginBottom: 8, textAlign: "center" }}>🏖️</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 20, textAlign: "center" }}>Spiel beenden?</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button onClick={() => setShowQuit(false)} style={outlinedBtnStyle}>Weiterspielen</button>
+              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...ctrlBtn("var(--surface2)"), padding: "13px 0" }}>Weiterspielen</button>
               {mode !== "daily" && (
-                <button onClick={handleQuitSave} style={primaryBtnStyle}>💾 Speichern &amp; Beenden</button>
+                <button onClick={handleQuitSave} style={{ ...ctrlBtn("var(--primary)"), padding: "13px 0" }}>💾 Speichern &amp; Beenden</button>
               )}
-              <button onClick={handleQuitNoSave} style={dangerBtnStyle}>✕ Beenden ohne Speichern</button>
+              <button onClick={handleQuitNoSave} style={{ ...ctrlBtn("var(--danger)"), padding: "13px 0" }}>✕ Beenden ohne Speichern</button>
             </div>
           </div>
         </div>
@@ -492,7 +491,7 @@ function ResultDialog({
           <span>Gewonnen: <strong style={{ color: ACCENT }}>{winPct}%</strong></span>
           <span>Streak: <strong style={{ color: ACCENT }}>{stats.currentStreak}</strong></span>
         </div>
-        <button onClick={onClose} style={{ ...primaryBtnStyle, width: "100%" }}>
+        <button onClick={onClose} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "13px 0" }}>
           Zurück zur Lobby
         </button>
       </div>
@@ -510,12 +509,10 @@ const headerBtnStyle: React.CSSProperties = {
   color: "var(--text)",
 };
 
-const controlBtnStyle: React.CSSProperties = {
-  padding: "7px 14px", background: "var(--surface2)",
-  border: "1px solid var(--border)", borderRadius: 10,
-  cursor: "pointer", fontSize: 13, fontWeight: 700,
-  color: "var(--text)", display: "flex", alignItems: "center", gap: 6,
-};
+const ctrlBtn = (color: string): React.CSSProperties => ({
+  padding: "9px 14px", background: color + "22", border: `1px solid ${color}55`,
+  borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color,
+});
 
 const overlayStyle: React.CSSProperties = {
   position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
@@ -534,22 +531,4 @@ const closeBtnStyle: React.CSSProperties = {
   borderRadius: 8, width: 30, height: 30, cursor: "pointer",
   color: "var(--text-muted)", fontSize: 13,
   display: "flex", alignItems: "center", justifyContent: "center",
-};
-
-const primaryBtnStyle: React.CSSProperties = {
-  padding: "13px 16px", background: ACCENT, color: "#000",
-  border: "none", borderRadius: 12, cursor: "pointer",
-  fontWeight: 800, fontSize: 15,
-};
-
-const outlinedBtnStyle: React.CSSProperties = {
-  padding: "13px 16px", background: "transparent", color: "var(--text-sub)",
-  border: "1.5px solid var(--border)", borderRadius: 12, cursor: "pointer",
-  fontWeight: 700, fontSize: 15,
-};
-
-const dangerBtnStyle: React.CSSProperties = {
-  padding: "13px 16px", background: "transparent", color: "var(--danger)",
-  border: "1.5px solid var(--danger)44", borderRadius: 12, cursor: "pointer",
-  fontWeight: 700, fontSize: 15,
 };
