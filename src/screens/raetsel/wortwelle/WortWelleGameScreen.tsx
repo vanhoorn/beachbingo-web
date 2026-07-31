@@ -1,0 +1,527 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  DIFFICULTY_CONFIG, computeStatuses, computeKeyStatuses, isValidGuess,
+  validateHardMode, createInitialState, serializeState, deserializeState,
+  recordResult, getStats, getRandomWord,
+  type WortWelleDifficulty, type LetterStatus, type GameStatus,
+} from "./wortwelleLogic";
+import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
+
+const ACCENT = "#06b6d4";
+
+interface LocationState {
+  difficulty: WortWelleDifficulty;
+  mode: "random" | "daily";
+  dailyWord?: string;
+  dateStr?: string;
+  saveId?: string;
+  savedState?: string;
+  elapsedSeconds?: number;
+}
+
+const STATUS_COLORS: Record<LetterStatus, { bg: string; border: string; text: string }> = {
+  correct: { bg: "#22c55e", border: "#22c55e", text: "#000" },
+  present:  { bg: "#eab308", border: "#eab308", text: "#000" },
+  absent:   { bg: "#374151", border: "#374151", text: "#9ca3af" },
+  empty:    { bg: "transparent", border: "#374151", text: "var(--text)" },
+  typing:   { bg: "transparent", border: ACCENT, text: "var(--text)" },
+};
+
+const KEYBOARD_ROWS = [
+  ["Q","W","E","R","T","Z","U","I","O","P","Ü"],
+  ["A","S","D","F","G","H","J","K","L","Ö","Ä"],
+  ["←","Y","X","C","V","B","N","M","ß","↵"],
+];
+
+const RULES_TEXT = [
+  "Errate das versteckte Wort in möglichst wenigen Versuchen.",
+  "🟩 Grün: Buchstabe ist richtig und an der richtigen Stelle.",
+  "🟨 Gelb: Buchstabe ist im Wort, aber an der falschen Stelle.",
+  "⬛ Grau: Buchstabe kommt im Wort nicht vor.",
+  "Im Hard Mode (Experte) musst du bestätigte Buchstaben weiterverwenden.",
+];
+
+export default function WortWelleGameScreen() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locState = (location.state ?? {}) as LocationState;
+
+  const difficulty = locState.difficulty ?? "mittel";
+  const mode = locState.mode ?? "random";
+  const cfg = DIFFICULTY_CONFIG[difficulty];
+
+  const saveIdRef = useRef<string>(locState.saveId ?? generateSaveId());
+  const resultRecordedRef = useRef(false);
+
+  const [targetWord] = useState<string>(() => {
+    if (locState.dailyWord) return locState.dailyWord;
+    if (locState.savedState) return (JSON.parse(locState.savedState) as { targetWord: string }).targetWord;
+    return getRandomWord(difficulty);
+  });
+
+  const [gs, setGs] = useState(() => {
+    if (locState.savedState) return deserializeState(locState.savedState);
+    return createInitialState(targetWord);
+  });
+
+  const [elapsed, setElapsed] = useState(locState.elapsedSeconds ?? 0);
+  const [running, setRunning] = useState(true);
+  const [shake, setShake] = useState(false);
+  const [flip, setFlip] = useState<number | null>(null);  // row index
+  const [showQuit, setShowQuit] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showWin, setShowWin] = useState(false);
+  const [showLose, setShowLose] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const bestTime = getBestTime("wortwelle", difficulty, difficulty);
+
+  // Timer
+  useEffect(() => {
+    if (!running || gs.gameStatus !== "playing") return;
+    const id = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(id);
+  }, [running, gs.gameStatus]);
+
+
+  // Auto-Save (alle 5s, nur im playing-Zustand, nur Random-Modus)
+  useEffect(() => {
+    if (gs.gameStatus !== "playing" || mode === "daily") return;
+    const id = setInterval(() => {
+      savePuzzle({
+        id: saveIdRef.current,
+        gameType: "wortwelle",
+        variant: mode,
+        difficulty,
+        seed: 0,
+        puzzleState: serializeState(gs),
+        startedAt: Date.now(),
+        elapsedSeconds: elapsed,
+      });
+    }, 5000);
+    return () => clearInterval(id);
+  }, [gs, elapsed, difficulty, mode]);
+
+  // Gewinn/Verlust-Erkennung
+  useEffect(() => {
+    if (resultRecordedRef.current) return;
+    if (gs.gameStatus === "won") {
+      resultRecordedRef.current = true;
+      setRunning(false);
+      recordBestTime("wortwelle", difficulty, difficulty, elapsed);
+      recordResult(difficulty, true, gs.guesses.length, mode === "daily", locState.dateStr);
+      deletePuzzleSave(saveIdRef.current);
+      setTimeout(() => setShowWin(true), cfg.wordLength * 150 + 200);
+    } else if (gs.gameStatus === "lost") {
+      resultRecordedRef.current = true;
+      setRunning(false);
+      recordResult(difficulty, false, gs.guesses.length, mode === "daily", locState.dateStr);
+      deletePuzzleSave(saveIdRef.current);
+      setTimeout(() => setShowLose(true), 400);
+    }
+  }, [gs.gameStatus, gs.guesses.length, difficulty, elapsed, mode, locState.dateStr, cfg.wordLength]);
+
+  const showError = (msg: string) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(null), 2000);
+  };
+
+  const submitGuess = useCallback(() => {
+    const input = gs.currentInput.toUpperCase();
+    if (input.length !== cfg.wordLength) {
+      setShake(true);
+      showError(`Bitte ${cfg.wordLength} Buchstaben eingeben.`);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+    if (!isValidGuess(input, difficulty)) {
+      setShake(true);
+      showError("Unbekanntes Wort.");
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+    if (cfg.hardMode) {
+      const violation = validateHardMode(input, gs.guesses, targetWord);
+      if (violation) {
+        setShake(true);
+        showError(violation);
+        setTimeout(() => setShake(false), 500);
+        return;
+      }
+    }
+    const newGuesses = [...gs.guesses, input];
+    const won = input === targetWord;
+    const lost = !won && newGuesses.length >= cfg.maxGuesses;
+    const newStatus: GameStatus = won ? "won" : lost ? "lost" : "playing";
+
+    setFlip(newGuesses.length - 1);
+    setTimeout(() => setFlip(null), cfg.wordLength * 150 + 200);
+
+    setGs({
+      guesses: newGuesses,
+      currentInput: "",
+      gameStatus: newStatus,
+      targetWord: targetWord,
+      hardModeViolation: null,
+    });
+  }, [gs, cfg, difficulty]);
+
+  const handleKey = useCallback((key: string) => {
+    if (gs.gameStatus !== "playing") return;
+    if (key === "←" || key === "Backspace") {
+      setGs(prev => ({ ...prev, currentInput: prev.currentInput.slice(0, -1) }));
+      return;
+    }
+    if (key === "↵" || key === "Enter") {
+      submitGuess();
+      return;
+    }
+    const ch = key.toUpperCase();
+    const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜΒ";
+    // ß
+    const validChar = ch === "SS" ? "ß" : ch;
+    if ((validChars.includes(validChar) || validChar === "ß") && gs.currentInput.length < cfg.wordLength) {
+      setGs(prev => ({ ...prev, currentInput: prev.currentInput + validChar }));
+    }
+  }, [gs, cfg, submitGuess]);
+
+  // Physische Tastatur
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "Backspace") { handleKey("←"); return; }
+      if (e.key === "Enter") { handleKey("↵"); return; }
+      if (e.key.length === 1) handleKey(e.key);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleKey]);
+
+  const keyStatuses = computeKeyStatuses(gs.guesses, targetWord);
+
+  const handleQuitSave = () => {
+    savePuzzle({
+      id: saveIdRef.current, gameType: "wortwelle", variant: mode,
+      difficulty, seed: 0, puzzleState: serializeState(gs),
+      startedAt: Date.now(), elapsedSeconds: elapsed,
+    });
+    navigate(-1);
+  };
+
+  const handleQuitNoSave = () => {
+    deletePuzzleSave(saveIdRef.current);
+    navigate(-1);
+  };
+
+  // Zellen-Berechnung für Responsive-Layout
+  // Grid-Breite: min(360, availW - 40); Zellgröße: (gridW - (wordLen-1)*6) / wordLen
+  const maxGridW = Math.min(360, typeof window !== "undefined" ? window.innerWidth - 40 : 320);
+  const cellSize = Math.floor((maxGridW - (cfg.wordLength - 1) * 6) / cfg.wordLength);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{
+        background: "var(--surface)", borderBottom: "1px solid var(--border)",
+        padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
+      }}>
+        <button onClick={() => setShowQuit(true)} style={headerBtnStyle}>‹</button>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 20 }}>🌊</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>WortWelle</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {DIFFICULTY_CONFIG[difficulty].label}
+              {mode === "daily" ? " · Tageswort" : ""}
+              {cfg.hardMode ? " · Hard Mode" : ""}
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+          {formatElapsed(elapsed)}
+        </div>
+        {bestTime !== null && (
+          <div style={{ fontSize: 11, color: ACCENT }}>⏱ {formatElapsed(bestTime)}</div>
+        )}
+        <button onClick={() => setShowHelp(true)} style={{ ...headerBtnStyle, color: ACCENT, border: `1px solid ${ACCENT}44` }}>?</button>
+      </div>
+
+      {/* Fehlermeldung */}
+      {errorMsg && (
+        <div style={{
+          position: "absolute", top: 70, left: "50%", transform: "translateX(-50%)",
+          background: "var(--surface)", border: "1px solid var(--border)",
+          borderRadius: 10, padding: "8px 18px", fontSize: 14, color: "var(--text)",
+          fontWeight: 600, zIndex: 50, whiteSpace: "nowrap",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        }}>
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Spielfeld */}
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        padding: "12px 20px", gap: 6, overflow: "hidden",
+      }}>
+        {Array.from({ length: cfg.maxGuesses }, (_, row) => {
+          const isSubmitted = row < gs.guesses.length;
+          const isCurrent = row === gs.guesses.length;
+          const statuses = isSubmitted ? computeStatuses(gs.guesses[row], targetWord) : null;
+          const isFlipping = flip === row;
+
+          return (
+            <div
+              key={row}
+              style={{
+                display: "flex", gap: 6,
+                animation: (isCurrent && shake) ? "shake 0.4s ease" : undefined,
+              }}
+            >
+              {Array.from({ length: cfg.wordLength }, (_, col) => {
+                let letter = "";
+                let status: LetterStatus = "empty";
+
+                if (isSubmitted) {
+                  letter = gs.guesses[row][col] ?? "";
+                  status = statuses![col];
+                } else if (isCurrent) {
+                  letter = gs.currentInput[col] ?? "";
+                  status = letter ? "typing" : "empty";
+                }
+
+                const c = STATUS_COLORS[status];
+                const delay = isFlipping ? col * 150 : 0;
+
+                return (
+                  <div
+                    key={col}
+                    style={{
+                      width: cellSize, height: cellSize,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: isFlipping && status !== "empty"
+                        ? c.bg
+                        : (isSubmitted ? c.bg : c.bg),
+                      border: `2.5px solid ${c.border}`,
+                      borderRadius: 8,
+                      fontSize: Math.max(16, Math.floor(cellSize * 0.45)),
+                      fontWeight: 900, color: c.text,
+                      transition: isFlipping ? `background ${delay}ms ease, border-color ${delay}ms ease` : undefined,
+                      userSelect: "none",
+                    }}
+                  >
+                    {letter}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Tastatur */}
+      <div style={{ flexShrink: 0, padding: "8px 8px 16px", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+        {KEYBOARD_ROWS.map((row, ri) => (
+          <div key={ri} style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: ri < 2 ? 4 : 0 }}>
+            {row.map(key => {
+              const status = keyStatuses[key];
+              const isAction = key === "←" || key === "↵";
+              const c = status ? STATUS_COLORS[status] : { bg: "var(--surface2)", border: "var(--border)", text: "var(--text)" };
+
+              return (
+                <button
+                  key={key}
+                  onPointerDown={e => { e.preventDefault(); handleKey(key); }}
+                  style={{
+                    minWidth: isAction ? 52 : 30,
+                    height: 48,
+                    background: c.bg,
+                    border: `1.5px solid ${c.border}`,
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    fontSize: isAction ? 16 : 14,
+                    fontWeight: 800,
+                    color: c.text,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    userSelect: "none",
+                    touchAction: "manipulation",
+                    padding: "0 4px",
+                    flexShrink: 0,
+                  }}
+                >
+                  {key}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Quit-Dialog */}
+      {showQuit && (
+        <div style={overlayStyle}>
+          <div style={dialogStyle}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Spiel beenden?</div>
+            <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 20 }}>
+              Dein Fortschritt kann gespeichert werden.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => setShowQuit(false)} style={outlinedBtnStyle}>Weiterspielen</button>
+              {mode !== "daily" && (
+                <button onClick={handleQuitSave} style={primaryBtnStyle}>💾 Speichern &amp; Beenden</button>
+              )}
+              <button onClick={handleQuitNoSave} style={dangerBtnStyle}>✕ Beenden ohne Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hilfe-Dialog */}
+      {showHelp && (
+        <div style={overlayStyle} onClick={() => setShowHelp(false)}>
+          <div style={{ ...dialogStyle, maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
+              <span style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>Spielregeln</span>
+              <button onClick={() => setShowHelp(false)} style={closeBtnStyle}>✕</button>
+            </div>
+            {RULES_TEXT.map((r, i) => (
+              <div key={i} style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 8 }}>{r}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gewinn-Dialog */}
+      {showWin && (
+        <ResultDialog
+          won={true}
+          targetWord={targetWord}
+          guessCount={gs.guesses.length}
+          maxGuesses={cfg.maxGuesses}
+          elapsed={elapsed}
+          difficulty={difficulty}
+          onClose={() => navigate("/raetsel/wortwelle/lobby")}
+        />
+      )}
+
+      {/* Verloren-Dialog */}
+      {showLose && (
+        <ResultDialog
+          won={false}
+          targetWord={targetWord}
+          guessCount={gs.guesses.length}
+          maxGuesses={cfg.maxGuesses}
+          elapsed={elapsed}
+          difficulty={difficulty}
+          onClose={() => navigate("/raetsel/wortwelle/lobby")}
+        />
+      )}
+
+      <style>{`
+        @keyframes shake {
+          0%,100% { transform: translateX(0); }
+          20% { transform: translateX(-6px); }
+          40% { transform: translateX(6px); }
+          60% { transform: translateX(-4px); }
+          80% { transform: translateX(4px); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Ergebnis-Dialog ────────────────────────────────────────────────────────────
+
+function ResultDialog({
+  won, targetWord, guessCount, maxGuesses, elapsed, difficulty, onClose,
+}: {
+  won: boolean; targetWord: string; guessCount: number; maxGuesses: number;
+  elapsed: number; difficulty: WortWelleDifficulty; onClose: () => void;
+}) {
+  const stats = getStats(difficulty);
+  const winPct = stats.played > 0 ? Math.round((stats.won / stats.played) * 100) : 0;
+
+  return (
+    <div style={overlayStyle}>
+      <div style={{ ...dialogStyle, maxWidth: 360, textAlign: "center" }}>
+        <div style={{ fontSize: 48, marginBottom: 8 }}>{won ? "🎉" : "😔"}</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text)", marginBottom: 4 }}>
+          {won ? "Glückwunsch!" : "Schade!"}
+        </div>
+        <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 16 }}>
+          {won
+            ? `Du hast das Wort in ${guessCount} von ${maxGuesses} Versuchen erraten!`
+            : `Das gesuchte Wort war:`}
+        </div>
+        <div style={{
+          display: "inline-flex", gap: 4, marginBottom: 20,
+          padding: "10px 16px", background: "var(--surface2)", borderRadius: 12,
+        }}>
+          {targetWord.split("").map((ch, i) => (
+            <div key={i} style={{
+              width: 40, height: 40, background: "#22c55e", borderRadius: 6,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 20, fontWeight: 900, color: "#000",
+            }}>{ch}</div>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 20, fontSize: 13, color: "var(--text-muted)" }}>
+          <span>Zeit: <strong style={{ color: "var(--text)" }}>{formatElapsed(elapsed)}</strong></span>
+          <span>Gewonnen: <strong style={{ color: ACCENT }}>{winPct}%</strong></span>
+          <span>Streak: <strong style={{ color: ACCENT }}>{stats.currentStreak}</strong></span>
+        </div>
+        <button onClick={onClose} style={{ ...primaryBtnStyle, width: "100%" }}>
+          Zurück zur Lobby
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Styles ─────────────────────────────────────────────────────────────────────
+
+const headerBtnStyle: React.CSSProperties = {
+  width: 36, height: 36, flexShrink: 0,
+  background: "var(--surface2)", border: "1px solid var(--border)",
+  borderRadius: 10, cursor: "pointer", fontSize: 18,
+  display: "flex", alignItems: "center", justifyContent: "center",
+  color: "var(--text)",
+};
+
+const overlayStyle: React.CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  zIndex: 100, padding: 20,
+};
+
+const dialogStyle: React.CSSProperties = {
+  background: "var(--surface)", border: "1px solid var(--border)",
+  borderRadius: 20, padding: 24, width: "100%",
+  maxHeight: "90vh", overflowY: "auto",
+};
+
+const closeBtnStyle: React.CSSProperties = {
+  background: "var(--surface2)", border: "1px solid var(--border)",
+  borderRadius: 8, width: 30, height: 30, cursor: "pointer",
+  color: "var(--text-muted)", fontSize: 13,
+  display: "flex", alignItems: "center", justifyContent: "center",
+};
+
+const primaryBtnStyle: React.CSSProperties = {
+  padding: "13px 16px", background: ACCENT, color: "#000",
+  border: "none", borderRadius: 12, cursor: "pointer",
+  fontWeight: 800, fontSize: 15,
+};
+
+const outlinedBtnStyle: React.CSSProperties = {
+  padding: "13px 16px", background: "transparent", color: "var(--text-sub)",
+  border: "1.5px solid var(--border)", borderRadius: 12, cursor: "pointer",
+  fontWeight: 700, fontSize: 15,
+};
+
+const dangerBtnStyle: React.CSSProperties = {
+  padding: "13px 16px", background: "transparent", color: "var(--danger)",
+  border: "1.5px solid var(--danger)44", borderRadius: 12, cursor: "pointer",
+  fontWeight: 700, fontSize: 15,
+};

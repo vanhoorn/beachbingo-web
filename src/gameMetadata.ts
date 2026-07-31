@@ -167,6 +167,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
+  {
+    id: "wortwelle",
+    emoji: "🌊",
+    title: "WortWelle",
+    description: "Errate das deutsche Wort in wenigen Versuchen — Wordle auf Deutsch mit Hard Mode.",
+    color: "#06b6d4",
+    path: "/raetsel/wortwelle",
+    playerCounts: ["ONE_TWO"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
 ];
 
 export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
