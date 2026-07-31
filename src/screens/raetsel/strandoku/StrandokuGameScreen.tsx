@@ -113,11 +113,13 @@ export default function StrandokuGameScreen() {
   const { size } = puzzle;
   const isSamurai = puzzle.isSamurai;
 
-  // Cell size: cap content width at 520px (.screen max-width) to prevent horizontal scrollbar
-  const MAX_CONTENT_W = Math.min(window.innerWidth, 520);
-  const cellPx = isSamurai
-    ? Math.max(14, Math.floor(Math.min(MAX_CONTENT_W - 8, window.innerHeight - 210) / size))
-    : Math.floor(Math.min(MAX_CONTENT_W - 32, window.innerHeight - 210) / size);
+  // Large grids (mega12/mega16/Samurai) break out of the 520px .screen cap to fill the screen
+  const isLargeGrid = size > 9;
+  // .screen padding: 16px L+R = 32px; board container padding: 8px L+R = 16px; total = 48px horizontal overhead
+  // Subtract 4 more for the 2px grid border on each side so grid+border never exceeds available space
+  const availW = Math.max(160, isLargeGrid ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48);
+  const availH = Math.max(160, window.innerHeight - 210);
+  const cellPx = Math.max(10, Math.floor((Math.min(availW, availH) - 4) / size));
 
   const { bw, bh } = getBoxDimensions(size);
   // Samurai uses values 1-9 regardless of grid size (21×21 canvas, but 9×9 sub-grids)
@@ -146,7 +148,7 @@ export default function StrandokuGameScreen() {
   };
 
   return (
-    <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none" }}>
+    <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none", ...(isLargeGrid && { maxWidth: "none" }) }}>
       {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
