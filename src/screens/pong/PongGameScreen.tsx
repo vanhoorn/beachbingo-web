@@ -148,55 +148,59 @@ export default function PongGameScreen() {
   const activeSides = sidesForPaddles(totalPaddles, gsRef.current.wallSide);
 
   // ── Touch / Mouse helpers ────────────────────────────────────────────────────
-  const getScale = useCallback(() => {
-    const el = canvasRef.current;
-    if (!el) return { sx: 1, sy: 1, rect: null as DOMRect | null };
-    const rect = el.getBoundingClientRect();
-    return { sx: CW / rect.width, sy: CH / rect.height, rect };
-  }, [CW, CH]);
+  const zoneRef = useRef<HTMLDivElement>(null);
 
-  function applyInput(lx: number, ly: number) {
-    // lx, ly are in logical canvas coords
+  function applyZoneInput(clientX: number, clientY: number, rect: DOMRect) {
     const g = gsRef.current;
-    const side = humanCount === 1 ? mySide : mySide;  // player always controls mySide
-    const wallOff = is2P && (side === "left" || side === "right") ? WALL_H : 0;
-    const clamped = (axis: "x" | "y", val: number) =>
-      Math.max(PADDLE_LEN / 2 + wallOff, Math.min((axis === "x" ? CW : CH) - PADDLE_LEN / 2 - wallOff, val));
-
-    if (side === "left"   || side === "right")  g.paddles[side] = clamped("y", ly);
-    if (side === "top"    || side === "bottom")  g.paddles[side] = clamped("x", lx);
+    const touchX = clientX - rect.left;
+    const touchY = clientY - rect.top;
+    const frac  = Math.max(0, Math.min(1, touchY / rect.height));
+    const fracX = Math.max(0, Math.min(1, touchX / rect.width));
+    const wallOff = is2P ? WALL_H : 0;
+    const pMin  = PADDLE_LEN / 2 + wallOff;
+    const pMax  = CH - PADDLE_LEN / 2 - wallOff;
+    const pMinX = PADDLE_LEN / 2;
+    const pMaxX = CW - PADDLE_LEN / 2;
+    const side: PongSide = humanCount === 1
+      ? mySide
+      : touchX < rect.width / 2 ? "left" : "right";
+    if (side === "left" || side === "right") {
+      g.paddles[side] = pMin + frac * (pMax - pMin);
+    } else {
+      g.paddles[side] = pMinX + fracX * (pMaxX - pMinX);
+    }
   }
 
   useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
+    const zone = zoneRef.current;
+    if (!zone) return;
     const onTouch = (e: TouchEvent) => {
       e.preventDefault();
-      const { sx, sy, rect } = getScale();
-      if (!rect) return;
+      const rect = zone.getBoundingClientRect();
       for (let i = 0; i < e.touches.length; i++) {
         const t = e.touches[i];
-        applyInput((t.clientX - rect.left) * sx, (t.clientY - rect.top) * sy);
+        applyZoneInput(t.clientX, t.clientY, rect);
       }
     };
-    el.addEventListener("touchstart", onTouch, { passive: false });
-    el.addEventListener("touchmove",  onTouch, { passive: false });
-    return () => { el.removeEventListener("touchstart", onTouch); el.removeEventListener("touchmove", onTouch); };
+    zone.addEventListener("touchstart", onTouch, { passive: false });
+    zone.addEventListener("touchmove",  onTouch, { passive: false });
+    return () => { zone.removeEventListener("touchstart", onTouch); zone.removeEventListener("touchmove", onTouch); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getScale, mySide, CW, CH]);
+  }, [mySide, humanCount, is2P, CW, CH]);
 
   useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    const onMouse = (e: MouseEvent) => {
-      const { sx, sy, rect } = getScale();
-      if (!rect) return;
-      applyInput((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy);
-    };
-    el.addEventListener("mousemove", onMouse);
-    return () => el.removeEventListener("mousemove", onMouse);
+    const zone = zoneRef.current;
+    if (!zone) return;
+    let down = false;
+    const onDown = (e: MouseEvent) => { down = true; applyZoneInput(e.clientX, e.clientY, zone.getBoundingClientRect()); };
+    const onMove = (e: MouseEvent) => { if (down) applyZoneInput(e.clientX, e.clientY, zone.getBoundingClientRect()); };
+    const onUp   = () => { down = false; };
+    zone.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
+    return () => { zone.removeEventListener("mousedown", onDown); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getScale, mySide, CW, CH]);
+  }, [mySide, humanCount, is2P, CW, CH]);
 
   // ── Host: mark game as running so guests can activate ─────────────────────
   useEffect(() => {
@@ -282,9 +286,6 @@ export default function PongGameScreen() {
     const ctx = canvas.getContext("2d")!;
 
     function drawScene(g: GS) {
-      ctx.fillStyle = "#0a1628";
-      ctx.fillRect(0, 0, CW, CH);
-
       if (is2P) {
         draw2PField(ctx, g, CW, CH);
       } else {
@@ -401,194 +402,73 @@ export default function PongGameScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loser]);
 
-  // ── Draw helpers ─────────────────────────────────────────────────────────────
-
-  function drawBackground(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
-    // Sandy beach court gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, ch);
-    grad.addColorStop(0,   "#c8a86b");
-    grad.addColorStop(0.5, "#d4b87a");
-    grad.addColorStop(1,   "#c09050");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, cw, ch);
-    // Subtle sand texture lines
-    ctx.save();
-    ctx.globalAlpha = 0.07;
-    ctx.strokeStyle = "#8b6a30";
-    ctx.lineWidth = 1;
-    for (let y = 0; y < ch; y += 6) {
-      ctx.beginPath(); ctx.moveTo(0, y + Math.sin(y * 0.3) * 1.5); ctx.lineTo(cw, y + Math.sin(y * 0.3 + 1) * 1.5); ctx.stroke();
-    }
-    ctx.restore();
-    // Court boundary
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.strokeRect(MARGIN + PADDLE_THICK + 4, 8, cw - 2 * (MARGIN + PADDLE_THICK + 4), ch - 16);
-    ctx.restore();
-  }
-
-  function drawNet2P(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
-    const nx = cw / 2;
-    // Shadow
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 6;
-    ctx.fillStyle = "#7a5c28";
-    ctx.fillRect(nx - 2, 0, 4, ch);
-    ctx.shadowBlur = 0;
-    // Net stripes
-    ctx.strokeStyle = "rgba(255,255,255,0.55)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 5]);
-    for (let y = 8; y < ch; y += 9) {
-      ctx.beginPath(); ctx.moveTo(nx - 6, y); ctx.lineTo(nx + 6, y); ctx.stroke();
-    }
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-
-  function drawNetMulti(ctx: CanvasRenderingContext2D, size: number) {
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 6]);
-    ctx.beginPath(); ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, size / 2); ctx.lineTo(size, size / 2); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-
-  function draw2PWall(ctx: CanvasRenderingContext2D, cw: number, y: number) {
-    const grad = ctx.createLinearGradient(0, y, 0, y + WALL_H);
-    grad.addColorStop(0, "#5c3a1e");
-    grad.addColorStop(0.4, "#8b5e2a");
-    grad.addColorStop(1, "#a87040");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, y, cw, WALL_H);
-    // highlight stripe
-    ctx.fillStyle = "rgba(255,220,150,0.18)";
-    ctx.fillRect(0, y + 3, cw, 3);
-    // shadow stripe
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.fillRect(0, y + WALL_H - 3, cw, 3);
-    // border line
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, y + 0.5, cw - 1, WALL_H - 1);
-  }
+  // ── Draw helpers (classic) ───────────────────────────────────────────────────
 
   function draw2PField(ctx: CanvasRenderingContext2D, g: GS, cw: number, ch: number) {
-    drawBackground(ctx, cw, ch);
-    drawNet2P(ctx, cw, ch);
-
-    // Top and bottom walls
-    draw2PWall(ctx, cw, 0);
-    draw2PWall(ctx, cw, ch - WALL_H);
-
-    drawSurfboard(ctx, MARGIN, g.paddles.left  - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR.left,  "v");
-    drawSurfboard(ctx, cw - MARGIN - PADDLE_THICK, g.paddles.right - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR.right, "v");
-
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, cw, ch);
+    // Walls
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, cw, WALL_H);
+    ctx.fillRect(0, ch - WALL_H, cw, WALL_H);
+    // Dashed center line
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 4;
+    ctx.setLineDash([12, 10]);
+    ctx.beginPath();
+    ctx.moveTo(cw / 2, WALL_H);
+    ctx.lineTo(cw / 2, ch - WALL_H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Paddles
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(MARGIN, g.paddles.left  - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN);
+    ctx.fillRect(cw - MARGIN - PADDLE_THICK, g.paddles.right - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN);
     drawBall(ctx, g);
     if (g.paused && g.pauseTimer > 30) drawCountdown(ctx, g.pauseTimer, cw, ch);
   }
 
   function drawMultiField(ctx: CanvasRenderingContext2D, g: GS, total: number, size: number) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, size, size);
     const wall = g.wallSide;
-    drawBackground(ctx, size, size);
-    drawNetMulti(ctx, size);
-
-    // Corner deflectors (4P only)
+    // Center cross
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath(); ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, size / 2); ctx.lineTo(size, size / 2); ctx.stroke();
+    ctx.setLineDash([]);
+    // Wall side
+    if (wall) {
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      if (wall === "left")   ctx.fillRect(0, 0, MARGIN + PADDLE_THICK, size);
+      if (wall === "right")  ctx.fillRect(size - MARGIN - PADDLE_THICK, 0, MARGIN + PADDLE_THICK, size);
+      if (wall === "top")    ctx.fillRect(0, 0, size, MARGIN + PADDLE_THICK);
+      if (wall === "bottom") ctx.fillRect(0, size - MARGIN - PADDLE_THICK, size, MARGIN + PADDLE_THICK);
+    }
     if (total === 4) {
       drawCorner(ctx, 0,    0,    "tl");
       drawCorner(ctx, size, 0,    "tr");
       drawCorner(ctx, 0,    size, "bl");
       drawCorner(ctx, size, size, "br");
     }
-
-    // Wall (3P) — sand-coloured plank
-    if (wall) {
-      ctx.save();
-      ctx.fillStyle = "#8b6530cc";
-      ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 2;
-      if (wall === "left")   { ctx.fillRect(0, 0, PADDLE_THICK + MARGIN, size); ctx.strokeRect(0, 0, PADDLE_THICK + MARGIN, size); }
-      if (wall === "right")  { ctx.fillRect(size - MARGIN - PADDLE_THICK, 0, PADDLE_THICK + MARGIN, size); }
-      if (wall === "top")    { ctx.fillRect(0, 0, size, PADDLE_THICK + MARGIN); }
-      if (wall === "bottom") { ctx.fillRect(0, size - MARGIN - PADDLE_THICK, size, PADDLE_THICK + MARGIN); }
-      ctx.restore();
-    }
-
+    // Paddles (colored for player identification)
     sidesForPaddles(total, wall).forEach((side) => {
+      ctx.fillStyle = SIDE_COLOR[side];
       const pos = g.paddles[side];
-      if (side === "left")   drawSurfboard(ctx, MARGIN,                       pos - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR[side], "v");
-      if (side === "right")  drawSurfboard(ctx, size - MARGIN - PADDLE_THICK, pos - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN, SIDE_COLOR[side], "v");
-      if (side === "top")    drawSurfboard(ctx, pos - PADDLE_LEN / 2, MARGIN,                       PADDLE_LEN, PADDLE_THICK, SIDE_COLOR[side], "h");
-      if (side === "bottom") drawSurfboard(ctx, pos - PADDLE_LEN / 2, size - MARGIN - PADDLE_THICK, PADDLE_LEN, PADDLE_THICK, SIDE_COLOR[side], "h");
+      if (side === "left")   ctx.fillRect(MARGIN, pos - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN);
+      if (side === "right")  ctx.fillRect(size - MARGIN - PADDLE_THICK, pos - PADDLE_LEN / 2, PADDLE_THICK, PADDLE_LEN);
+      if (side === "top")    ctx.fillRect(pos - PADDLE_LEN / 2, MARGIN, PADDLE_LEN, PADDLE_THICK);
+      if (side === "bottom") ctx.fillRect(pos - PADDLE_LEN / 2, size - MARGIN - PADDLE_THICK, PADDLE_LEN, PADDLE_THICK);
     });
-
     drawBall(ctx, g);
     if (g.paused && g.pauseTimer > 30) drawCountdown(ctx, g.pauseTimer, size, size);
   }
 
-  // Surfboard shape — pointed at both long ends, curved sides
-  function drawSurfboard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, dir: "v" | "h") {
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 8;
-
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-
-    if (dir === "v") {
-      // Vertical surfboard: pointed top & bottom, wide middle
-      const hw = w / 2, hh = h / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - hh);                                    // top tip
-      ctx.bezierCurveTo(cx + hw * 2.2, cy - hh * 0.6, cx + hw * 2.2, cy + hh * 0.6, cx, cy + hh); // right curve
-      ctx.bezierCurveTo(cx - hw * 2.2, cy + hh * 0.6, cx - hw * 2.2, cy - hh * 0.6, cx, cy - hh); // left curve
-      ctx.closePath();
-      // Fill with gradient
-      const g2 = ctx.createLinearGradient(x, 0, x + w, 0);
-      g2.addColorStop(0, shadeColor(color, -20));
-      g2.addColorStop(0.5, color);
-      g2.addColorStop(1, shadeColor(color, -20));
-      ctx.fillStyle = g2;
-      ctx.fill();
-      // Stripe down the middle
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1.5; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(cx, cy - hh * 0.7); ctx.lineTo(cx, cy + hh * 0.7); ctx.stroke();
-    } else {
-      // Horizontal surfboard: pointed left & right
-      const hw = w / 2, hh = h / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - hw, cy);                                    // left tip
-      ctx.bezierCurveTo(cx - hw * 0.6, cy - hh * 2.2, cx + hw * 0.6, cy - hh * 2.2, cx + hw, cy); // top curve
-      ctx.bezierCurveTo(cx + hw * 0.6, cy + hh * 2.2, cx - hw * 0.6, cy + hh * 2.2, cx - hw, cy); // bottom curve
-      ctx.closePath();
-      const g2 = ctx.createLinearGradient(0, y, 0, y + h);
-      g2.addColorStop(0, shadeColor(color, -20));
-      g2.addColorStop(0.5, color);
-      g2.addColorStop(1, shadeColor(color, -20));
-      ctx.fillStyle = g2;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 1.5; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(cx - hw * 0.7, cy); ctx.lineTo(cx + hw * 0.7, cy); ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function shadeColor(hex: string, amt: number): string {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.min(255, Math.max(0, (n >> 16) + amt));
-    const g2 = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + amt));
-    const b = Math.min(255, Math.max(0, (n & 0xff) + amt));
-    return `rgb(${r},${g2},${b})`;
-  }
-
   function drawCorner(ctx: CanvasRenderingContext2D, cx: number, cy: number, pos: "tl"|"tr"|"bl"|"br") {
     const s = CORNER_SIZE;
-    ctx.fillStyle = "#8b6530bb";
+    ctx.fillStyle = "rgba(255,255,255,0.15)";
     ctx.beginPath();
     if (pos === "tl") { ctx.moveTo(cx, cy); ctx.lineTo(cx + s, cy); ctx.lineTo(cx, cy + s); }
     if (pos === "tr") { ctx.moveTo(cx, cy); ctx.lineTo(cx - s, cy); ctx.lineTo(cx, cy + s); }
@@ -599,49 +479,10 @@ export default function PongGameScreen() {
 
   function drawBall(ctx: CanvasRenderingContext2D, g: GS) {
     if (g.paused && g.pauseTimer >= 30) return;
-    const r = BALL_R;
-    const bx = g.bx, by = g.by;
-
-    // Drop shadow
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 10;
-    ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#f0ede0"; ctx.fill();
-    ctx.restore();
-
-    // Ball base (off-white)
-    ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#f5f2e6"; ctx.fill();
-
-    // Volleyball panel seams — 3 curved bands
-    ctx.save();
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([]);
-
-    // Blue panel (top-left area)
+    ctx.fillStyle = "#fff";
     ctx.beginPath();
-    ctx.arc(bx - r * 0.3, by - r * 0.3, r * 1.05, Math.PI * 0.55, Math.PI * 1.3);
-    ctx.strokeStyle = "#2563eb"; ctx.stroke();
-
-    // Orange/yellow panel (right area)
-    ctx.beginPath();
-    ctx.arc(bx + r * 0.3, by, r * 1.05, Math.PI * 1.55, Math.PI * 0.25);
-    ctx.strokeStyle = "#f59e0b"; ctx.stroke();
-
-    // Green panel (bottom area)
-    ctx.beginPath();
-    ctx.arc(bx, by + r * 0.35, r * 1.05, Math.PI * 0.05, Math.PI * 0.95);
-    ctx.strokeStyle = "#16a34a"; ctx.stroke();
-
-    // Outer border
-    ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(0,0,0,0.15)"; ctx.lineWidth = 1; ctx.stroke();
-
-    // Highlight
-    ctx.beginPath(); ctx.arc(bx - r * 0.28, by - r * 0.28, r * 0.3, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fill();
-
-    ctx.restore();
+    ctx.arc(g.bx, g.by, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawCountdown(ctx: CanvasRenderingContext2D, timer: number, cw: number, ch: number) {
@@ -649,7 +490,6 @@ export default function PongGameScreen() {
     ctx.save();
     ctx.font = "bold 80px system-ui";
     ctx.textAlign = "center";
-    ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 12;
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.fillText(String(n), cw / 2, ch / 2 + 28);
     ctx.restore();
@@ -826,18 +666,55 @@ export default function PongGameScreen() {
       </div>
 
       {/* Canvas */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 4 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "4px 4px 0" }}>
         <canvas
           ref={canvasRef}
           width={CW} height={CH}
           style={{
-            width: is2P ? "auto" : "min(100%, calc(100dvh - 120px))",
-            height: is2P ? "calc(100dvh - 120px)" : "min(100%, calc(100dvh - 120px))",
+            width: is2P ? "auto" : "min(100%, calc(100dvh - 200px))",
+            height: is2P ? "calc(100dvh - 200px)" : "min(100%, calc(100dvh - 200px))",
             maxWidth: is2P ? CW : undefined,
             maxHeight: is2P ? "100%" : undefined,
             touchAction: "none", display: "block",
           }}
         />
+      </div>
+
+      {/* Zone control strip */}
+      <div
+        ref={zoneRef}
+        style={{
+          height: 80, background: "#0d0d0d", borderTop: "1px solid #1a1a1a",
+          display: "flex", alignItems: "stretch", userSelect: "none",
+          touchAction: "none", flexShrink: 0, cursor: "ns-resize",
+        }}
+      >
+        {humanCount >= 2 ? (
+          <>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid #1a1a1a", gap: 8 }}>
+              <div style={{ width: 3, height: 28, background: SIDE_COLOR.left, borderRadius: 2 }} />
+              <span style={{ fontSize: 10, color: "#444", fontWeight: 700 }}>↕</span>
+            </div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ fontSize: 10, color: "#444", fontWeight: 700 }}>↕</span>
+              <div style={{ width: 3, height: 28, background: SIDE_COLOR.right, borderRadius: 2 }} />
+            </div>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {(mySide === "left" || mySide === "right") ? (
+              <>
+                <div style={{ width: 3, height: 32, background: SIDE_COLOR[mySide], borderRadius: 2 }} />
+                <span style={{ fontSize: 11, color: "#444", fontWeight: 700 }}>↕</span>
+              </>
+            ) : (
+              <>
+                <div style={{ width: 32, height: 3, background: SIDE_COLOR[mySide], borderRadius: 2 }} />
+                <span style={{ fontSize: 11, color: "#444", fontWeight: 700 }}>↔</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* HUD bar */}
@@ -866,13 +743,6 @@ export default function PongGameScreen() {
           onDismiss={() => { setShowQuitDialog(false); setManualPaused(false); manualPausedRef.current = false; }}
         />
       )}
-
-      {/* Touch hint */}
-      <div style={{ position: "fixed", bottom: 16, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
-        <div style={{ fontSize: 11, color: `${SIDE_COLOR[mySide]}88`, fontWeight: 700 }}>
-          {mySide === "left" || mySide === "right" ? "↕ Ziehe zum Steuern" : "↔ Ziehe zum Steuern"}
-        </div>
-      </div>
 
       {/* Loser / Winner overlay */}
       {loser && (
