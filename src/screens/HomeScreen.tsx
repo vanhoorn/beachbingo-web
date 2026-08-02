@@ -225,7 +225,6 @@ export default function HomeScreen() {
 
         {/* Rätsel */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Rätsel" emoji="🧩" />
           <button
             onClick={() => navigate("/raetsel")}
             style={{
@@ -248,7 +247,6 @@ export default function HomeScreen() {
 
         {/* Karten */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Karten" emoji="🃏" />
           <button
             onClick={() => navigate("/card-games")}
             style={{
@@ -271,7 +269,6 @@ export default function HomeScreen() {
 
         {/* Action */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Action" emoji="⚡" />
           <button
             onClick={() => navigate("/action-games")}
             style={{
@@ -294,7 +291,6 @@ export default function HomeScreen() {
 
         {/* Couch */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Couch" emoji="🛋️" />
           <button
             onClick={() => navigate("/couch-games")}
             style={{
@@ -317,7 +313,6 @@ export default function HomeScreen() {
 
         {/* Alle Spiele */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Alle Spiele" emoji="🎮" />
           <button
             onClick={() => navigate("/all-games")}
             style={{
