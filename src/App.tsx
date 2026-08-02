@@ -51,6 +51,8 @@ import JoinScreen from "./screens/JoinScreen";
 import CategoryScreen from "./screens/CategoryScreen";
 import AllGamesScreen from "./screens/AllGamesScreen";
 import CardGamesScreen from "./screens/CardGamesScreen";
+import ActionGamesScreen from "./screens/ActionGamesScreen";
+import CouchGamesScreen from "./screens/CouchGamesScreen";
 import RaetselScreen from "./screens/RaetselScreen";
 import DuenenschattenLobbyScreen from "./screens/raetsel/duenenschatten/DuenenschattenLobbyScreen";
 import DuenenschattenGameScreen from "./screens/raetsel/duenenschatten/DuenenschattenGameScreen";
@@ -145,6 +147,8 @@ function App() {
         <Route path="/category/:playerCount" element={loggedIn ? <CategoryScreen /> : <Navigate to="/login" />} />
         <Route path="/all-games"     element={loggedIn ? <AllGamesScreen />    : <Navigate to="/login" />} />
         <Route path="/card-games"    element={loggedIn ? <CardGamesScreen />   : <Navigate to="/login" />} />
+        <Route path="/action-games"  element={loggedIn ? <ActionGamesScreen /> : <Navigate to="/login" />} />
+        <Route path="/couch-games"   element={loggedIn ? <CouchGamesScreen />  : <Navigate to="/login" />} />
         <Route path="/raetsel"       element={loggedIn ? <RaetselScreen />     : <Navigate to="/login" />} />
         <Route path="/raetsel/duenenschatten/lobby" element={loggedIn ? <DuenenschattenLobbyScreen /> : <Navigate to="/login" />} />
         <Route path="/raetsel/duenenschatten/game"  element={loggedIn ? <DuenenschattenGameScreen />  : <Navigate to="/login" />} />

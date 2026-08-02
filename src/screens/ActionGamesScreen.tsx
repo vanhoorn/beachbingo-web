@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CARD_GAMES, type GameMetadata } from "../gameMetadata";
+import { ACTION_GAMES, type GameMetadata } from "../gameMetadata";
 import { GAME_RULES } from "../gameRules";
 import GameRulesModal from "../components/GameRulesModal";
 
-export default function CardGamesScreen() {
+export default function ActionGamesScreen() {
   const navigate = useNavigate();
-  const games = [...CARD_GAMES].sort((a, b) => a.title.localeCompare(b.title));
+  const games = [...ACTION_GAMES].sort((a, b) => a.title.localeCompare(b.title));
   const [rulesGameId, setRulesGameId] = useState<string | null>(null);
   const activeRule = rulesGameId ? GAME_RULES[rulesGameId] : null;
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
-      {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
         padding: "20px 20px",
@@ -27,17 +26,16 @@ export default function CardGamesScreen() {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >‹</button>
-        <span style={{ fontSize: 32, lineHeight: 1 }}>🃏</span>
+        <span style={{ fontSize: 32, lineHeight: 1 }}>⚡</span>
         <div>
           <div style={{
             fontSize: 10, color: "var(--text-muted)", fontWeight: 700,
             letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 2,
           }}>KATEGORIE</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>Karten</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>Action</div>
         </div>
       </div>
 
-      {/* Game list */}
       <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 14 }}>
         {games.map((game) => (
           <GameRow
@@ -87,9 +85,7 @@ function GameRow({
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 32,
       }}>
-        {game.id === "meermau"
-          ? <img src="/meermau-logo.svg" alt="MeerMau" style={{ width: 42, height: 42, objectFit: "contain" }} />
-          : game.emoji}
+        {game.emoji}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{game.title}</div>

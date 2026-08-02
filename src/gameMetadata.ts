@@ -34,7 +34,7 @@ export const ALL_GAMES: GameMetadata[] = [
     color: "#0ea5e9",
     path: "/lobby",
     playerCounts: ["TWO_FOUR", "FOUR_PLUS"],
-    genres: ["PARTY"],
+    genres: ["PARTY", "COUCH"],
   },
   {
     id: "pong",
@@ -54,7 +54,7 @@ export const ALL_GAMES: GameMetadata[] = [
     color: "#f59e0b",
     path: "/vier/lobby",
     playerCounts: ["ONE_TWO"],
-    genres: ["LOGICAL"],
+    genres: ["LOGICAL", "COUCH"],
   },
   {
     id: "pirates",
@@ -74,7 +74,7 @@ export const ALL_GAMES: GameMetadata[] = [
     color: "#22c55e",
     path: "/worm/lobby",
     playerCounts: ["ONE_TWO"],
-    genres: ["ACTION"],
+    genres: ["COUCH"],
   },
   {
     id: "strandturm",
@@ -179,7 +179,9 @@ export const ALL_GAMES: GameMetadata[] = [
   },
 ];
 
-export const CARD_GAMES = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
+export const CARD_GAMES   = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
 export const RIDDLE_GAMES = ALL_GAMES.filter((g) => g.genres.includes("RIDDLE"));
+export const ACTION_GAMES = ALL_GAMES.filter((g) => g.genres.includes("ACTION"));
+export const COUCH_GAMES  = ALL_GAMES.filter((g) => g.genres.includes("COUCH"));
 
 export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

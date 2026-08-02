@@ -3,7 +3,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from "fireb
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
-import { ALL_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, RIDDLE_GAMES, type PlayerCountKey } from "../gameMetadata";
+import { ACTION_GAMES, ALL_GAMES, COUCH_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, RIDDLE_GAMES, type PlayerCountKey } from "../gameMetadata";
 import { getPuzzleSaves, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave } from "../puzzleSave";
 
 interface ActiveGameInfo {
@@ -83,6 +83,8 @@ export default function HomeScreen() {
 
   const cardGameCount = ALL_GAMES.filter((g) => g.genres.includes("CARD")).length;
   const riddleCount = RIDDLE_GAMES.length;
+  const actionCount = ACTION_GAMES.length;
+  const couchCount = COUCH_GAMES.length;
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
@@ -244,9 +246,9 @@ export default function HomeScreen() {
           </button>
         </section>
 
-        {/* Kartenspiele */}
+        {/* Karten */}
         <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Kartenspiele" emoji="🃏" />
+          <SectionHeader title="Karten" emoji="🃏" />
           <button
             onClick={() => navigate("/card-games")}
             style={{
@@ -258,12 +260,81 @@ export default function HomeScreen() {
           >
             <span style={{ fontSize: 28 }}>🃏</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Kartenspiele</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Karten</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                 {cardGameCount} {cardGameCount === 1 ? "Spiel" : "Spiele"} · MeerMau, Brandung & mehr
               </div>
             </div>
             <span style={{ fontSize: 20, color: "#7c3aed" }}>›</span>
+          </button>
+        </section>
+
+        {/* Action */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Action" emoji="⚡" />
+          <button
+            onClick={() => navigate("/action-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(249,115,22,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>⚡</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Action</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {actionCount} {actionCount === 1 ? "Spiel" : "Spiele"} · BeachPirates, BeachVolley & mehr
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#f97316" }}>›</span>
+          </button>
+        </section>
+
+        {/* Couch */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Couch" emoji="🛋️" />
+          <button
+            onClick={() => navigate("/couch-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(245,158,11,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🛋️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Couch</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {couchCount} {couchCount === 1 ? "Spiel" : "Spiele"} · BeachBingo, Vier4Bier & mehr
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#f59e0b" }}>›</span>
+          </button>
+        </section>
+
+        {/* Alle Spiele */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Alle Spiele" emoji="🎮" />
+          <button
+            onClick={() => navigate("/all-games")}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 14,
+              padding: "18px 20px", background: "var(--surface)",
+              border: "1.5px solid rgba(14,165,233,0.4)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 28 }}>🎮</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Alle Spiele</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                {ALL_GAMES.length} Spiele · alphabetisch sortiert
+              </div>
+            </div>
+            <span style={{ fontSize: 20, color: "#0ea5e9" }}>›</span>
           </button>
         </section>
 
@@ -290,29 +361,6 @@ export default function HomeScreen() {
             </div>
           </section>
         )}
-
-        {/* Alle Spiele */}
-        <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Alle Spiele" emoji="🎮" />
-          <button
-            onClick={() => navigate("/all-games")}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 14,
-              padding: "18px 20px", background: "var(--surface)",
-              border: "1.5px solid rgba(14,165,233,0.4)", borderRadius: 14,
-              cursor: "pointer", textAlign: "left",
-            }}
-          >
-            <span style={{ fontSize: 28 }}>🎮</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Alle Spiele</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                {ALL_GAMES.length} Spiele · alphabetisch sortiert
-              </div>
-            </div>
-            <span style={{ fontSize: 20, color: "#0ea5e9" }}>›</span>
-          </button>
-        </section>
 
       </div>
     </div>
