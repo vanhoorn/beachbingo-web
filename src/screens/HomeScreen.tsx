@@ -19,11 +19,14 @@ export default function HomeScreen() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [activeGame, setActiveGame] = useState<ActiveGameInfo | null>(null);
   const [savedPuzzles, setSavedPuzzles] = useState<PuzzleSave[]>([]);
+  const [showTour, setShowTour] = useState(false);
+  const [tourSlide, setTourSlide] = useState(0);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
   useEffect(() => {
     setSavedPuzzles(getPuzzleSaves());
+    if (!localStorage.getItem("beachbande_tour_seen")) setShowTour(true);
   }, []);
 
   useEffect(() => {
@@ -77,6 +80,12 @@ export default function HomeScreen() {
     setActiveGame(null);
   }
 
+  function closeTour() {
+    localStorage.setItem("beachbande_tour_seen", "1");
+    setShowTour(false);
+    setTourSlide(0);
+  }
+
   const favoriteGames = ALL_GAMES
     .filter((g) => favoriteIds.includes(g.id))
     .sort((a, b) => a.title.localeCompare(b.title));
@@ -88,6 +97,15 @@ export default function HomeScreen() {
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
+
+      {showTour && (
+        <HelpTour
+          slide={tourSlide}
+          onNext={() => setTourSlide((s) => s + 1)}
+          onBack={() => setTourSlide((s) => s - 1)}
+          onClose={closeTour}
+        />
+      )}
 
       {/* Hero */}
       <div style={{
@@ -111,6 +129,16 @@ export default function HomeScreen() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => { setShowTour(true); setTourSlide(0); }}
+            title="App-Tour & Hilfe"
+            style={{
+              background: "var(--surface2)", border: "1px solid var(--border)",
+              borderRadius: 14, width: 48, height: 48, fontSize: 20, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 700, color: "var(--text-muted)",
+            }}
+          >?</button>
           <button
             onClick={() => navigate("/join")}
             title="Spiel beitreten"
@@ -197,31 +225,6 @@ export default function HomeScreen() {
             </div>
           </section>
         )}
-
-        {/* Spieleranzahl */}
-        <section style={{ padding: "24px 20px 0" }}>
-          <SectionHeader title="Spieleranzahl" emoji="👥" />
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-          }}>
-            {PLAYER_COUNT_ORDER.map((key) => {
-              const info = PLAYER_COUNT_INFO[key];
-              const count = ALL_GAMES.filter((g) => g.playerCounts.includes(key)).length;
-              return (
-                <CategoryTile
-                  key={key}
-                  playerKey={key}
-                  emoji={info.emoji}
-                  label={info.label}
-                  gameCount={count}
-                  onClick={() => navigate(`/category/${key}`)}
-                />
-              );
-            })}
-          </div>
-        </section>
 
         {/* Rätsel */}
         <section style={{ padding: "24px 20px 0" }}>
@@ -333,6 +336,31 @@ export default function HomeScreen() {
           </button>
         </section>
 
+        {/* Spieleranzahl */}
+        <section style={{ padding: "24px 20px 0" }}>
+          <SectionHeader title="Spieleranzahl" emoji="👥" />
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 10,
+          }}>
+            {PLAYER_COUNT_ORDER.map((key) => {
+              const info = PLAYER_COUNT_INFO[key];
+              const count = ALL_GAMES.filter((g) => g.playerCounts.includes(key)).length;
+              return (
+                <CategoryTile
+                  key={key}
+                  playerKey={key}
+                  emoji={info.emoji}
+                  label={info.label}
+                  gameCount={count}
+                  onClick={() => navigate(`/category/${key}`)}
+                />
+              );
+            })}
+          </div>
+        </section>
+
         {/* Gespeicherte Spiele */}
         {savedPuzzles.length > 0 && (
           <section style={{ padding: "24px 20px 0" }}>
@@ -357,6 +385,95 @@ export default function HomeScreen() {
           </section>
         )}
 
+      </div>
+    </div>
+  );
+}
+
+const TOUR_SLIDES = [
+  { emoji: "🏖️", title: "Willkommen bei BeachBande!", desc: "Diese kurze Tour zeigt dir die wichtigsten Funktionen. Du kannst sie jederzeit über das ? oben links erneut aufrufen." },
+  { emoji: "🎮", title: "Rubriken", desc: "Alle Spiele sind nach Art sortiert: Rätsel, Karten, Action und Couch. So findest du schnell das passende Spiel für eure Runde." },
+  { emoji: "👥", title: "Nach Spieleranzahl filtern", desc: "Tippe auf eine Spieleranzahl, um alle passenden Spiele zu sehen – ideal, wenn du schon weißt, wie viele mitspielen werden." },
+  { emoji: "★", title: "Favoriten", desc: "Öffne ein Spiel und tippe auf das Herz-Symbol, um es als Favorit zu markieren. Favoriten erscheinen immer oben auf dem Startbildschirm." },
+  { emoji: "🔗", title: "Spiel beitreten", desc: "Über das Ketten-Symbol oben rechts kannst du einem laufenden Spiel beitreten – per 6-stelligem Code oder QR-Code-Scan." },
+  { emoji: "📱", title: "Spieler per QR-Code einladen", desc: "In jeder Spiellobby findest du einen QR-Code. Zeige ihn deinen Mitspielern – sie können sofort beitreten, ohne den Code abzutippen." },
+  { emoji: "👤", title: "Profil & Einstellungen", desc: "Über das Personen-Symbol oben rechts erreichst du dein Profil. Dort kannst du Name, Avatar und Einstellungen anpassen und speichern." },
+];
+
+function HelpTour({ slide, onNext, onBack, onClose }: {
+  slide: number; onNext: () => void; onBack: () => void; onClose: () => void;
+}) {
+  const current = TOUR_SLIDES[slide];
+  const isLast = slide === TOUR_SLIDES.length - 1;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "rgba(0,0,0,0.88)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "24px 20px",
+    }}>
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute", top: 20, right: 20,
+          background: "rgba(255,255,255,0.1)", border: "none",
+          borderRadius: "50%", width: 36, height: 36,
+          color: "rgba(255,255,255,0.6)", fontSize: 18, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >✕</button>
+
+      <div style={{
+        background: "var(--surface)", borderRadius: 20,
+        padding: "36px 28px 32px",
+        maxWidth: 380, width: "100%", textAlign: "center",
+        border: "1px solid var(--border)",
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>{current.emoji}</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", marginBottom: 14, lineHeight: 1.3 }}>
+          {current.title}
+        </div>
+        <div style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.7 }}>
+          {current.desc}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, margin: "24px 0 20px", alignItems: "center" }}>
+        {TOUR_SLIDES.map((_, i) => (
+          <div key={i} style={{
+            height: 7,
+            width: i === slide ? 20 : 7,
+            borderRadius: 4,
+            background: i === slide ? "#38bdf8" : "rgba(255,255,255,0.25)",
+            transition: "width 0.2s ease",
+          }} />
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 380 }}>
+        {slide > 0 ? (
+          <button
+            onClick={onBack}
+            style={{
+              flex: 1, padding: "14px", borderRadius: 12,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              color: "rgba(255,255,255,0.7)", fontSize: 15, cursor: "pointer",
+            }}
+          >← Zurück</button>
+        ) : (
+          <div style={{ flex: 1 }} />
+        )}
+        <button
+          onClick={isLast ? onClose : onNext}
+          style={{
+            flex: 1, padding: "14px", borderRadius: 12,
+            background: "#38bdf8", border: "none",
+            color: "white", fontSize: 15, fontWeight: 700, cursor: "pointer",
+          }}
+        >{isLast ? "Los geht's! 🏖️" : "Weiter →"}</button>
       </div>
     </div>
   );
