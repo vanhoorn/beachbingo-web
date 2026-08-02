@@ -52,6 +52,17 @@ export default function KuestenkriegLobbyScreen() {
   const [_myName, setMyName] = useState("Du");
 
   const saves = getPuzzleSaves().filter(s => s.gameType === "kuestenkrieg");
+  const [isFavorite, setIsFavorite] = useState(() => {
+    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("kuestenkrieg"); }
+    catch { return false; }
+  });
+  function toggleFavorite() {
+    const next = !isFavorite; setIsFavorite(next);
+    try {
+      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
+      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "kuestenkrieg"])] : favs.filter(f => f !== "kuestenkrieg")));
+    } catch { }
+  }
 
   useEffect(() => {
     if (!uid) return;
@@ -200,18 +211,40 @@ export default function KuestenkriegLobbyScreen() {
   const canStart = waitingPlayers.length === 2;
 
   return (
-    <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
+    <div className="screen">
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate(-1)}>‹ Rätsel</button>
+
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "20px", display: "flex", alignItems: "center", gap: 14 }}>
-        <button onClick={() => navigate(-1)} style={backBtn}>‹</button>
-        <span style={{ fontSize: 32 }}>⚓</span>
-        <div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 2 }}>RÄTSEL</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>Küstenkrieg</div>
+      <div style={{
+        background: `linear-gradient(135deg, #4c0519 0%, ${ACCENT} 100%)`,
+        borderRadius: "var(--radius)", padding: "20px",
+        display: "flex", alignItems: "center", gap: 16,
+      }}>
+        <div style={{ fontSize: 44 }}>⚓</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Rätsel</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>Küstenkrieg</div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-outline btn-sm"
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            onClick={() => navigate("/raetsel/kuestenkrieg/highscores")} title="Ergebnisse">🏆</button>
+          <button className="btn btn-outline btn-sm" onClick={toggleFavorite}
+            style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}>
+            {isFavorite ? "★" : "☆"}
+          </button>
+          <button className="btn btn-outline btn-sm"
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            onClick={() => navigate("/raetsel/kuestenkrieg/rules")} title="Spielanleitung">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+          </button>
+          <button className="btn btn-outline btn-sm"
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            onClick={() => navigate("/raetsel/kuestenkrieg/settings")} title="Einstellungen">⚙️</button>
         </div>
       </div>
 
-      <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* Online waiting lobby */}
         {gameMode === "online" && gameCode ? (
@@ -450,7 +483,3 @@ export default function KuestenkriegLobbyScreen() {
   );
 }
 
-const backBtn: React.CSSProperties = {
-  width: 40, height: 40, flexShrink: 0, background: "var(--surface2)", border: "1px solid var(--border)",
-  borderRadius: 12, cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)",
-};

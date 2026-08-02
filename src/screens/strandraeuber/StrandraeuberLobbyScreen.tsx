@@ -279,6 +279,9 @@ export default function StrandraeuberLobbyScreen() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-outline btn-sm"
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            onClick={() => navigate("/strandraeuber/results")} title="Ergebnisse">🏆</button>
+          <button className="btn btn-outline btn-sm"
             onClick={toggleFavorite}
             style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}>
             {isFavorite ? "★" : "☆"}
