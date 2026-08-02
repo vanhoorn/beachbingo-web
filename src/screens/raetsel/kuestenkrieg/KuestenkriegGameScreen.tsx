@@ -246,7 +246,7 @@ export default function KuestenkriegGameScreen() {
         </div>
 
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-          <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡 Hinweis</button>
+          <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡</button>
           <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
           <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>
           <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>

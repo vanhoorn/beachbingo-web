@@ -44,12 +44,6 @@ export interface WortWelleStats {
   dailyDistribution: number[];
 }
 
-// ── Hilfsfunktion: Uppercase im Spielformat (ß bleibt ß, nicht SS) ─────────────
-
-function wwToUpper(s: string): string {
-  return s.split("").map(c => (c === "ß" ? "ß" : c.toUpperCase())).join("");
-}
-
 // ── Wortlisten — lazy-loaded aus /public/wortwelle/*.txt ────────────────────────
 // Quellen: enz/german-wordlist (CC0) + caco3/wordle-de Targets 5 (MIT)
 
@@ -65,10 +59,14 @@ interface WwWordLists {
 let _wordLists: WwWordLists | null = null;
 let _initPromise: Promise<WwWordLists> | null = null;
 
+const UMLAUT_RE = /[äöüÄÖÜß]/;
+
 async function loadWordFile(path: string): Promise<string[]> {
   const res = await fetch(path);
   const text = await res.text();
-  return text.split("\n").map(w => w.trim()).filter(Boolean);
+  return text.split("\n")
+    .map(w => w.trim())
+    .filter(w => w.length > 0 && !UMLAUT_RE.test(w));
 }
 
 export async function initWwWordLists(): Promise<void> {
@@ -130,15 +128,14 @@ export function getRandomWord(difficulty: WortWelleDifficulty): string {
 
 export function isValidGuess(word: string, difficulty: WortWelleDifficulty): boolean {
   const { wordLength } = DIFFICULTY_CONFIG[difficulty];
-  // wwToUpper statt toUpperCase() damit ß nicht zu SS wird
-  return getPool(wordLength).has(wwToUpper(word));
+  return getPool(wordLength).has(word.toUpperCase());
 }
 
 // ── Spiel-Algorithmen ──────────────────────────────────────────────────────────
 
 export function computeStatuses(guess: string, target: string): LetterStatus[] {
-  const g = wwToUpper(guess);
-  const t = wwToUpper(target);
+  const g = guess.toUpperCase();
+  const t = target.toUpperCase();
   const result: LetterStatus[] = new Array(g.length).fill("absent");
 
   const remaining: Record<string, number> = {};
@@ -181,7 +178,7 @@ export function validateHardMode(
   target: string
 ): string | null {
   if (previousGuesses.length === 0) return null;
-  const g = wwToUpper(newGuess);
+  const g = newGuess.toUpperCase();
   for (const prev of previousGuesses) {
     const statuses = computeStatuses(prev, target);
     for (let i = 0; i < prev.length; i++) {

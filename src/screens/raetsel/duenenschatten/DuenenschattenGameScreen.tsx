@@ -196,16 +196,16 @@ export default function DuenenschattenGameScreen() {
         background: "var(--surface)", borderTop: "1px solid var(--border)",
       }}>
         <button onClick={() => { setRunning(r => !r); }} style={controlBtnStyle(running ? "var(--primary)" : "var(--accent)")}>
-          {running ? "⏸ Pause" : "▶ Weiter"}
+          {running ? "⏸" : "▶"}
         </button>
         <button onClick={handleHint} style={controlBtnStyle(ACCENT)}>
-          💡 Hinweis
+          💡
         </button>
         <button onClick={() => { setRunning(false); setShowHelp(true); }} style={controlBtnStyle("var(--text-muted)")}>
-          ? Regeln
+          ?
         </button>
         <button onClick={() => { setRunning(false); setShowQuit(true); }} style={controlBtnStyle("var(--danger)")}>
-          ✕ Abbruch
+          ✕
         </button>
       </div>
 

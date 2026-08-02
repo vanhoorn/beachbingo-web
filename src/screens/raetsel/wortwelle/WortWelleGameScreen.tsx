@@ -29,9 +29,9 @@ const STATUS_COLORS: Record<LetterStatus, { bg: string; border: string; text: st
 };
 
 const KEYBOARD_ROWS = [
-  ["Q","W","E","R","T","Z","U","I","O","P","Ü"],
-  ["A","S","D","F","G","H","J","K","L","Ö","Ä"],
-  ["←","Y","X","C","V","B","N","M","ß","↵"],
+  ["Q","W","E","R","T","Z","U","I","O","P","←"],
+  ["A","S","D","F","G","H","J","K","L"],
+  ["Y","X","C","V","B","N","M","↵"],
 ];
 
 const RULES_TEXT = [
@@ -74,6 +74,25 @@ export default function WortWelleGameScreen() {
   const [gs, setGs] = useState(() => {
     if (locState.savedState) return deserializeState(locState.savedState);
     return createInitialState(targetWord);
+  });
+
+  const [cells, setCells] = useState<string[]>(() => {
+    const saved = locState.savedState
+      ? (JSON.parse(locState.savedState) as { currentInput: string }).currentInput
+      : "";
+    const arr = new Array(cfg.wordLength).fill("");
+    for (let i = 0; i < Math.min(saved.length, cfg.wordLength); i++) {
+      if (saved[i] && saved[i].trim()) arr[i] = saved[i];
+    }
+    return arr;
+  });
+
+  const [cursorPos, setCursorPos] = useState<number>(() => {
+    const saved = locState.savedState
+      ? (JSON.parse(locState.savedState) as { currentInput: string }).currentInput
+      : "";
+    const firstEmpty = Array.from({ length: cfg.wordLength }, (_, i) => saved[i] ?? "").findIndex(c => !c || !c.trim());
+    return firstEmpty === -1 ? cfg.wordLength - 1 : Math.max(0, firstEmpty);
   });
 
   const [elapsed, setElapsed] = useState(locState.elapsedSeconds ?? 0);
@@ -138,13 +157,13 @@ export default function WortWelleGameScreen() {
   };
 
   const submitGuess = useCallback(() => {
-    const input = gs.currentInput.toUpperCase();
-    if (input.length !== cfg.wordLength) {
+    if (cells.some(c => c === "")) {
       setShake(true);
       showError(`Bitte ${cfg.wordLength} Buchstaben eingeben.`);
       setTimeout(() => setShake(false), 500);
       return;
     }
+    const input = cells.join("").toUpperCase();
     if (!isValidGuess(input, difficulty)) {
       setShake(true);
       showError("Unbekanntes Wort.");
@@ -168,6 +187,8 @@ export default function WortWelleGameScreen() {
     setFlip(newGuesses.length - 1);
     setTimeout(() => setFlip(null), cfg.wordLength * 150 + 200);
 
+    setCells(new Array(cfg.wordLength).fill(""));
+    setCursorPos(0);
     setGs({
       guesses: newGuesses,
       currentInput: "",
@@ -175,12 +196,24 @@ export default function WortWelleGameScreen() {
       targetWord: targetWord,
       hardModeViolation: null,
     });
-  }, [gs, cfg, difficulty]);
+  }, [cells, gs.guesses, cfg, difficulty, targetWord]);
 
   const handleKey = useCallback((key: string) => {
     if (gs.gameStatus !== "playing") return;
     if (key === "←" || key === "Backspace") {
-      setGs(prev => ({ ...prev, currentInput: prev.currentInput.slice(0, -1) }));
+      if (cells[cursorPos] !== "") {
+        const next = [...cells];
+        next[cursorPos] = "";
+        setCells(next);
+        setGs(prev => ({ ...prev, currentInput: next.join("") }));
+      } else if (cursorPos > 0) {
+        const newPos = cursorPos - 1;
+        const next = [...cells];
+        next[newPos] = "";
+        setCells(next);
+        setCursorPos(newPos);
+        setGs(prev => ({ ...prev, currentInput: next.join("") }));
+      }
       return;
     }
     if (key === "↵" || key === "Enter") {
@@ -188,13 +221,14 @@ export default function WortWelleGameScreen() {
       return;
     }
     const ch = key.toUpperCase();
-    const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜΒ";
-    // ß
-    const validChar = ch === "SS" ? "ß" : ch;
-    if ((validChars.includes(validChar) || validChar === "ß") && gs.currentInput.length < cfg.wordLength) {
-      setGs(prev => ({ ...prev, currentInput: prev.currentInput + validChar }));
+    if (/^[A-Z]$/.test(ch)) {
+      const next = [...cells];
+      next[cursorPos] = ch;
+      setCells(next);
+      setGs(prev => ({ ...prev, currentInput: next.join("") }));
+      if (cursorPos < cfg.wordLength - 1) setCursorPos(cursorPos + 1);
     }
-  }, [gs, cfg, submitGuess]);
+  }, [gs.gameStatus, cells, cursorPos, cfg.wordLength, submitGuess]);
 
   // Physische Tastatur
   useEffect(() => {
@@ -295,28 +329,30 @@ export default function WortWelleGameScreen() {
                   letter = gs.guesses[row][col] ?? "";
                   status = statuses![col];
                 } else if (isCurrent) {
-                  letter = gs.currentInput[col] ?? "";
+                  letter = cells[col] ?? "";
                   status = letter ? "typing" : "empty";
                 }
 
                 const c = STATUS_COLORS[status];
                 const delay = isFlipping ? col * 150 : 0;
+                const isCursorCell = isCurrent && col === cursorPos && gs.gameStatus === "playing";
 
                 return (
                   <div
                     key={col}
+                    onClick={isCurrent && gs.gameStatus === "playing" ? () => setCursorPos(col) : undefined}
                     style={{
                       width: cellSize, height: cellSize,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      background: isFlipping && status !== "empty"
-                        ? c.bg
-                        : (isSubmitted ? c.bg : c.bg),
-                      border: `2.5px solid ${c.border}`,
+                      background: c.bg,
+                      border: `2.5px solid ${isCursorCell ? ACCENT : c.border}`,
                       borderRadius: 8,
                       fontSize: Math.max(16, Math.floor(cellSize * 0.45)),
                       fontWeight: 900, color: c.text,
                       transition: isFlipping ? `background ${delay}ms ease, border-color ${delay}ms ease` : undefined,
                       userSelect: "none",
+                      cursor: isCurrent && gs.gameStatus === "playing" ? "pointer" : undefined,
+                      boxShadow: isCursorCell ? `0 0 0 2px ${ACCENT}44` : undefined,
                     }}
                   >
                     {letter}
@@ -335,7 +371,7 @@ export default function WortWelleGameScreen() {
         borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)",
       }}>
         {mode !== "daily" && (
-          <button onClick={handleQuitSave} style={ctrlBtn("var(--primary)")}>💾 Speichern</button>
+          <button onClick={handleQuitSave} style={ctrlBtn("var(--primary)")}>💾</button>
         )}
         <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
         <button onClick={() => setRunning(r => !r)} style={ctrlBtn("var(--primary)")}>{running ? "⏸" : "▶"}</button>

@@ -304,9 +304,9 @@ export default function StrandokuGameScreen() {
           <button onClick={() => setGsErase()} style={ctrlBtn("var(--text-muted)")}>⌫</button>
           <button
             onClick={() => setNoteMode(m => !m)}
-            style={{ ...ctrlBtn(noteMode ? ACCENT : "var(--text-muted)"), minWidth: 72 }}
+            style={ctrlBtn(noteMode ? ACCENT : "var(--text-muted)")}
           >
-            ✏️ {noteMode ? "Notiz AN" : "Notiz"}
+            ✏️
           </button>
           <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡</button>
           <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>

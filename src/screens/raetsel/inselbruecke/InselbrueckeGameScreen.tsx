@@ -215,11 +215,11 @@ export default function InselbrueckeGameScreen() {
         background: "var(--surface)", borderTop: "1px solid var(--border)",
       }}>
         <button onClick={() => setRunning(r => !r)} style={ctrlBtn(running ? "var(--primary)" : "var(--accent)")}>
-          {running ? "⏸ Pause" : "▶ Weiter"}
+          {running ? "⏸" : "▶"}
         </button>
-        <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡 Hinweis</button>
-        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>? Regeln</button>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕ Abbruch</button>
+        <button onClick={handleHint} style={ctrlBtn(ACCENT)}>💡</button>
+        <button onClick={() => { setRunning(false); setShowHelp(true); }} style={ctrlBtn("var(--text-muted)")}>?</button>
+        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={ctrlBtn("var(--danger)")}>✕</button>
       </div>
 
       {showWin && (
