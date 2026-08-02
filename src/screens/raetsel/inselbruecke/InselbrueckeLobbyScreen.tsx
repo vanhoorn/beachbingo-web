@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPuzzleSaves, deletePuzzleSave, formatElapsed, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
+import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
 import type { HashiDifficulty } from "./inselbrueckeLogic";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 const ACCENT = "#4ade80";
 const DIFFICULTIES: HashiDifficulty[] = ["leicht", "mittel", "schwer", "experte"];
@@ -11,6 +13,8 @@ export default function InselbrueckeLobbyScreen() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<HashiDifficulty>("mittel");
   const saves = getPuzzleSaves().filter(s => s.gameType === "inselbruecke");
+  const [showStats, setShowStats] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [isFavorite, setIsFavorite] = useState(() => {
     try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("inselbruecke"); }
     catch { return false; }
@@ -48,19 +52,16 @@ export default function InselbrueckeLobbyScreen() {
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-outline btn-sm"
             style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
-            onClick={() => navigate("/raetsel/inselbruecke/highscores")} title="Ergebnisse">🏆</button>
+            onClick={() => setShowStats(true)} title="Ergebnisse">🏆</button>
           <button className="btn btn-outline btn-sm" onClick={toggleFavorite}
             style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}>
             {isFavorite ? "★" : "☆"}
           </button>
           <button className="btn btn-outline btn-sm"
             style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
-            onClick={() => navigate("/raetsel/inselbruecke/rules")} title="Spielanleitung">
+            onClick={() => setShowRules(true)} title="Spielanleitung">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
           </button>
-          <button className="btn btn-outline btn-sm"
-            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
-            onClick={() => navigate("/raetsel/inselbruecke/settings")} title="Einstellungen">⚙️</button>
         </div>
       </div>
 
@@ -106,7 +107,49 @@ export default function InselbrueckeLobbyScreen() {
           </div>
         )}
       </div>
+
+      {showStats && (
+        <div style={overlayStyle} onClick={() => setShowStats(false)}>
+          <div style={dialogStyle} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>🏆 Bestzeiten</span>
+              <button onClick={() => setShowStats(false)} style={closeBtnStyle}>✕</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {(["leicht", "mittel", "schwer", "experte"] as const).map(d => {
+                const best = getBestTimeAny("inselbruecke", d);
+                return (
+                  <div key={d} style={{ background: "var(--surface2)", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase" }}>{PUZZLE_DIFFICULTY_LABELS[d]}</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: best ? ACCENT : "var(--text-muted)" }}>{best ? formatElapsed(best) : "—"}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Bestzeit</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      {showRules && GAME_RULES["inselbruecke"] && (
+        <GameRulesModal rule={GAME_RULES["inselbruecke"]} onClose={() => setShowRules(false)} />
+      )}
     </div>
   );
 }
+
+const overlayStyle: React.CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  zIndex: 100, padding: 20,
+};
+const dialogStyle: React.CSSProperties = {
+  background: "var(--surface)", border: "1px solid var(--border)",
+  borderRadius: 20, padding: 24, width: "100%", maxWidth: 360,
+};
+const closeBtnStyle: React.CSSProperties = {
+  background: "var(--surface2)", border: "1px solid var(--border)",
+  borderRadius: 8, width: 32, height: 32, cursor: "pointer",
+  color: "var(--text-muted)", fontSize: 14,
+  display: "flex", alignItems: "center", justifyContent: "center",
+};
 

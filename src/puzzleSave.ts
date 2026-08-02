@@ -79,6 +79,20 @@ export function recordBestTime(
   } catch { /* ignore */ }
 }
 
+export function getBestTimeAny(gameTypePrefix: string, difficulty: string): number | null {
+  try {
+    const raw = localStorage.getItem(BEST_TIMES_KEY);
+    const times: Record<string, number> = raw ? JSON.parse(raw) : {};
+    const suffix = `_${difficulty}`;
+    const matches = Object.entries(times)
+      .filter(([k]) => k.startsWith(gameTypePrefix) && k.endsWith(suffix))
+      .map(([, v]) => v);
+    return matches.length > 0 ? Math.min(...matches) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function formatElapsed(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
