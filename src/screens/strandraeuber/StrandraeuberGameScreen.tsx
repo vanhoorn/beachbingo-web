@@ -9,6 +9,8 @@ import {
 } from "./strandraeuberLogic";
 import type { SpDifficulty } from "./strandraeuberLogic";
 import { audioManager } from "../../audio/AudioManager";
+import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { GameSaveQuitDialog } from "../../components/GameHudBar";
 
 const SP_COLOR = "#e11d48";
 const SP_DIM   = "rgba(225,29,72,0.12)";
@@ -281,12 +283,13 @@ export default function StrandraeuberGameScreen() {
 
   const gameData = JSON.parse(sessionStorage.getItem("spGame") ?? "{}") as {
     mode?: string; aiCount?: number; difficulty?: SpDifficulty;
-    totalRounds?: number; myName?: string; myAvatar?: string; gameId?: string;
+    totalRounds?: number; myName?: string; myAvatar?: string; gameId?: string; saveId?: string;
   };
 
   const mode        = gameData.mode ?? "ai";
   const difficulty  = gameData.difficulty ?? "SNIPER";
   const gameId      = gameData.gameId ?? "";
+  const saveId      = gameData.saveId ?? null;
 
   // AI mode state
   const [local, setLocal] = useState<SpGameStateLocal | null>(null);
@@ -307,9 +310,21 @@ export default function StrandraeuberGameScreen() {
     return () => audioManager.stopMusic();
   }, []);
 
+  // ── Restore from save ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!saveId) return;
+    const save = getGameSave("strandraeuber");
+    if (!save || save.id !== saveId) return;
+    try {
+      const restored = JSON.parse(save.gameState) as SpGameStateLocal;
+      setLocal({ ...restored, pairRevealInfo: null });
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Init AI mode ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (mode !== "ai") return;
+    if (mode !== "ai" || saveId) return;
     const aiCount    = gameData.aiCount ?? 2;
     const totalRounds = gameData.totalRounds ?? 3;
     const myName     = gameData.myName ?? "Du";
@@ -803,7 +818,29 @@ export default function StrandraeuberGameScreen() {
       )}
 
       {/* ── Quit dialog ── */}
-      {showQuit && (
+      {showQuit && mode === "ai" && local && (
+        <GameSaveQuitDialog
+          emoji="🦹"
+          message={`Runde ${local.roundNumber} · ${local.players.length} Spieler`}
+          onContinue={() => setShowQuit(false)}
+          onSaveAndQuit={() => {
+            saveGame({
+              id: saveId ?? generateGameSaveId(),
+              gameType: "strandraeuber",
+              difficulty,
+              gameState: JSON.stringify({ ...local, pairRevealInfo: null }),
+              displayLabel: `Runde ${local.roundNumber} · ${local.players.length} Spieler`,
+              savedAt: Date.now(),
+            });
+            navigate("/strandraeuber/lobby");
+          }}
+          onQuitWithoutSave={() => {
+            deleteGameSave("strandraeuber");
+            navigate("/strandraeuber/lobby");
+          }}
+        />
+      )}
+      {showQuit && mode !== "ai" && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(10,22,40,0.9)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
