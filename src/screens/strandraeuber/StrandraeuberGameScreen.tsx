@@ -125,12 +125,12 @@ function OpponentFan({
 
 // ── OwnCard ───────────────────────────────────────────────────────────────────
 
-function OwnCard({ card, highlight }: { card: SpCard; highlight: boolean }) {
+function OwnCard({ card, highlight, cardW = 54, cardH = 78 }: { card: SpCard; highlight: boolean; cardW?: number; cardH?: number }) {
   const isSR = card.pairId === "strandraeuber";
   const color = PAIR_COLORS[card.pairId] ?? "#666";
   return (
     <div style={{
-      width: 54, height: 78, borderRadius: 8, flexShrink: 0,
+      width: cardW, height: cardH, borderRadius: 8, flexShrink: 0,
       background: isSR
         ? `linear-gradient(135deg, #7a0f27, #e11d48)`
         : `linear-gradient(135deg, ${color}22, ${color}11)`,
@@ -149,11 +149,11 @@ function OwnCard({ card, highlight }: { card: SpCard; highlight: boolean }) {
       gap: 2, userSelect: "none",
       transition: "box-shadow 0.3s, border 0.3s",
     }}>
-      <div style={{ fontSize: 22, lineHeight: 1 }}>{card.emoji}</div>
+      <div style={{ fontSize: cardW * 0.37, lineHeight: 1 }}>{card.emoji}</div>
       <div style={{
-        fontSize: 9, fontWeight: 600, textAlign: "center",
+        fontSize: cardW * 0.15, fontWeight: 600, textAlign: "center",
         color: isSR ? "white" : color,
-        maxWidth: 48, overflow: "hidden", textOverflow: "ellipsis",
+        maxWidth: cardW - 6, overflow: "hidden", textOverflow: "ellipsis",
         whiteSpace: "nowrap",
       }}>{card.name}</div>
     </div>
@@ -583,6 +583,10 @@ export default function StrandraeuberGameScreen() {
   // Is human the TARGET (needs to show shuffle button)
   const isHumanTarget   = humanActivePos !== -1 && targetIdx === humanPlayerIdx;
 
+  const isTablet = window.innerWidth > 640;
+  const ownCardW = isTablet ? 72 : 54;
+  const ownCardH = isTablet ? 100 : 78;
+
   // Pair highlight ids
   const pairHighlightIds = new Set<string>();
   if (gs.pairRevealInfo?.playerIdx === humanPlayerIdx) {
@@ -767,6 +771,8 @@ export default function StrandraeuberGameScreen() {
               key={card.id}
               card={card}
               highlight={pairHighlightIds.has(card.id)}
+              cardW={ownCardW}
+              cardH={ownCardH}
             />
           ))}
           {(humanPlayer?.hand?.length ?? 0) === 0 && (

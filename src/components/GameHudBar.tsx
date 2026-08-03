@@ -73,6 +73,46 @@ interface QuitDialogProps {
   onDismiss: () => void;
 }
 
+interface GameSaveQuitDialogProps {
+  emoji?: string;
+  message?: string;
+  onContinue: () => void;
+  onSaveAndQuit: () => void;
+  onQuitWithoutSave: () => void;
+}
+
+export function GameSaveQuitDialog({
+  emoji = "🏳️", message = "Möchtest du speichern?",
+  onContinue, onSaveAndQuit, onQuitWithoutSave,
+}: GameSaveQuitDialogProps) {
+  const overlay: CSSProperties = {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
+  };
+  const dialog: CSSProperties = {
+    background: "var(--surface)", borderRadius: 16,
+    padding: "28px 24px", maxWidth: 320, width: "90%",
+    border: "1.5px solid rgba(239,68,68,0.3)",
+    display: "flex", flexDirection: "column", gap: 12, alignItems: "center",
+  };
+  const btn = (bg: string, color = "#fff"): CSSProperties => ({
+    width: "100%", padding: "11px 0", borderRadius: 10, border: "none",
+    background: bg, color, fontWeight: 700, cursor: "pointer", fontSize: 14,
+  });
+  return (
+    <div style={overlay}>
+      <div style={dialog}>
+        <div style={{ fontSize: 36 }}>{emoji}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Spiel beenden?</div>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>{message}</div>
+        <button onClick={onSaveAndQuit} style={btn("#0ea5e9")}>💾 Speichern &amp; Beenden</button>
+        <button onClick={onQuitWithoutSave} style={btn("rgba(239,68,68,0.85)")}>✕ Beenden ohne Speichern</button>
+        <button onClick={onContinue} style={btn("var(--surface2)", "var(--text)")}>Weiterspielen</button>
+      </div>
+    </div>
+  );
+}
+
 export function QuitConfirmDialog({ message = "Dein Fortschritt geht verloren.", onConfirm, onDismiss }: QuitDialogProps) {
   return (
     <div style={{

@@ -99,8 +99,8 @@ export default function DuenenschattenGameScreen() {
 
   const { size, grid } = puzzle;
   const availH = Math.max(200, window.innerHeight - 210);
-  const availW = Math.min(window.innerWidth, 520) - 72; // .screen 16px + container 20px each side
-  const cellSize = Math.min(Math.floor(Math.min(availW, availH) / size), 80);
+  const availW = (window.innerWidth > 640 ? window.innerWidth - 72 : Math.min(window.innerWidth, 520) - 72);
+  const cellSize = Math.min(Math.floor(Math.min(availW, availH) / size), 100);
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none" }}>

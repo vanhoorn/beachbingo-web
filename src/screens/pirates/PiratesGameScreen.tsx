@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { PiratesDifficulty } from "../../types";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
+import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
 const CW = 400;
@@ -193,10 +194,11 @@ function drawEmoji(ctx: CanvasRenderingContext2D, emoji: string, cx: number, cy:
 export default function PiratesGameScreen() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const locState  = location.state as { difficulty?: PiratesDifficulty; fireRate?: number; controlMode?: "BUTTONS" | "TOUCH" } | null;
+  const locState  = location.state as { difficulty?: PiratesDifficulty; fireRate?: number; controlMode?: "BUTTONS" | "TOUCH"; saveId?: string } | null;
   const difficulty    = locState?.difficulty  ?? "ROOKIE";
   const fireRate      = locState?.fireRate    ?? 5;
   const controlMode   = locState?.controlMode ?? "BUTTONS";
+  const saveId        = locState?.saveId ?? null;
   const fireCooldownMax = fireCooldownFrames(fireRate);
 
   function waveDiff(wave: number): DiffConfig {
@@ -252,6 +254,20 @@ export default function PiratesGameScreen() {
     audioManager.startMusic("pirates");
     return () => audioManager.stopMusic();
   }, []);
+
+  useEffect(() => {
+    if (!saveId) return;
+    const save = getGameSave("pirates");
+    if (!save) return;
+    try {
+      const s = JSON.parse(save.gameState) as { score: number; lives: number; wave: number };
+      gsRef.current = initGS(waveDiff(s.wave), s.wave, s.lives, s.score);
+      setUiScore(s.score);
+      setUiLives(s.lives);
+      setUiWave(s.wave);
+    } catch { /* ignore malformed save */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveId]);
 
   // ── Game loop ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -548,14 +564,27 @@ export default function PiratesGameScreen() {
     else audioManager.startMusic("pirates");
   }
   function handleQuitRequest() {
-    setPausedSync(true);       // pause while dialog is open
+    setPausedSync(true);
     setShowQuitDialog(true);
   }
   function handleQuitCancel() {
     setShowQuitDialog(false);
-    setPausedSync(false);      // resume
+    setPausedSync(false);
   }
-  function handleQuitConfirm() {
+  function handleSaveAndQuit() {
+    const gs = gsRef.current;
+    saveGame({
+      id: generateGameSaveId(),
+      gameType: "pirates",
+      difficulty,
+      gameState: JSON.stringify({ score: gs.score, lives: gs.lives, wave: gs.wave }),
+      displayLabel: `Score: ${gs.score} · Wave: ${gs.wave} · Leben: ${gs.lives}`,
+      savedAt: Date.now(),
+    });
+    navigate("/pirates/lobby");
+  }
+  function handleQuitWithoutSave() {
+    deleteGameSave("pirates");
     navigate("/pirates/lobby");
   }
 
@@ -660,10 +689,12 @@ export default function PiratesGameScreen() {
       )}
 
       {showQuitDialog && (
-        <QuitConfirmDialog
-          message={`Score: ${uiScore} — Fortschritt geht verloren.`}
-          onConfirm={handleQuitConfirm}
-          onDismiss={handleQuitCancel}
+        <GameSaveQuitDialog
+          emoji="🐙"
+          message={`Score: ${uiScore} · Wave: ${uiWave} · Leben: ${uiLives}`}
+          onContinue={handleQuitCancel}
+          onSaveAndQuit={handleSaveAndQuit}
+          onQuitWithoutSave={handleQuitWithoutSave}
         />
       )}
     </div>

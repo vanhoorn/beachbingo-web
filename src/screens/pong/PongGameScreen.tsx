@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
 import { db, auth } from "../../firebase";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { QuitConfirmDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
 
@@ -662,7 +662,22 @@ export default function PongGameScreen() {
           ))}
         </div>
 
-        <div style={{ fontSize: 10, color: "var(--text-muted)", minWidth: 36, textAlign: "right" }}>/{scoreLimit}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button
+            onClick={handleManualPause}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", padding: "4px 6px", lineHeight: 1 }}
+            title={manualPaused ? "Weiterspielen" : "Pause"}
+          >
+            {manualPaused ? "▶" : "⏸"}
+          </button>
+          <button
+            onClick={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer", padding: "4px 6px", lineHeight: 1 }}
+            title="Beenden"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Canvas */}
@@ -716,25 +731,6 @@ export default function PongGameScreen() {
           </div>
         )}
       </div>
-
-      {/* HUD bar */}
-      <GameHudBar
-        paused={manualPaused}
-        onPauseToggle={handleManualPause}
-        onQuit={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, overflowX: "auto" }}>
-          {activeSidesList.map((side, i) => (
-            <div key={side} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {i > 0 && <span style={{ color: "#1e3050", fontWeight: 900, fontSize: 12 }}>·</span>}
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 8, color: SIDE_COLOR[side], fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{labelForSide(side)}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: scores[side] >= scoreLimit - 1 ? "var(--danger)" : "#e2e8f0", lineHeight: 1 }}>{scores[side]}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </GameHudBar>
 
       {showQuitDialog && (
         <QuitConfirmDialog

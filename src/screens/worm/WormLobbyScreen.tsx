@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase";
 import type { WormDifficulty, User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
+import { getGameSave } from "../../gameSave";
 
 const WORM_GREEN = "#22c55e";
 
@@ -143,6 +144,21 @@ export default function WormLobbyScreen() {
         Steuerung: <strong style={{ color: "var(--text)" }}>{controlMode === "BUTTONS" ? "🔲 Buttons" : "👆 Swipe"}</strong>
         {" "}· <span style={{ cursor: "pointer", color: WORM_GREEN }} onClick={() => navigate("/worm/settings")}>Ändern</span>
       </div>
+
+      {(() => { const save = getGameSave("worm"); return save ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(34,197,94,0.08)", border: `1px solid rgba(34,197,94,0.35)`, borderRadius: "var(--radius)", padding: "14px" }}>
+          <span style={{ fontSize: 28 }}>💾</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
+            <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: WORM_GREEN, borderColor: WORM_GREEN }}
+            onClick={() => navigate("/worm/game", { state: { difficulty: save.difficulty, controlMode, saveId: save.id } })}
+          >Fortsetzen</button>
+        </div>
+      ) : null; })()}
 
       <button
         className="btn btn-primary"

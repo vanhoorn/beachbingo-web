@@ -117,9 +117,9 @@ export default function KuestenkriegGameScreen() {
   };
 
   const { size } = puzzle;
-  const LABEL_SIZE = 24;
+  const LABEL_SIZE = 30;
   const availH = Math.max(200, window.innerHeight - 230);
-  const maxBoardW = Math.min(Math.min(window.innerWidth, 520) - 48, availH); // .screen 16px + container 8px each side
+  const maxBoardW = Math.min((window.innerWidth > 640 ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48), availH);
   const cellPx = Math.floor((maxBoardW - LABEL_SIZE) / size);
   const boardPx = cellPx * size + LABEL_SIZE;
 
@@ -157,6 +157,7 @@ export default function KuestenkriegGameScreen() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: Math.max(cellPx * 0.38, 9), fontWeight: 800,
                   color: errors.cols[c] ? "var(--danger)" : "var(--text)",
+                  background: "var(--bg)",
                 }}
               >
                 {clue}
@@ -174,6 +175,7 @@ export default function KuestenkriegGameScreen() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: Math.max(cellPx * 0.38, 9), fontWeight: 800,
                   color: errors.rows[r] ? "var(--danger)" : "var(--text)",
+                  background: "var(--bg)",
                 }}
               >
                 {puzzle.rowClues[r]}

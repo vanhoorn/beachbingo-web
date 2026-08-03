@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase";
 import type { PiratesDifficulty, User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
+import { getGameSave } from "../../gameSave";
 
 function DiffOption({ selected, onClick, title, description }: {
   selected: boolean; onClick: () => void; title: string; description: string;
@@ -169,6 +170,21 @@ export default function PiratesLobbyScreen() {
           description="Speed 10/30, Schießen 10/30 — viel Spaß 😈"
         />
       </div>
+
+      {(() => { const save = getGameSave("pirates"); return save ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.35)", borderRadius: "var(--radius)", padding: "14px" }}>
+          <span style={{ fontSize: 28 }}>💾</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
+            <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            style={{ background: "#a855f7", borderColor: "#a855f7" }}
+            onClick={() => navigate("/pirates/game", { state: { difficulty: save.difficulty, fireRate, controlMode, saveId: save.id } })}
+          >Fortsetzen</button>
+        </div>
+      ) : null; })()}
 
       <button
         className="btn btn-primary"

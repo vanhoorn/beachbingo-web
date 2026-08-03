@@ -117,7 +117,7 @@ export default function StrandokuGameScreen() {
   const isLargeGrid = size > 9;
   // .screen padding: 16px L+R = 32px; board container padding: 8px L+R = 16px; total = 48px horizontal overhead
   // Subtract 4 more for the 2px grid border on each side so grid+border never exceeds available space
-  const availW = Math.max(160, isLargeGrid ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48);
+  const availW = Math.max(160, (isLargeGrid || window.innerWidth > 640) ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48);
   const availH = Math.max(160, window.innerHeight - 210);
   const cellPx = Math.max(10, Math.floor((Math.min(availW, availH) - 4) / size));
 
@@ -239,7 +239,7 @@ export default function StrandokuGameScreen() {
                       <span style={{
                         position: "absolute", top: 1, left: 2,
                         fontSize: Math.max(cellPx * 0.22, 7),
-                        color: "var(--text-muted)", fontWeight: 700, lineHeight: 1,
+                        color: "white", fontWeight: 700, lineHeight: 1,
                       }}>{cage.sum}</span>
                     )}
 

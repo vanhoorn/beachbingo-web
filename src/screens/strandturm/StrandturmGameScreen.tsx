@@ -2,8 +2,9 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
+import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
 // ── Canvas ─────────────────────────────────────────────────────────────────────
 const CW = 400, CH = 580;
@@ -760,9 +761,10 @@ function drawOverlay(ctx: CanvasRenderingContext2D, gs: GS) {
 export default function StrandturmGameScreen() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" | "SPLIT"; startLevel?: number } | null;
+  const state     = location.state as { controlMode?: "BUTTONS" | "TOUCH" | "SPLIT"; startLevel?: number; saveId?: string } | null;
   const controlMode = state?.controlMode ?? "BUTTONS";
   const startLevel  = state?.startLevel ?? 1;
+  const saveId      = state?.saveId ?? null;
 
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const rafRef     = useRef<number>(0);
@@ -1343,6 +1345,19 @@ export default function StrandturmGameScreen() {
     };
   }, [loop]);
 
+  useEffect(() => {
+    if (!saveId) return;
+    const save = getGameSave("strandturm");
+    if (!save) return;
+    try {
+      const s = JSON.parse(save.gameState) as { score: number; lives: number; level: number };
+      gsRef.current = makeGS(s.level, s.lives, s.score);
+      setScore(s.score);
+      setLives(s.lives);
+    } catch { /* ignore malformed save */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveId]);
+
   // ── Keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     function onDown(e: KeyboardEvent) {
@@ -1367,6 +1382,23 @@ export default function StrandturmGameScreen() {
     const gs = gsRef.current;
     if (gs.phase !== "PLAYING") return;
     setPaused((p) => !p);
+  }
+
+  function handleSaveAndQuit() {
+    const gs = gsRef.current;
+    saveGame({
+      id: generateGameSaveId(),
+      gameType: "strandturm",
+      difficulty: "default",
+      gameState: JSON.stringify({ score: gs.score, lives: gs.lives, level: gs.level }),
+      displayLabel: `Score: ${gs.score} · Level ${gs.level} · Leben: ${gs.lives}`,
+      savedAt: Date.now(),
+    });
+    navigate("/strandturm/lobby");
+  }
+  function handleQuitWithoutSave() {
+    deleteGameSave("strandturm");
+    navigate("/strandturm/lobby");
   }
 
   // ── Touch controls (TOUCH mode) ───────────────────────────────────────────
@@ -1591,10 +1623,12 @@ export default function StrandturmGameScreen() {
       )}
 
       {quitDialog && (
-        <QuitConfirmDialog
-          message={`Score: ${score} Pts · Level ${gs.level}. Fortschritt geht verloren.`}
-          onConfirm={() => navigate("/strandturm/lobby")}
-          onDismiss={() => { setQuit(false); setPaused(false); }}
+        <GameSaveQuitDialog
+          emoji="🗼"
+          message={`Score: ${score} Pts · Level ${gs.level} · Leben: ${lives}`}
+          onContinue={() => { setQuit(false); setPaused(false); }}
+          onSaveAndQuit={handleSaveAndQuit}
+          onQuitWithoutSave={handleQuitWithoutSave}
         />
       )}
     </div>

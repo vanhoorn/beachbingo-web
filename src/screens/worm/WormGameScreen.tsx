@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { WormDifficulty } from "../../types";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
+import { saveGame, deleteGameSave, getGameSave, generateGameSaveId } from "../../gameSave";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const WORM_GREEN = "#22c55e";
@@ -69,9 +70,10 @@ function spawnFood(snake: Vec2[]): Food {
 export default function WormGameScreen() {
   const navigate   = useNavigate();
   const location   = useLocation();
-  const state      = location.state as { difficulty: WormDifficulty; controlMode: "BUTTONS" | "SWIPE" } | null;
+  const state      = location.state as { difficulty: WormDifficulty; controlMode: "BUTTONS" | "SWIPE"; saveId?: string } | null;
   const difficulty  = state?.difficulty  ?? "ROOKIE";
   const controlMode = state?.controlMode ?? "BUTTONS";
+  const saveId      = state?.saveId ?? null;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
@@ -246,6 +248,25 @@ export default function WormGameScreen() {
     draw();
     rafRef.current = requestAnimationFrame(loop);
   }, [stepInterval]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restore saved game on mount
+  useEffect(() => {
+    if (saveId) {
+      const save = getGameSave("worm");
+      if (save) {
+        try {
+          const s = JSON.parse(save.gameState);
+          snakeRef.current = s.snake;
+          dirRef.current   = { x: s.dirX, y: s.dirY };
+          nextDirRef.current = { x: s.dirX, y: s.dirY };
+          foodRef.current  = { x: s.foodX, y: s.foodY, emoji: s.foodEmoji, points: s.foodPoints };
+          scoreRef.current = s.score;
+          setScore(s.score);
+          setLength(s.snake.length);
+        } catch { /* ignore */ }
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     audioManager.startMusic("worm");
@@ -436,13 +457,21 @@ export default function WormGameScreen() {
       )}
 
       {quitDialog && (
-        <QuitConfirmDialog
-          message={`Score: ${score} Pts. Dein Fortschritt geht verloren.`}
-          onConfirm={() => navigate("/worm/lobby")}
-          onDismiss={() => {
+        <GameSaveQuitDialog
+          emoji="🪱"
+          message={`Score: ${score} Pts · Länge: ${length}`}
+          onContinue={() => {
             setQuitDialog(false);
             if (!dead) { statusRef.current = "PLAYING"; setPaused(false); lastStepRef.current = 0; }
           }}
+          onSaveAndQuit={() => {
+            const s = snakeRef.current; const d = dirRef.current; const f = foodRef.current;
+            saveGame({ id: generateGameSaveId(), gameType: "worm", difficulty,
+              gameState: JSON.stringify({ snake: s, dirX: d.x, dirY: d.y, foodX: f.x, foodY: f.y, foodEmoji: f.emoji, foodPoints: f.points, score: scoreRef.current }),
+              displayLabel: `Score: ${scoreRef.current} · Länge: ${s.length}`, savedAt: Date.now() });
+            navigate("/worm/lobby");
+          }}
+          onQuitWithoutSave={() => { deleteGameSave("worm"); navigate("/worm/lobby"); }}
         />
       )}
     </div>
