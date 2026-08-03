@@ -177,7 +177,7 @@ export default function KuestenkriegOnlineBattleScreen() {
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={() => navigate("/raetsel/kuestenkrieg/lobby")} style={backBtn}>‹</button>
+        <button onClick={() => navigate(-2)} style={backBtn}>‹</button>
         <span style={{ fontSize: 24 }}>⚓</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>KÜSTENKRIEG · ONLINE</div>
@@ -230,7 +230,7 @@ export default function KuestenkriegOnlineBattleScreen() {
               {iWon ? "Alle feindlichen Schiffe versenkt!" : "Deine Flotte wurde vernichtet!"}
             </div>
             <button
-              onClick={() => navigate("/raetsel/kuestenkrieg/lobby")}
+              onClick={() => navigate(-2)}
               style={{ width: "100%", padding: "14px", background: ACCENT, border: "none", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#0a1628" }}
             >
               Zurück zur Lobby

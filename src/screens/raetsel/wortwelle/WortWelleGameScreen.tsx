@@ -457,7 +457,7 @@ export default function WortWelleGameScreen() {
           maxGuesses={cfg.maxGuesses}
           elapsed={elapsed}
           difficulty={difficulty}
-          onClose={() => navigate("/raetsel/wortwelle/lobby")}
+          onClose={() => navigate(-1)}
         />
       )}
 
@@ -470,7 +470,7 @@ export default function WortWelleGameScreen() {
           maxGuesses={cfg.maxGuesses}
           elapsed={elapsed}
           difficulty={difficulty}
-          onClose={() => navigate("/raetsel/wortwelle/lobby")}
+          onClose={() => navigate(-1)}
         />
       )}
 

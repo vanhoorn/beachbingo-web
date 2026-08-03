@@ -177,13 +177,13 @@ export default function KuestenkriegBattleScreen() {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => navigate("/raetsel/kuestenkrieg/lobby")}
+                onClick={() => navigate(-2)}
                 style={{ flex: 1, padding: "12px", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--text)" }}
               >
                 Lobby
               </button>
               <button
-                onClick={() => navigate("/raetsel/kuestenkrieg/placement", { state: { aiMode } })}
+                onClick={() => navigate(-1)}
                 style={{ flex: 1, padding: "12px", background: ACCENT, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#0a1628" }}
               >
                 Nochmal!

@@ -377,7 +377,7 @@ export default function HomeScreen() {
                     key={save.id}
                     save={save}
                     info={info}
-                    onClick={() => navigate(`/raetsel/${save.gameType}`, { state: { resumeSaveId: save.id } })}
+                    onClick={() => navigate(`/raetsel/${save.gameType}/lobby`)}
                   />
                 );
               })}
