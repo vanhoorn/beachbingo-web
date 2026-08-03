@@ -4,8 +4,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { VierDifficulty, VierGame } from "../../types";
 import { DrinkPiece, getDrink } from "./drinkIcons";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, QuitConfirmDialog, GameSaveQuitDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
+import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
 const ROWS = 6;
 const COLS = 7;
@@ -153,6 +154,7 @@ interface LocationState {
   aiDrinkId?: string;
   aiDifficulty?: VierDifficulty;
   gameId?: string;
+  saveId?: string;
 }
 
 interface LocalState {
@@ -172,7 +174,7 @@ export default function VierGameScreen() {
   const state = location.state as LocationState;
   const uid = auth.currentUser?.uid;
 
-  const { mode, myDrinkId, aiDrinkId, aiDifficulty = "SNIPER", gameId } = state ?? {};
+  const { mode, myDrinkId, aiDrinkId, aiDifficulty = "SNIPER", gameId, saveId } = state ?? {};
 
   // Local state (AI mode + shared UI state)
   const [local, setLocal] = useState<LocalState>({
@@ -200,6 +202,17 @@ export default function VierGameScreen() {
     audioManager.startMusic("vier");
     return () => audioManager.stopMusic();
   }, []);
+
+  useEffect(() => {
+    if (!saveId || mode !== "ai") return;
+    const save = getGameSave("vier");
+    if (!save) return;
+    try {
+      const s = JSON.parse(save.gameState) as { board: number[]; currentPlayer: 1 | 2 };
+      setLocal({ board: s.board, currentPlayer: s.currentPlayer, winner: null, draw: false, winCells: [], aiThinking: s.currentPlayer === 2 });
+    } catch { /* ignore malformed save */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveId]);
 
   // Load user profile for result saving
   const userProfileRef = useRef<{ displayName: string; avatarUrl: string } | null>(null);
@@ -325,6 +338,22 @@ export default function VierGameScreen() {
   // ── Restart (AI mode) ──
   function restartAi() {
     setLocal({ board: emptyBoard(), currentPlayer: 1, winner: null, draw: false, winCells: [], aiThinking: false });
+  }
+
+  function handleSaveAndQuit() {
+    saveGame({
+      id: generateGameSaveId(),
+      gameType: "vier",
+      difficulty: aiDifficulty,
+      gameState: JSON.stringify({ board: local.board, currentPlayer: local.currentPlayer, myDrinkId, aiDrinkId }),
+      displayLabel: `KI · ${local.board.filter(x => x !== 0).length} Steine`,
+      savedAt: Date.now(),
+    });
+    navigate("/vier/lobby");
+  }
+  function handleQuitWithoutSave() {
+    deleteGameSave("vier");
+    navigate("/vier/lobby");
   }
 
   // ── Determine display values ──
@@ -581,7 +610,16 @@ export default function VierGameScreen() {
         </div>
       </GameHudBar>
 
-      {showQuitDialog && (
+      {showQuitDialog && isAiMode && !gameOver && (
+        <GameSaveQuitDialog
+          emoji="🍺"
+          message={`KI-Partie · ${local.board.filter(x => x !== 0).length} Steine gesetzt`}
+          onContinue={() => setShowQuitDialog(false)}
+          onSaveAndQuit={handleSaveAndQuit}
+          onQuitWithoutSave={handleQuitWithoutSave}
+        />
+      )}
+      {showQuitDialog && (!isAiMode || gameOver) && (
         <QuitConfirmDialog
           message="Das laufende Spiel wird beendet."
           onConfirm={() => navigate("/vier/lobby")}

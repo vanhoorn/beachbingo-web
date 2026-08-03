@@ -7,6 +7,7 @@ import type { User, VierDifficulty, VierGame } from "../../types";
 import { DRINK_ICONS, DrinkPiece } from "./drinkIcons";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
+import { getGameSave } from "../../gameSave";
 
 function generateCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -181,6 +182,27 @@ export default function VierLobbyScreen() {
       {/* Step: Mode */}
       {step === "mode" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {(() => {
+            const save = getGameSave("vier");
+            if (!save) return null;
+            const savedState = (() => { try { return JSON.parse(save.gameState); } catch { return null; } })();
+            if (!savedState) return null;
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(194,65,12,0.10)", border: "1px solid rgba(194,65,12,0.4)", borderRadius: "var(--radius)", padding: "14px" }}>
+                <span style={{ fontSize: 28 }}>💾</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
+                  <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
+                </div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  style={{ background: "#C2410C", borderColor: "#C2410C" }}
+                  onClick={() => navigate("/vier/game", { state: { mode: "ai", myDrinkId: savedState.myDrinkId, aiDrinkId: savedState.aiDrinkId, aiDifficulty: save.difficulty, saveId: save.id } })}
+                >Fortsetzen</button>
+              </div>
+            );
+          })()}
+
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Spielmodus wählen</div>
 
           <ModeCard
