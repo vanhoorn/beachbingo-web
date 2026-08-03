@@ -9,6 +9,8 @@ import {
   DEFAULT_MM_SETTINGS,
 } from "./meermauLogic";
 import { audioManager } from "../../audio/AudioManager";
+import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { GameSaveQuitDialog } from "../../components/GameHudBar";
 
 const VIOLET = "#7c3aed";
 const AI_DELAY_MS = 1200;
@@ -396,6 +398,7 @@ interface LocState {
   difficulty?: MeerMauDifficulty;
   settings?: MeerMauSettings;
   gameId?: string;
+  saveId?: string;
 }
 
 export default function MeermauGameScreen() {
@@ -407,6 +410,7 @@ export default function MeermauGameScreen() {
   const difficulty = (locState?.difficulty ?? "SNIPER") as MeerMauDifficulty;
   const initSettings = locState?.settings ?? DEFAULT_MM_SETTINGS;
   const gameId = locState?.gameId ?? null;
+  const saveId = locState?.saveId ?? null;
 
   const [localState, setLocalState] = useState<LocalState | null>(null);
   const [_onlineGame, setOnlineGame] = useState<MeermauGame | null>(null);
@@ -436,9 +440,21 @@ export default function MeermauGameScreen() {
   const HAND_W = Math.min(CARD_W, maxHandCardW);
   const HAND_H = Math.round(CARD_H * HAND_W / CARD_W);
 
+  // ── Restore from save ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!saveId) return;
+    const save = getGameSave("meermau");
+    if (!save || save.id !== saveId) return;
+    try {
+      const s = JSON.parse(save.gameState) as LocalState;
+      setLocalState({ ...s, aiThinking: false });
+    } catch { /* ignore corrupt save */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Init AI game ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (mode !== "ai") return;
+    if (mode !== "ai" || saveId) return;
     getDoc(doc(db, "users", uid)).then(snap => {
       const ud = snap.exists() ? snap.data() : {};
       const { hands, drawPile, topCard } = dealMCards(1 + aiCount);
@@ -693,7 +709,7 @@ export default function MeermauGameScreen() {
         background: "var(--surface)", borderBottom: "1px solid var(--border)", flexShrink: 0,
       }}>
         <button className="btn btn-outline btn-sm" style={{ width: 36, padding: 0, fontSize: 16 }}
-          onClick={() => mode === "online" ? setShowQuit(true) : navigate("/meermau/lobby")}>‹</button>
+          onClick={() => setShowQuit(true)}>‹</button>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 800, fontSize: 17, color: VIOLET }}>MeerMau</div>
           <div style={{ fontSize: 11, color: "var(--text-sub)" }}>Runde {st?.round ?? 1}</div>
@@ -1095,8 +1111,30 @@ export default function MeermauGameScreen() {
         </div>
       )}
 
-      {/* ── Quit dialog ── */}
-      {showQuit && (
+      {/* ── Quit dialog (AI: save dialog; Online: custom leave dialog) ── */}
+      {showQuit && mode === "ai" && st && (
+        <GameSaveQuitDialog
+          emoji="🂠"
+          message={`Runde ${st.round} · ${st.players.length} Spieler · ${st.players[0]?.totalScore ?? 0}P`}
+          onContinue={() => setShowQuit(false)}
+          onSaveAndQuit={() => {
+            saveGame({
+              id: generateGameSaveId(),
+              gameType: "meermau",
+              difficulty: st.difficulty,
+              gameState: JSON.stringify({ ...st, aiThinking: false }),
+              displayLabel: `Runde ${st.round} · ${st.players.length} Spieler · ${st.players[0]?.totalScore ?? 0}P`,
+              savedAt: Date.now(),
+            });
+            navigate("/meermau/lobby");
+          }}
+          onQuitWithoutSave={() => {
+            deleteGameSave("meermau");
+            navigate("/meermau/lobby");
+          }}
+        />
+      )}
+      {showQuit && mode === "online" && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(10,22,40,0.9)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
