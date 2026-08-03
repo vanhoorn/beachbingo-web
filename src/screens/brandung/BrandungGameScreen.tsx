@@ -8,6 +8,8 @@ import {
   formatScore, isFeuerBlitz, isThirtyOne, bestAIMove, RED_SUITS,
 } from "./brandungLogic";
 import { audioManager } from "../../audio/AudioManager";
+import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { GameSaveQuitDialog } from "../../components/GameHudBar";
 
 const TEAL = "#0d9488";
 const LIVES_START = 3;
@@ -224,12 +226,13 @@ interface LocationState {
   difficulty?: BrandungDifficulty;
   settings?: BrandungSettings;
   gameId?: string;
+  saveId?: string;
 }
 
 export default function BrandungGameScreen() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { mode, aiCount = 2, difficulty = "SNIPER", settings: initSettings, gameId } = (location.state ?? {}) as LocationState;
+  const { mode, aiCount = 2, difficulty = "SNIPER", settings: initSettings, gameId, saveId = null } = (location.state ?? {}) as LocationState;
   const uid = auth.currentUser?.uid ?? "";
 
   // Responsive card sizing (same mechanism as MeerMau)
@@ -265,9 +268,21 @@ export default function BrandungGameScreen() {
     return () => audioManager.stopMusic();
   }, []);
 
+  // ── Restore from save ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!saveId) return;
+    const save = getGameSave("brandung");
+    if (!save || save.id !== saveId) return;
+    try {
+      const s = JSON.parse(save.gameState) as LocalState;
+      setLocal({ ...s, aiThinking: false });
+    } catch { /* ignore corrupt save */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Init AI mode ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (mode !== "ai") return;
+    if (mode !== "ai" || saveId) return;
     const playerIds: string[] = [uid];
     const aiNames = ["Mia 🤖", "Leo 🤖", "Finn 🤖", "Zoe 🤖", "Max 🤖"];
     const aiAvatars = ["🤖", "🦾", "⚡", "🎯", "🔮"];
@@ -954,7 +969,29 @@ export default function BrandungGameScreen() {
       )}
 
       {/* ── Quit Dialog ── */}
-      {showQuit && (
+      {showQuit && mode === "ai" && local && (
+        <GameSaveQuitDialog
+          emoji="🌊"
+          message={`Runde ${local.round} · ${local.players.length} Spieler · ${local.players[0]?.lives ?? 0}♥`}
+          onContinue={() => setShowQuit(false)}
+          onSaveAndQuit={() => {
+            saveGame({
+              id: generateGameSaveId(),
+              gameType: "brandung",
+              difficulty,
+              gameState: JSON.stringify({ ...local, aiThinking: false }),
+              displayLabel: `Runde ${local.round} · ${local.players.length} Spieler · ${local.players[0]?.lives ?? 0}♥`,
+              savedAt: Date.now(),
+            });
+            navigate("/brandung/lobby");
+          }}
+          onQuitWithoutSave={() => {
+            deleteGameSave("brandung");
+            navigate("/brandung/lobby");
+          }}
+        />
+      )}
+      {showQuit && mode === "online" && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(10,22,40,0.88)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
@@ -962,7 +999,7 @@ export default function BrandungGameScreen() {
           <div className="card" style={{ width: "min(300px, 90vw)", padding: "24px", textAlign: "center" }}>
             <div style={{ fontSize: 36 }}>🏳️</div>
             <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Spiel verlassen?</div>
-            <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>Der aktuelle Spielstand geht verloren.</div>
+            <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>Du kannst über den Code wieder beitreten.</div>
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Weiter spielen</button>
               <button className="btn" style={{ flex: 1, background: "#ef4444", color: "white" }}

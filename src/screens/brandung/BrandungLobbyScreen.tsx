@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
 import type { User, BrandungGame, BrandungPlayer, BrandungSettings } from "../../types";
+import { getGameSave } from "../../gameSave";
 import type { BrandungDifficulty } from "./brandungLogic";
 import { dealCards } from "./brandungLogic";
 import GameRulesModal from "../../components/GameRulesModal";
@@ -286,6 +287,41 @@ export default function BrandungLobbyScreen() {
       {step === "mode" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>Spielmodus wählen</div>
+          {(() => {
+            const savedGame = getGameSave("brandung");
+            if (!savedGame) return null;
+            let savedRound = 1;
+            try { savedRound = (JSON.parse(savedGame.gameState) as { round?: number }).round ?? 1; } catch { /* ignore */ }
+            return (
+              <button onClick={() => {
+                try {
+                  const saved = JSON.parse(savedGame.gameState) as { players?: unknown[] };
+                  const savedAiCount = Math.max(1, (saved.players?.length ?? 2) - 1);
+                  navigate("/brandung/game", {
+                    state: {
+                      mode: "ai",
+                      aiCount: savedAiCount,
+                      difficulty: savedGame.difficulty,
+                      saveId: savedGame.id,
+                    },
+                  });
+                } catch { /* ignore corrupt save */ }
+              }} style={{
+                background: "linear-gradient(135deg, #0d948822, #0d948811)",
+                border: "1px solid #0d948844", borderRadius: "var(--radius)",
+                padding: "18px", textAlign: "left", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 16, width: "100%",
+              }}>
+                <span style={{ fontSize: 36 }}>↩️</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text)" }}>Fortsetzen</div>
+                  <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 2 }}>
+                    {savedGame.displayLabel ?? `Runde ${savedRound}`}
+                  </div>
+                </div>
+              </button>
+            );
+          })()}
           <ModeCard emoji="🤖" title="Gegen KI" description="Spiel allein gegen 1–5 KI-Gegner" color={TEAL}
             onClick={() => { setMode("ai"); setStep("lobby"); }} />
           <ModeCard emoji="📱" title="Online – bis 6 Spieler" description="Spielt gemeinsam via QR-Code" color="#0ea5e9"
