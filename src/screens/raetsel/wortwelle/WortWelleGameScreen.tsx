@@ -40,7 +40,7 @@ const RULES_TEXT = [
   "🟩 Grün: Buchstabe ist richtig und an der richtigen Stelle.",
   "🟨 Gelb: Buchstabe ist im Wort, aber an der falschen Stelle.",
   "⬛ Grau: Buchstabe kommt im Wort nicht vor.",
-  "Im Hard Mode (Experte) musst du bestätigte Buchstaben weiterverwenden.",
+  "Umlaute werden ersetzt: Ä→AE, Ö→OE, Ü→UE, ß→SS (z.B. BÖSE = BOESE).",
 ];
 
 export default function WortWelleGameScreen() {
