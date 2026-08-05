@@ -15,8 +15,8 @@ export interface DifficultyConfig {
 export const DIFFICULTY_CONFIG: Record<WortWelleDifficulty, DifficultyConfig> = {
   leicht:  { wordLength: 4, maxGuesses: 7, hardMode: false, label: "Leicht",  description: "4 Buchstaben · 7 Versuche" },
   mittel:  { wordLength: 5, maxGuesses: 6, hardMode: false, label: "Mittel",  description: "5 Buchstaben · 6 Versuche" },
-  schwer:  { wordLength: 5, maxGuesses: 5, hardMode: false, label: "Schwer",  description: "5 Buchstaben · 5 Versuche" },
-  experte: { wordLength: 6, maxGuesses: 5, hardMode: true,  label: "Experte", description: "6 Buchstaben · 5 Versuche · Hard Mode" },
+  schwer:  { wordLength: 6, maxGuesses: 6, hardMode: false, label: "Schwer",  description: "6 Buchstaben · 6 Versuche" },
+  experte: { wordLength: 7, maxGuesses: 6, hardMode: false, label: "Experte", description: "7 Buchstaben · 6 Versuche" },
 };
 
 export const DIFFICULTIES: WortWelleDifficulty[] = ["leicht", "mittel", "schwer", "experte"];
@@ -46,47 +46,69 @@ export interface WortWelleStats {
 
 // ── Wortlisten — lazy-loaded aus /public/wortwelle/*.txt ────────────────────────
 // Quellen: enz/german-wordlist (CC0) + caco3/wordle-de Targets 5 (MIT)
+// Umlaute werden beim Laden substituiert: ä→ae, ö→oe, ü→ue, ß→ss
 
 interface WwWordLists {
-  targets4: string[];
-  targets5: string[];
-  targets6: string[];
-  pool4: Set<string>;
-  pool5: Set<string>;
-  pool6: Set<string>;
+  targets: Map<number, string[]>;
+  pool: Map<number, Set<string>>;
 }
 
 let _wordLists: WwWordLists | null = null;
 let _initPromise: Promise<WwWordLists> | null = null;
 
-const UMLAUT_RE = /[äöüÄÖÜß]/;
+function substituteUmlauts(word: string): string {
+  return word
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue")
+    .replace(/Ä/g, "AE").replace(/Ö/g, "OE").replace(/Ü/g, "UE")
+    .replace(/ß/g, "ss").replace(/ẞ/g, "SS");
+}
 
 async function loadWordFile(path: string): Promise<string[]> {
   const res = await fetch(path);
   const text = await res.text();
   return text.split("\n")
-    .map(w => w.trim())
-    .filter(w => w.length > 0 && !UMLAUT_RE.test(w));
+    .map(w => substituteUmlauts(w.trim()).toUpperCase())
+    .filter(w => w.length > 0 && /^[A-Z]+$/.test(w));
 }
 
 export async function initWwWordLists(): Promise<void> {
   if (_wordLists) return;
   if (!_initPromise) {
     _initPromise = (async (): Promise<WwWordLists> => {
-      const [t4, t5, t6, p4, p5, p6] = await Promise.all([
+      const [t4, t5, t6, t7, p4, p5, p6, p7] = await Promise.all([
         loadWordFile("/wortwelle/targets_4.txt"),
         loadWordFile("/wortwelle/targets_5.txt"),
         loadWordFile("/wortwelle/targets_6.txt"),
+        loadWordFile("/wortwelle/targets_7.txt"),
         loadWordFile("/wortwelle/pool_4.txt"),
         loadWordFile("/wortwelle/pool_5.txt"),
         loadWordFile("/wortwelle/pool_6.txt"),
+        loadWordFile("/wortwelle/pool_7.txt"),
       ]);
-      return {
-        targets4: t4, targets5: t5, targets6: t6,
-        pool4: new Set([...p4, ...t4]),
-        pool5: new Set([...p5, ...t5]),
-        pool6: new Set([...p6, ...t6]),
-      };
+
+      // Group words by length-after-substitution so umlaut words
+      // land in the correct bucket (e.g. BÖSE→BOESE goes to len=5)
+      const targets = new Map<number, string[]>();
+      const pool = new Map<number, Set<string>>();
+
+      const allTargetWords = [...t4, ...t5, ...t6, ...t7];
+      const allPoolWords = [...p4, ...p5, ...p6, ...p7, ...allTargetWords];
+
+      for (const w of allTargetWords) {
+        const len = w.length;
+        if (len < 4 || len > 7) continue;
+        if (!targets.has(len)) targets.set(len, []);
+        targets.get(len)!.push(w);
+      }
+
+      for (const w of allPoolWords) {
+        const len = w.length;
+        if (len < 4 || len > 7) continue;
+        if (!pool.has(len)) pool.set(len, new Set());
+        pool.get(len)!.add(w);
+      }
+
+      return { targets, pool };
     })();
   }
   _wordLists = await _initPromise;
@@ -97,13 +119,11 @@ export function isWwReady(): boolean {
 }
 
 function getTargets(len: number): string[] {
-  if (!_wordLists) return [];
-  return len === 4 ? _wordLists.targets4 : len === 5 ? _wordLists.targets5 : _wordLists.targets6;
+  return _wordLists?.targets.get(len) ?? [];
 }
 
 function getPool(len: number): Set<string> {
-  if (!_wordLists) return new Set();
-  return len === 4 ? _wordLists.pool4 : len === 5 ? _wordLists.pool5 : _wordLists.pool6;
+  return _wordLists?.pool.get(len) ?? new Set();
 }
 
 // ── Kernfunktionen ─────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import {
   type WortWelleDifficulty, type LetterStatus, type GameStatus,
 } from "./wortwelleLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
+import { GameSaveQuitDialog } from "../../../components/GameHudBar";
 
 const ACCENT = "#06b6d4";
 
@@ -278,7 +279,6 @@ export default function WortWelleGameScreen() {
             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>
               {DIFFICULTY_CONFIG[difficulty].label}
               {mode === "daily" ? " · Tageswort" : ""}
-              {cfg.hardMode ? " · Hard Mode" : ""}
               {" · "}{formatElapsed(elapsed)}
             </div>
           </div>
@@ -418,19 +418,13 @@ export default function WortWelleGameScreen() {
 
       {/* Quit-Dialog */}
       {showQuit && (
-        <div style={overlayStyle}>
-          <div style={dialogStyle}>
-            <div style={{ fontSize: 36, marginBottom: 8, textAlign: "center" }}>🏖️</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 20, textAlign: "center" }}>Spiel beenden?</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...ctrlBtn("var(--surface2)"), padding: "13px 0" }}>Weiterspielen</button>
-              {mode !== "daily" && (
-                <button onClick={handleQuitSave} style={{ ...ctrlBtn("var(--primary)"), padding: "13px 0" }}>💾 Speichern &amp; Beenden</button>
-              )}
-              <button onClick={handleQuitNoSave} style={{ ...ctrlBtn("var(--danger)"), padding: "13px 0" }}>✕ Beenden ohne Speichern</button>
-            </div>
-          </div>
-        </div>
+        <GameSaveQuitDialog
+          emoji="🏖️"
+          hideSave={mode === "daily"}
+          onContinue={() => { setRunning(true); setShowQuit(false); }}
+          onSaveAndQuit={handleQuitSave}
+          onQuitWithoutSave={handleQuitNoSave}
+        />
       )}
 
       {/* Hilfe-Dialog */}

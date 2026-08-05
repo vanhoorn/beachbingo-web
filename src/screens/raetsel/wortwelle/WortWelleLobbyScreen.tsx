@@ -129,9 +129,6 @@ export default function WortWelleLobbyScreen() {
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                     {cfg.description}
                   </div>
-                  {cfg.hardMode && (
-                    <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 4, fontWeight: 700 }}>⚡ Hard Mode</div>
-                  )}
                 </button>
               );
             })}
