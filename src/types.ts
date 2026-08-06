@@ -159,7 +159,7 @@ export interface BrandungSettings {
 export interface BrandungGame {
   gameId: string;
   adminId: string;
-  status: "LOBBY" | "RUNNING" | "FINISHED";
+  status: "LOBBY" | "WAITING" | "RUNNING" | "FINISHED";
   phase: "TURN" | "ROUND_END" | "GAME_OVER";
   players: { [uid: string]: BrandungPlayer };
   playerIds: string[];
