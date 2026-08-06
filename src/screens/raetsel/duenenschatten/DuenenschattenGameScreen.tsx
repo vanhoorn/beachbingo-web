@@ -6,6 +6,7 @@ import {
   type HitoriDifficulty, type HitoriState, type CellMark,
 } from "./duenenschattenLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
+import { GameSaveQuitDialog } from "../../../components/GameHudBar";
 
 interface LocationState {
   difficulty: HitoriDifficulty;
@@ -248,23 +249,12 @@ export default function DuenenschattenGameScreen() {
 
       {/* Quit dialog */}
       {showQuit && (
-        <div style={overlayStyle}>
-          <div style={dialogStyle}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🏖️</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>Spiel beenden?</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button onClick={() => { setRunning(true); setShowQuit(false); }} style={{ ...controlBtnStyle("var(--surface2)"), padding: "13px 0" }}>
-                Weiterspielen
-              </button>
-              <button onClick={() => navigate(-1)} style={{ ...controlBtnStyle(ACCENT), padding: "13px 0" }}>
-                💾 Speichern & Beenden
-              </button>
-              <button onClick={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }} style={{ ...controlBtnStyle("var(--danger)"), padding: "13px 0" }}>
-                ✕ Beenden ohne Speichern
-              </button>
-            </div>
-          </div>
-        </div>
+        <GameSaveQuitDialog
+          emoji="🏖️"
+          onContinue={() => { setRunning(true); setShowQuit(false); }}
+          onSaveAndQuit={() => navigate(-1)}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }}
+        />
       )}
     </div>
   );

@@ -68,6 +68,7 @@ export function GameHudBar({
 }
 
 interface QuitDialogProps {
+  emoji?: string;
   message?: string;
   onConfirm: () => void;
   onDismiss: () => void;
@@ -76,78 +77,60 @@ interface QuitDialogProps {
 interface GameSaveQuitDialogProps {
   emoji?: string;
   message?: string;
+  hideSave?: boolean;
   onContinue: () => void;
   onSaveAndQuit: () => void;
   onQuitWithoutSave: () => void;
 }
 
+const quitOverlay: CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+  display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
+};
+const quitDialog: CSSProperties = {
+  background: "var(--surface)", borderRadius: 20,
+  padding: "28px 24px", maxWidth: 340, width: "90%",
+  border: "1.5px solid rgba(239,68,68,0.3)",
+  display: "flex", flexDirection: "column", gap: 10, alignItems: "center",
+};
+const quitBtn = (bg: string, color: string, border = "none"): CSSProperties => ({
+  width: "100%", padding: "13px 0", borderRadius: 10, border,
+  background: bg, color, fontWeight: 700, cursor: "pointer", fontSize: 14,
+});
+
 export function GameSaveQuitDialog({
-  emoji = "🏳️", message = "Möchtest du speichern?",
+  emoji = "🏳️", message = "",
+  hideSave = false,
   onContinue, onSaveAndQuit, onQuitWithoutSave,
 }: GameSaveQuitDialogProps) {
-  const overlay: CSSProperties = {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
-  };
-  const dialog: CSSProperties = {
-    background: "var(--surface)", borderRadius: 16,
-    padding: "28px 24px", maxWidth: 320, width: "90%",
-    border: "1.5px solid rgba(239,68,68,0.3)",
-    display: "flex", flexDirection: "column", gap: 12, alignItems: "center",
-  };
-  const btn = (bg: string, color = "#fff"): CSSProperties => ({
-    width: "100%", padding: "11px 0", borderRadius: 10, border: "none",
-    background: bg, color, fontWeight: 700, cursor: "pointer", fontSize: 14,
-  });
   return (
-    <div style={overlay}>
-      <div style={dialog}>
-        <div style={{ fontSize: 36 }}>{emoji}</div>
+    <div style={quitOverlay}>
+      <div style={quitDialog}>
+        <div style={{ fontSize: 40 }}>{emoji}</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Spiel beenden?</div>
-        <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>{message}</div>
-        <button onClick={onSaveAndQuit} style={btn("#0ea5e9")}>💾 Speichern &amp; Beenden</button>
-        <button onClick={onQuitWithoutSave} style={btn("rgba(239,68,68,0.85)")}>✕ Beenden ohne Speichern</button>
-        <button onClick={onContinue} style={btn("var(--surface2)", "var(--text)")}>Weiterspielen</button>
+        {message && <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>{message}</div>}
+        <button onClick={onContinue} style={quitBtn("var(--surface2)", "var(--text)", "1px solid var(--border)")}>Weiterspielen</button>
+        {!hideSave && (
+          <button onClick={onSaveAndQuit} style={quitBtn("#0ea5e9", "#fff")}>💾 Speichern &amp; Beenden</button>
+        )}
+        <button onClick={onQuitWithoutSave} style={quitBtn("transparent", "#ef4444", "1.5px solid rgba(239,68,68,0.55)")}>✕ Beenden ohne Speichern</button>
       </div>
     </div>
   );
 }
 
-export function QuitConfirmDialog({ message = "Dein Fortschritt geht verloren.", onConfirm, onDismiss }: QuitDialogProps) {
+export function QuitConfirmDialog({
+  emoji = "🏳️", message = "Dein Fortschritt geht verloren.",
+  onConfirm, onDismiss,
+}: QuitDialogProps) {
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999,
-    }}>
-      <div style={{
-        background: "var(--surface)", borderRadius: 16,
-        padding: "28px 24px", maxWidth: 320, width: "90%",
-        border: "1.5px solid rgba(239,68,68,0.3)",
-        display: "flex", flexDirection: "column", gap: 16, alignItems: "center",
-      }}>
-        <div style={{ fontSize: 36 }}>🏳️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Spiel abbrechen?</div>
+    <div style={quitOverlay}>
+      <div style={quitDialog}>
+        <div style={{ fontSize: 40 }}>{emoji}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Spiel beenden?</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>{message}</div>
-        <div style={{ display: "flex", gap: 10, width: "100%" }}>
-          <button
-            onClick={onDismiss}
-            style={{
-              flex: 1, padding: "10px 0", borderRadius: 10, border: "1px solid var(--border)",
-              background: "var(--surface2)", color: "var(--text)", fontWeight: 600, cursor: "pointer",
-            }}
-          >
-            Weiterspielen
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              flex: 1, padding: "10px 0", borderRadius: 10, border: "none",
-              background: "rgba(239,68,68,0.85)", color: "#fff", fontWeight: 600, cursor: "pointer",
-            }}
-          >
-            Abbrechen
-          </button>
-        </div>
+        <button onClick={onDismiss} style={quitBtn("var(--surface2)", "var(--text)", "1px solid var(--border)")}>Weiterspielen</button>
+        <button onClick={onConfirm} style={quitBtn("transparent", "#ef4444", "1.5px solid rgba(239,68,68,0.55)")}>✕ Beenden</button>
       </div>
     </div>
   );

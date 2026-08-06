@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
 import { ACTION_GAMES, ALL_GAMES, COUCH_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, RIDDLE_GAMES, type PlayerCountKey } from "../gameMetadata";
-import { getPuzzleSaves, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave } from "../puzzleSave";
+import { getPuzzleSaves, deletePuzzleSave, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave } from "../puzzleSave";
+import { getGameSaves, deleteGameSave, type GameSave } from "../gameSave";
 
 interface ActiveGameInfo {
   type: string;
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [activeGame, setActiveGame] = useState<ActiveGameInfo | null>(null);
   const [savedPuzzles, setSavedPuzzles] = useState<PuzzleSave[]>([]);
+  const [savedGames, setSavedGames] = useState<GameSave[]>([]);
   const [showTour, setShowTour] = useState(false);
   const [tourSlide, setTourSlide] = useState(0);
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     setSavedPuzzles(getPuzzleSaves());
+    setSavedGames(getGameSaves());
     if (!localStorage.getItem("beachbande_tour_seen")) setShowTour(true);
   }, []);
 
@@ -362,13 +365,21 @@ export default function HomeScreen() {
         </section>
 
         {/* Gespeicherte Spiele */}
-        {savedPuzzles.length > 0 && (
+        {(savedPuzzles.length > 0 || savedGames.length > 0) && (
           <section style={{ padding: "24px 20px 0" }}>
             <SectionHeader title="Gespeicherte Spiele" emoji="💾" />
             <div style={{
               display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4,
               scrollbarWidth: "none",
             }}>
+              {savedGames.map((save) => (
+                <SavedGameCard
+                  key={save.id}
+                  save={save}
+                  onClick={() => navigate(ALL_GAMES.find((g) => g.id === save.gameType)?.path ?? "/home")}
+                  onDelete={() => { deleteGameSave(save.gameType); setSavedGames((g) => g.filter((s) => s.gameType !== save.gameType)); }}
+                />
+              ))}
               {savedPuzzles.map((save) => {
                 const info = PUZZLE_GAME_INFO[save.gameType];
                 if (!info) return null;
@@ -378,6 +389,7 @@ export default function HomeScreen() {
                     save={save}
                     info={info}
                     onClick={() => navigate(`/raetsel/${save.gameType}/lobby`)}
+                    onDelete={() => { deletePuzzleSave(save.id); setSavedPuzzles((p) => p.filter((s) => s.id !== save.id)); }}
                   />
                 );
               })}
@@ -552,38 +564,105 @@ function CategoryTile({
 }
 
 function SavedPuzzleCard({
-  save, info, onClick,
+  save, info, onClick, onDelete,
 }: {
   save: PuzzleSave;
   info: { title: string; emoji: string; color: string };
   onClick: () => void;
+  onDelete: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const diffLabel = PUZZLE_DIFFICULTY_LABELS[save.difficulty] ?? save.difficulty;
   const elapsed = formatElapsed(save.elapsedSeconds);
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        flexShrink: 0, width: 140, padding: "14px 12px 12px",
-        background: hovered ? "var(--surface2)" : "var(--surface)",
-        border: `1.5px solid ${hovered ? info.color : info.color + "55"}`,
-        borderRadius: 14, cursor: "pointer", textAlign: "left",
-        transition: "all 0.15s",
-      }}
-    >
-      <div style={{ fontSize: 26, marginBottom: 6 }}>{info.emoji}</div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1.3, marginBottom: 2 }}>
-        {info.title}
-      </div>
-      <div style={{ fontSize: 10, color: info.color, fontWeight: 700, marginBottom: 4 }}>
-        {diffLabel} · {save.variant}
-      </div>
-      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
-        ⏱ {elapsed}
-      </div>
-    </button>
+    <div style={{ position: "relative", flexShrink: 0, width: 140 }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          width: "100%", padding: "14px 12px 12px",
+          background: hovered ? "var(--surface2)" : "var(--surface)",
+          border: `1.5px solid ${hovered ? info.color : info.color + "55"}`,
+          borderRadius: 14, cursor: "pointer", textAlign: "left",
+          transition: "all 0.15s",
+        }}
+      >
+        <div style={{ fontSize: 26, marginBottom: 6 }}>{info.emoji}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1.3, marginBottom: 2, paddingRight: 18 }}>
+          {info.title}
+        </div>
+        <div style={{ fontSize: 10, color: info.color, fontWeight: 700, marginBottom: 4 }}>
+          {diffLabel} · {save.variant}
+        </div>
+        <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+          ⏱ {elapsed}
+        </div>
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        title="Löschen"
+        style={{
+          position: "absolute", top: 6, right: 6,
+          width: 22, height: 22, borderRadius: "50%",
+          background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)",
+          cursor: "pointer", fontSize: 10, color: "#ef4444",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          lineHeight: 1, padding: 0,
+        }}
+      >✕</button>
+    </div>
+  );
+}
+
+function SavedGameCard({
+  save, onClick, onDelete,
+}: {
+  save: GameSave;
+  onClick: () => void;
+  onDelete: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const game = ALL_GAMES.find((g) => g.id === save.gameType);
+  if (!game) return null;
+  return (
+    <div style={{ position: "relative", flexShrink: 0, width: 140 }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          width: "100%", padding: "14px 12px 12px",
+          background: hovered ? "var(--surface2)" : "var(--surface)",
+          border: `1.5px solid ${hovered ? game.color : game.color + "55"}`,
+          borderRadius: 14, cursor: "pointer", textAlign: "left",
+          transition: "all 0.15s",
+        }}
+      >
+        <div style={{ fontSize: 26, marginBottom: 6, display: "flex", alignItems: "center" }}>
+          {game.id === "meermau"
+            ? <img src="/meermau-logo.svg" alt="MeerMau" style={{ width: 26, height: 26, objectFit: "contain" }} />
+            : game.emoji}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1.3, marginBottom: 2, paddingRight: 18 }}>
+          {game.title}
+        </div>
+        <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+          {save.displayLabel}
+        </div>
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        title="Löschen"
+        style={{
+          position: "absolute", top: 6, right: 6,
+          width: 22, height: 22, borderRadius: "50%",
+          background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)",
+          cursor: "pointer", fontSize: 10, color: "#ef4444",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          lineHeight: 1, padding: 0,
+        }}
+      >✕</button>
+    </div>
   );
 }

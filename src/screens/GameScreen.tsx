@@ -631,6 +631,7 @@ export default function GameScreen() {
 
       {showQuitDialog && (
         <QuitConfirmDialog
+          emoji="🎱"
           message="Du verlässt das Spiel."
           onConfirm={() => navigate("/lobby")}
           onDismiss={() => setShowQuitDialog(false)}

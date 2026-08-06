@@ -5,7 +5,8 @@ import { auth, db } from "../../firebase";
 import type { User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
-import { getGameSave } from "../../gameSave";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 
 const RED = "#dc2626";
 const RED_BG = "rgba(220,38,38,0.12)";
@@ -18,6 +19,7 @@ export default function StrandturmLobbyScreen() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [turmSave, setTurmSave] = useState(() => getGameSave("strandturm"));
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -120,23 +122,18 @@ export default function StrandturmLobbyScreen() {
         </div>
       </div>
 
-      {(() => { const save = getGameSave("strandturm"); return save ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.35)", borderRadius: "var(--radius)", padding: "14px" }}>
-          <span style={{ fontSize: 28 }}>💾</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
-            <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
-          </div>
-          <button
-            className="btn btn-primary btn-sm"
-            style={{ background: RED, borderColor: RED }}
-            onClick={() => {
-              const savedLevel = (() => { try { return JSON.parse(save.gameState).level as number; } catch { return 1; } })();
-              navigate("/strandturm/game", { state: { controlMode, startLevel: savedLevel, saveId: save.id } });
-            }}
-          >Fortsetzen</button>
-        </div>
-      ) : null; })()}
+      {turmSave && (
+        <SavedGameRow
+          title="Strandturm"
+          subtitle={turmSave.displayLabel}
+          color={RED}
+          onResume={() => {
+            const savedLevel = (() => { try { return (JSON.parse(turmSave.gameState) as { level?: number }).level ?? 1; } catch { return 1; } })();
+            navigate("/strandturm/game", { state: { controlMode, startLevel: savedLevel, saveId: turmSave.id } });
+          }}
+          onDelete={() => { deleteGameSave("strandturm"); setTurmSave(null); }}
+        />
+      )}
 
       <button
         className="btn btn-primary"

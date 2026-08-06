@@ -5,7 +5,8 @@ import { auth, db } from "../../firebase";
 import type { PiratesDifficulty, User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
-import { getGameSave } from "../../gameSave";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 
 function DiffOption({ selected, onClick, title, description }: {
   selected: boolean; onClick: () => void; title: string; description: string;
@@ -50,6 +51,7 @@ export default function PiratesLobbyScreen() {
 
   const [fireRate, setFireRate] = useState(5);
   const [controlMode, setControlMode] = useState<"BUTTONS" | "TOUCH">("BUTTONS");
+  const [pirateSave, setPirateSave] = useState(() => getGameSave("pirates"));
 
   useEffect(() => {
     if (!uid) return;
@@ -171,20 +173,15 @@ export default function PiratesLobbyScreen() {
         />
       </div>
 
-      {(() => { const save = getGameSave("pirates"); return save ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.35)", borderRadius: "var(--radius)", padding: "14px" }}>
-          <span style={{ fontSize: 28 }}>💾</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
-            <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
-          </div>
-          <button
-            className="btn btn-primary btn-sm"
-            style={{ background: "#a855f7", borderColor: "#a855f7" }}
-            onClick={() => navigate("/pirates/game", { state: { difficulty: save.difficulty, fireRate, controlMode, saveId: save.id } })}
-          >Fortsetzen</button>
-        </div>
-      ) : null; })()}
+      {pirateSave && (
+        <SavedGameRow
+          title="BeachPirates"
+          subtitle={pirateSave.displayLabel}
+          color="#a855f7"
+          onResume={() => navigate("/pirates/game", { state: { difficulty: pirateSave.difficulty, fireRate, controlMode, saveId: pirateSave.id } })}
+          onDelete={() => { deleteGameSave("pirates"); setPirateSave(null); }}
+        />
+      )}
 
       <button
         className="btn btn-primary"

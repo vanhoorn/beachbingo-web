@@ -5,7 +5,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
 import type { User, MeermauGame, MeermauOnlinePlayer } from "../../types";
 import type { MeerMauDifficulty, MeerMauSettings } from "./meermauLogic";
-import { getGameSave } from "../../gameSave";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 import { dealMCards, DEFAULT_MM_SETTINGS } from "./meermauLogic";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
@@ -63,6 +64,7 @@ export default function MeermauLobbyScreen() {
   const [settings, setSettings] = useState<MeerMauSettings>(DEFAULT_MM_SETTINGS);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [meermauSave, setMeermauSave] = useState(() => getGameSave("meermau"));
 
   // Online state
   const [creating, setCreating] = useState(false);
@@ -308,42 +310,21 @@ export default function MeermauLobbyScreen() {
       {step === "mode" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>Spielmodus wählen</div>
-          {(() => {
-            const savedGame = getGameSave("meermau");
-            if (!savedGame) return null;
-            let savedRound = 1;
-            try { savedRound = (JSON.parse(savedGame.gameState) as { round?: number }).round ?? 1; } catch { /* ignore */ }
-            return (
-              <button onClick={() => {
+          {meermauSave && (
+            <SavedGameRow
+              title="MeerMau"
+              subtitle={meermauSave.displayLabel ?? `Runde ${(() => { try { return (JSON.parse(meermauSave.gameState) as { round?: number }).round ?? 1; } catch { return 1; } })()}`}
+              color={VIOLET}
+              onResume={() => {
                 try {
-                  const saved = JSON.parse(savedGame.gameState) as { players?: unknown[]; settings?: MeerMauSettings };
+                  const saved = JSON.parse(meermauSave.gameState) as { players?: unknown[]; settings?: MeerMauSettings };
                   const savedAiCount = Math.max(1, (saved.players?.length ?? 2) - 1);
-                  navigate("/meermau/game", {
-                    state: {
-                      mode: "ai",
-                      aiCount: savedAiCount,
-                      difficulty: savedGame.difficulty,
-                      settings: saved.settings,
-                      saveId: savedGame.id,
-                    },
-                  });
+                  navigate("/meermau/game", { state: { mode: "ai", aiCount: savedAiCount, difficulty: meermauSave.difficulty, settings: saved.settings, saveId: meermauSave.id } });
                 } catch { /* ignore corrupt save */ }
-              }} style={{
-                background: "linear-gradient(135deg, #6b21a822, #6b21a811)",
-                border: "1px solid #6b21a844", borderRadius: "var(--radius)",
-                padding: "18px", textAlign: "left", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 16, width: "100%",
-              }}>
-                <span style={{ fontSize: 36 }}>↩️</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text)" }}>Fortsetzen</div>
-                  <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 2 }}>
-                    {savedGame.displayLabel ?? `Runde ${savedRound}`}
-                  </div>
-                </div>
-              </button>
-            );
-          })()}
+              }}
+              onDelete={() => { deleteGameSave("meermau"); setMeermauSave(null); }}
+            />
+          )}
           <ModeCard emoji="🤖" title="Gegen KI" description="Spiel allein gegen 1–3 KI-Gegner" color={VIOLET}
             onClick={() => { setMode("ai"); setStep("lobby"); }} />
           <ModeCard emoji="📱" title="Online – bis 4 Spieler" description="Spielt gemeinsam via QR-Code" color="#0ea5e9"

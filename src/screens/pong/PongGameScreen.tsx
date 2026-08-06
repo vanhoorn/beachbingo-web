@@ -734,6 +734,7 @@ export default function PongGameScreen() {
 
       {showQuitDialog && (
         <QuitConfirmDialog
+          emoji="🏓"
           message="Das laufende Spiel wird beendet."
           onConfirm={() => navigate("/pong/lobby")}
           onDismiss={() => { setShowQuitDialog(false); setManualPaused(false); manualPausedRef.current = false; }}

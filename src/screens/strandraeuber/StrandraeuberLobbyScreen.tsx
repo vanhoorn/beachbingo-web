@@ -7,7 +7,8 @@ import type { User, SpOnlineGame, SpOnlinePlayer } from "../../types";
 import type { SpDifficulty } from "./strandraeuberLogic";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
-import { getGameSave } from "../../gameSave";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 
 const SP_COLOR = "#e11d48";
 const SP_DIM   = "rgba(225,29,72,0.12)";
@@ -79,6 +80,7 @@ export default function StrandraeuberLobbyScreen() {
   const [totalRounds, setTotalRounds] = useState(3);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRules, setShowRules]  = useState(false);
+  const [spSave, setSpSave] = useState(() => getGameSave("strandraeuber"));
 
   // Online state
   const [creating, setCreating]   = useState(false);
@@ -301,40 +303,32 @@ export default function StrandraeuberLobbyScreen() {
       </div>
 
       {/* ── Step: Mode ── */}
-      {step === "mode" && (() => {
-        const savedSp = getGameSave("strandraeuber");
-        return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Spielmodus wählen</div>
-            {savedSp && (
-              <ModeCard
-                emoji="▶️"
-                title="Fortsetzen"
-                description={savedSp.displayLabel}
-                color={SP_COLOR}
-                onClick={() => {
-                  const gs = (() => { try { return JSON.parse(savedSp.gameState); } catch (_) { return {}; } })();
-                  const savedAiCount = Math.max(1, (gs.players?.length ?? 2) - 1);
-                  sessionStorage.setItem("spGame", JSON.stringify({
-                    mode: "ai",
-                    aiCount: savedAiCount,
-                    difficulty: savedSp.difficulty,
-                    totalRounds: gs.totalRounds ?? 3,
-                    myName,
-                    myAvatar,
-                    saveId: savedSp.id,
-                  }));
-                  navigate("/strandraeuber/game");
-                }}
-              />
-            )}
-            <ModeCard emoji="🤖" title="Gegen KI" description="Spiel allein gegen 1–5 KI-Gegner" color={SP_COLOR}
-              onClick={() => { setMode("ai"); setStep("lobby"); }} />
-            <ModeCard emoji="📱" title="Online – bis 6 Spieler" description="Spielt gemeinsam via QR-Code" color="#0ea5e9"
-              onClick={() => { setMode("online"); setStep("lobby"); createOnlineGame(); }} />
-          </div>
-        );
-      })()}
+      {step === "mode" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>Spielmodus wählen</div>
+          {spSave && (
+            <SavedGameRow
+              title="Strandräuber"
+              subtitle={spSave.displayLabel}
+              color={SP_COLOR}
+              onResume={() => {
+                const gs = (() => { try { return JSON.parse(spSave.gameState); } catch { return {}; } })();
+                const savedAiCount = Math.max(1, (gs.players?.length ?? 2) - 1);
+                sessionStorage.setItem("spGame", JSON.stringify({
+                  mode: "ai", aiCount: savedAiCount, difficulty: spSave.difficulty,
+                  totalRounds: gs.totalRounds ?? 3, myName, myAvatar, saveId: spSave.id,
+                }));
+                navigate("/strandraeuber/game");
+              }}
+              onDelete={() => { deleteGameSave("strandraeuber"); setSpSave(null); }}
+            />
+          )}
+          <ModeCard emoji="🤖" title="Gegen KI" description="Spiel allein gegen 1–5 KI-Gegner" color={SP_COLOR}
+            onClick={() => { setMode("ai"); setStep("lobby"); }} />
+          <ModeCard emoji="📱" title="Online – bis 6 Spieler" description="Spielt gemeinsam via QR-Code" color="#0ea5e9"
+            onClick={() => { setMode("online"); setStep("lobby"); createOnlineGame(); }} />
+        </div>
+      )}
 
       {/* ── Step: AI Lobby ── */}
       {step === "lobby" && mode === "ai" && (

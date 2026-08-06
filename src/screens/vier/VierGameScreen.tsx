@@ -621,6 +621,7 @@ export default function VierGameScreen() {
       )}
       {showQuitDialog && (!isAiMode || gameOver) && (
         <QuitConfirmDialog
+          emoji="🍺"
           message="Das laufende Spiel wird beendet."
           onConfirm={() => navigate("/vier/lobby")}
           onDismiss={() => setShowQuitDialog(false)}

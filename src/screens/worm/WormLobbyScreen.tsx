@@ -5,7 +5,8 @@ import { auth, db } from "../../firebase";
 import type { WormDifficulty, User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
-import { getGameSave } from "../../gameSave";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 
 const WORM_GREEN = "#22c55e";
 
@@ -47,6 +48,7 @@ export default function WormLobbyScreen() {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [wormSave, setWormSave] = useState(() => getGameSave("worm"));
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -145,20 +147,15 @@ export default function WormLobbyScreen() {
         {" "}· <span style={{ cursor: "pointer", color: WORM_GREEN }} onClick={() => navigate("/worm/settings")}>Ändern</span>
       </div>
 
-      {(() => { const save = getGameSave("worm"); return save ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(34,197,94,0.08)", border: `1px solid rgba(34,197,94,0.35)`, borderRadius: "var(--radius)", padding: "14px" }}>
-          <span style={{ fontSize: 28 }}>💾</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700 }}>Gespeichertes Spiel</div>
-            <div style={{ fontSize: 14 }}>{save.displayLabel}</div>
-          </div>
-          <button
-            className="btn btn-primary btn-sm"
-            style={{ background: WORM_GREEN, borderColor: WORM_GREEN }}
-            onClick={() => navigate("/worm/game", { state: { difficulty: save.difficulty, controlMode, saveId: save.id } })}
-          >Fortsetzen</button>
-        </div>
-      ) : null; })()}
+      {wormSave && (
+        <SavedGameRow
+          title="Wattwurm"
+          subtitle={wormSave.displayLabel}
+          color={WORM_GREEN}
+          onResume={() => navigate("/worm/game", { state: { difficulty: wormSave.difficulty, controlMode, saveId: wormSave.id } })}
+          onDelete={() => { deleteGameSave("worm"); setWormSave(null); }}
+        />
+      )}
 
       <button
         className="btn btn-primary"
