@@ -2,6 +2,7 @@ export type PuzzleGameType =
   | "strandoku"
   | "wellensumme"
   | "kuestenkrieg"
+  | "kuestenkrieg_ki"
   | "duenenschatten"
   | "inselbruecke"
   | "wortwelle";
@@ -12,7 +13,7 @@ export interface PuzzleSave {
   id: string;
   gameType: PuzzleGameType;
   variant: string;
-  difficulty: PuzzleDifficulty;
+  difficulty: string;
   seed: number;
   puzzleState: string; // JSON-stringified game-specific state
   startedAt: number;   // ms timestamp
@@ -105,8 +106,9 @@ export const PUZZLE_GAME_INFO: Record<
 > = {
   strandoku:      { title: "Strandoku",     emoji: "🔢", color: "#38bdf8" },
   wellensumme:    { title: "WellenSumme",   emoji: "➕", color: "#c084fc" },
-  kuestenkrieg:   { title: "Küstenkrieg",   emoji: "⚓", color: "#fb7185" },
-  duenenschatten: { title: "DünenSchatten", emoji: "◼",  color: "#fbbf24" },
+  kuestenkrieg:    { title: "Küstenkrieg",    emoji: "⚓", color: "#fb7185" },
+  kuestenkrieg_ki: { title: "Küstenkrieg KI", emoji: "⚓", color: "#fb7185" },
+  duenenschatten:  { title: "DünenSchatten",  emoji: "◼",  color: "#fbbf24" },
   inselbruecke:   { title: "Inselbrücke",   emoji: "🌉", color: "#4ade80" },
   wortwelle:      { title: "WortWelle",     emoji: "🌊", color: "#06b6d4" },
 };

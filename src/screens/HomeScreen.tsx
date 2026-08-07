@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { User } from "../types";
 import { ACTION_GAMES, ALL_GAMES, COUCH_GAMES, PLAYER_COUNT_INFO, PLAYER_COUNT_ORDER, RIDDLE_GAMES, type PlayerCountKey } from "../gameMetadata";
-import { getPuzzleSaves, deletePuzzleSave, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave } from "../puzzleSave";
+import { getPuzzleSaves, deletePuzzleSave, PUZZLE_GAME_INFO, formatElapsed, PUZZLE_DIFFICULTY_LABELS, type PuzzleSave, type PuzzleDifficulty } from "../puzzleSave";
 import { getGameSaves, deleteGameSave, type GameSave } from "../gameSave";
 
 interface ActiveGameInfo {
@@ -572,7 +572,7 @@ function SavedPuzzleCard({
   onDelete: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const diffLabel = PUZZLE_DIFFICULTY_LABELS[save.difficulty] ?? save.difficulty;
+  const diffLabel = PUZZLE_DIFFICULTY_LABELS[save.difficulty as PuzzleDifficulty] ?? save.difficulty;
   const elapsed = formatElapsed(save.elapsedSeconds);
   return (
     <div style={{ position: "relative", flexShrink: 0, width: 140 }}>

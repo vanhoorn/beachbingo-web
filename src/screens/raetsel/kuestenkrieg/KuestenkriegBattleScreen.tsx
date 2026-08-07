@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   createBattleState, playerShoot, aiShoot, shipCells, countRemainingCells,
+  serializeBattleState, deserializeBattleState,
   type PlacedShip, type BattleState, type AiMode,
 } from "./kuestenkriegBattleLogic";
 import { GRID, FLEET_DEFS } from "./kuestenkriegBattleLogic";
+import { savePuzzle, generateSaveId, deletePuzzleSave } from "../../../puzzleSave";
+import { GameSaveQuitDialog } from "../../../components/GameHudBar";
 
 const ACCENT = "#fb7185";
 const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
@@ -12,6 +15,8 @@ const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 5
 interface LocState {
   fleet: PlacedShip[];
   aiMode: AiMode;
+  resumeSaveId?: string;
+  resumeState?: string;
 }
 
 type CellView = "unknown" | "miss" | "hit" | "sunk" | "myship";
@@ -37,11 +42,18 @@ function cellLabel(v: CellView): string {
 
 export default function KuestenkriegBattleScreen() {
   const navigate = useNavigate();
-  const { fleet, aiMode } = (useLocation().state ?? {}) as LocState;
-  const stateRef = useRef<BattleState>(createBattleState(fleet ?? [], aiMode ?? "matrose"));
+  const { fleet, aiMode, resumeSaveId, resumeState } = (useLocation().state ?? {}) as LocState;
+  const saveIdRef = useRef<string>(resumeSaveId ?? generateSaveId());
+  const startedAtRef = useRef(Date.now());
+  const stateRef = useRef<BattleState>(
+    resumeState
+      ? (deserializeBattleState(resumeState) ?? createBattleState(fleet ?? [], aiMode ?? "matrose"))
+      : createBattleState(fleet ?? [], aiMode ?? "matrose"),
+  );
   const [gs, setGs] = useState<BattleState>(stateRef.current);
   const [aiThinking, setAiThinking] = useState(false);
   const [lastHit, setLastHit] = useState<string | null>(null);
+  const [showQuit, setShowQuit] = useState(false);
 
   useEffect(() => {
     if (gs.turn === "ai" && !gs.gameOver) {
@@ -67,6 +79,23 @@ export default function KuestenkriegBattleScreen() {
       return () => clearTimeout(timer);
     }
   }, [gs.turn, gs.gameOver]);
+
+  useEffect(() => {
+    if (gs.gameOver) {
+      deletePuzzleSave(saveIdRef.current);
+    } else {
+      savePuzzle({
+        id: saveIdRef.current,
+        gameType: "kuestenkrieg_ki",
+        variant: aiMode ?? "matrose",
+        difficulty: "ki",
+        seed: 0,
+        puzzleState: serializeBattleState(gs),
+        startedAt: startedAtRef.current,
+        elapsedSeconds: 0,
+      });
+    }
+  }, [gs]);
 
   const handlePlayerShoot = (r: number, c: number) => {
     if (gs.turn !== "player" || gs.gameOver || aiThinking) return;
@@ -100,7 +129,7 @@ export default function KuestenkriegBattleScreen() {
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={() => navigate(-1)} style={backBtn}>‹</button>
+        <button onClick={() => setShowQuit(true)} style={backBtn}>‹</button>
         <span style={{ fontSize: 24 }}>⚓</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>KÜSTENKRIEG</div>
@@ -177,7 +206,7 @@ export default function KuestenkriegBattleScreen() {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => navigate(-2)}
+                onClick={() => navigate("/raetsel/kuestenkrieg/lobby")}
                 style={{ flex: 1, padding: "12px", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--text)" }}
               >
                 Lobby
@@ -192,6 +221,14 @@ export default function KuestenkriegBattleScreen() {
           </div>
         )}
       </div>
+      {showQuit && (
+        <GameSaveQuitDialog
+          emoji="⚓"
+          onContinue={() => setShowQuit(false)}
+          onSaveAndQuit={() => navigate("/raetsel/kuestenkrieg/lobby")}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/kuestenkrieg/lobby"); }}
+        />
+      )}
     </div>
   );
 }
