@@ -7,7 +7,7 @@ import {
 import { GRID, FLEET_DEFS } from "./kuestenkriegBattleLogic";
 
 const ACCENT = "#fb7185";
-const CELL = 30;
+const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
 
 interface LocState {
   fleet: PlacedShip[];
@@ -28,9 +28,9 @@ function cellColor(v: CellView): string {
 
 function cellLabel(v: CellView): string {
   switch (v) {
-    case "miss":  return "•";
-    case "hit":   return "✕";
-    case "sunk":  return "✕";
+    case "miss": return "•";
+    case "hit":  return "●";
+    case "sunk": return "✕";
     default: return "";
   }
 }

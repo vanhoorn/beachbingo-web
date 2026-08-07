@@ -7,7 +7,7 @@ import type { PlacedShip } from "./kuestenkriegBattleLogic";
 import type { KriegOnlineGame } from "../../../types";
 
 const ACCENT = "#fb7185";
-const CELL = 30;
+const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
 
 interface LocState { gameCode: string }
 type CellView = "unknown" | "miss" | "hit" | "sunk" | "myship";
@@ -24,7 +24,7 @@ function cellColor(v: CellView): string {
 function cellLabel(v: CellView): string {
   switch (v) {
     case "miss": return "•";
-    case "hit":
+    case "hit":  return "●";
     case "sunk": return "✕";
     default: return "";
   }
