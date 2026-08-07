@@ -138,7 +138,7 @@ export default function KuestenkriegOnlineBattleScreen() {
 
     const update: Record<string, unknown> = {
       [`shots.${uid}`]: newShots,
-      turn: winner ? uid : oppId,
+      turn: winner ? uid : hit ? uid : oppId,
     };
     if (winner) {
       update.winner = uid;

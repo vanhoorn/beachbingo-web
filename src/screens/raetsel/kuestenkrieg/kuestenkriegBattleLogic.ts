@@ -208,7 +208,7 @@ export function aiShoot(state: BattleState, aiMode: AiMode): BattleState {
   return {
     ...state,
     playerGrid, playerFleet,
-    turn: allSunk ? "ai" : "player",
+    turn: allSunk ? "ai" : !!hitShip ? "ai" : "player",
     gameOver: allSunk,
     winner: allSunk ? "ai" : null,
     _aiHuntMode: aiHuntMode,
