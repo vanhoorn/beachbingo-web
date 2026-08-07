@@ -716,8 +716,8 @@ export default function PongGameScreen() {
           ref={canvasRef}
           width={CW} height={CH}
           style={{
-            width: is2P ? "auto" : "min(100%, calc(100dvh - 200px))",
-            height: is2P ? "calc(100dvh - 200px)" : "min(100%, calc(100dvh - 200px))",
+            width: is2P ? "auto" : "min(100%, calc(100dvh - 260px))",
+            height: is2P ? "calc(100dvh - 260px)" : "min(100%, calc(100dvh - 260px))",
             maxWidth: is2P ? CW : undefined,
             maxHeight: is2P ? "100%" : undefined,
             touchAction: "none", display: "block",
@@ -729,7 +729,7 @@ export default function PongGameScreen() {
       <div
         ref={zoneRef}
         style={{
-          height: 80, background: "#0d0d0d", borderTop: "1px solid #1a1a1a",
+          height: "clamp(120px, 18vh, 180px)", background: "#0d0d0d", borderTop: "1px solid #1a1a1a",
           display: "flex", alignItems: "stretch", userSelect: "none",
           touchAction: "none", flexShrink: 0, cursor: "ns-resize",
         }}
