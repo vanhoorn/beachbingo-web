@@ -1329,6 +1329,12 @@ export default function StrandturmGameScreen() {
   const loop = useCallback((ts: number) => {
     void ts;
     const gs = gsRef.current;
+    // Update horizontal input from stored touch position (TOUCH mode)
+    if (controlMode === "TOUCH" && touchXRef.current !== null) {
+      const THRESHOLD = 15;
+      leftRef.current  = touchXRef.current < gs.px - THRESHOLD;
+      rightRef.current = touchXRef.current > gs.px + THRESHOLD;
+    }
     if (!paused || gs.phase !== "PLAYING") {
       step(gs);
     }
@@ -1402,43 +1408,46 @@ export default function StrandturmGameScreen() {
   }
 
   // ── Touch controls (TOUCH mode) ───────────────────────────────────────────
-  const touchRef = useRef<{ id: number; side: "left" | "right" | "jump" }[]>([]);
+  const touchXRef = useRef<number | null>(null); // game-X where finger is held
+
+  // Zones: top 25% = up/jump, bottom 25% = down, middle 50% = horizontal tracking
+  function scanTouches(touches: TouchList, rect: DOMRect) {
+    let hasHoriz = false, hasJump = false, hasDown = false;
+    for (const t of Array.from(touches)) {
+      const ly = (t.clientY - rect.top) * (CH / rect.height);
+      const lx = (t.clientX - rect.left) * (CW / rect.width);
+      if      (ly < CH * 0.25) hasJump = true;
+      else if (ly > CH * 0.75) hasDown = true;
+      else { touchXRef.current = lx; hasHoriz = true; }
+    }
+    if (!hasHoriz) { touchXRef.current = null; leftRef.current = false; rightRef.current = false; }
+    if (!hasJump)  upRef.current = false;
+    if (!hasDown)  downRef.current = false;
+  }
 
   function onCanvasTouchStart(e: React.TouchEvent) {
     if (controlMode !== "TOUCH") return;
     e.preventDefault();
     const rect = canvasRef.current!.getBoundingClientRect();
-    const scaleX = CW / rect.width;
     for (const t of Array.from(e.changedTouches)) {
-      const lx = (t.clientX - rect.left) * scaleX;
       const ly = (t.clientY - rect.top) * (CH / rect.height);
-      if (ly < CH * 0.35) {
-        // Top area = jump
-        jumpPressRef.current = true; upRef.current = true;
-        touchRef.current.push({ id: t.identifier, side: "jump" });
-      } else if (lx < CW / 2) {
-        leftRef.current = true;
-        touchRef.current.push({ id: t.identifier, side: "left" });
-      } else {
-        rightRef.current = true;
-        touchRef.current.push({ id: t.identifier, side: "right" });
-      }
+      const lx = (t.clientX - rect.left) * (CW / rect.width);
+      if      (ly < CH * 0.25) { jumpPressRef.current = true; upRef.current = true; }
+      else if (ly > CH * 0.75) downRef.current = true;
+      else                      touchXRef.current = lx;
     }
+  }
+
+  function onCanvasTouchMove(e: React.TouchEvent) {
+    if (controlMode !== "TOUCH") return;
+    e.preventDefault();
+    scanTouches(e.touches, canvasRef.current!.getBoundingClientRect());
   }
 
   function onCanvasTouchEnd(e: React.TouchEvent) {
     if (controlMode !== "TOUCH") return;
     e.preventDefault();
-    for (const t of Array.from(e.changedTouches)) {
-      const idx = touchRef.current.findIndex((x) => x.id === t.identifier);
-      if (idx >= 0) {
-        const { side } = touchRef.current[idx];
-        touchRef.current.splice(idx, 1);
-        if (side === "left"  && !touchRef.current.some((x) => x.side === "left"))  leftRef.current  = false;
-        if (side === "right" && !touchRef.current.some((x) => x.side === "right")) rightRef.current = false;
-        if (side === "jump"  && !touchRef.current.some((x) => x.side === "jump"))  upRef.current    = false;
-      }
-    }
+    scanTouches(e.touches, canvasRef.current!.getBoundingClientRect());
   }
 
   // ── Navigate to results ───────────────────────────────────────────────────
@@ -1466,6 +1475,7 @@ export default function StrandturmGameScreen() {
       <div
         style={{ position: "relative", width: CW, maxWidth: "100%" }}
         onTouchStart={onCanvasTouchStart}
+        onTouchMove={onCanvasTouchMove}
         onTouchEnd={onCanvasTouchEnd}
       >
         <canvas
@@ -1618,7 +1628,7 @@ export default function StrandturmGameScreen() {
 
       {controlMode === "TOUCH" && !isOver && (
         <div style={{ padding: "8px 0", fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
-          Links / Rechts tippen · Oben tippen = Springen / Klettern
+          Oben = Springen/Hoch · Mitte = Laufen · Unten = Leiter runter
         </div>
       )}
 
