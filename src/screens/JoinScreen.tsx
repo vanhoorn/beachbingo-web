@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, runTransaction } from "firebase/firestore";
 import jsQR from "jsqr";
 import { auth, db } from "../firebase";
 import type { BingoGame, PongGame, PongPlayer, PongSide, VierGame, User, BrandungGame, MeermauGame, SpOnlineGame, SpOnlinePlayer, KriegOnlineGame, KriegOnlinePlayer } from "../types";
@@ -181,19 +181,30 @@ export default function JoinScreen() {
   }
 
   async function joinPong(code: string, game: PongGame, user: User) {
-    if (game.status !== "LOBBY")              { setErrorMsg("Dieses Spiel läuft bereits."); setScanState("error"); return; }
-    if (game.players.length >= game.humanCount) { setErrorMsg("Das Spiel ist voll."); setScanState("error"); return; }
+    if (game.status !== "LOBBY") { setErrorMsg("Dieses Spiel läuft bereits."); setScanState("error"); return; }
     if (game.playerIds.includes(uid)) {
       navigate("/pong/game", { state: buildPongState(game, game.adminId === uid) });
       return;
     }
-    const takenSides = game.players.map((p) => p.side);
-    const freeSide   = sidesForPaddles(game.totalPaddles).find((s) => !takenSides.includes(s)) ?? "right";
-    const player: PongPlayer = { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, side: freeSide };
-    await updateDoc(doc(db, "pongGames", code), {
-      players:   arrayUnion(player),
-      playerIds: arrayUnion(uid),
+    let joinedSide: PongSide = "right";
+    await runTransaction(db, async (tx) => {
+      const ref  = doc(db, "pongGames", code);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error("not_found");
+      const d  = snap.data()!;
+      if (d.status !== "LOBBY") throw new Error("not_lobby");
+      const pIds = (d.playerIds as string[]) ?? [];
+      const ps   = (d.players  as any[])    ?? [];
+      const hc   = (d.humanCount  as number) ?? 2;
+      const tp   = (d.totalPaddles as number) ?? 2;
+      if (pIds.length >= hc) throw new Error("full");
+      const taken = ps.map((p: any) => p.side as string);
+      const side  = sidesForPaddles(tp).find((s) => !taken.includes(s)) ?? "right";
+      const player: PongPlayer = { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, side };
+      tx.update(ref, { players: arrayUnion(player), playerIds: arrayUnion(uid) });
+      joinedSide = side;
     });
+    const player: PongPlayer = { userId: uid, displayName: user.displayName, avatarUrl: user.avatarUrl, side: joinedSide };
     navigate("/pong/game", { state: buildPongState({ ...game, players: [...game.players, player] }, false) });
   }
 

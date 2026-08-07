@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../firebase";
 import { QuitConfirmDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
@@ -139,6 +139,8 @@ export default function PongGameScreen() {
   }, []);
 
   const resultWrittenRef = useRef(false);
+  const [hostGone, setHostGone] = useState(false);
+  const lastHbRef = useRef(Date.now());
 
   // AI config
   const aiSpd = difficulty === "ROOKIE" ? 2.8 : difficulty === "SNIPER" ? 5   : 9;
@@ -161,7 +163,7 @@ export default function PongGameScreen() {
     const pMax  = CH - PADDLE_LEN / 2 - wallOff;
     const pMinX = PADDLE_LEN / 2;
     const pMaxX = CW - PADDLE_LEN / 2;
-    const side: PongSide = humanCount === 1
+    const side: PongSide = (humanCount === 1 || gameId != null)
       ? mySide
       : touchX < rect.width / 2 ? "left" : "right";
     if (side === "left" || side === "right") {
@@ -225,6 +227,8 @@ export default function PongGameScreen() {
       setOpponentNames(names);
 
       if (!isHost) {
+        lastHbRef.current = Date.now();
+        const status = (data as any).status as string | undefined;
         // Sync wallSide from host so both devices render the same paddles
         if (data.wallSide && gsRef.current.wallSide !== data.wallSide) {
           gsRef.current.wallSide = data.wallSide as PongSide;
@@ -238,10 +242,12 @@ export default function PongGameScreen() {
           paused: data.paused, pauseTimer: data.pauseTimer,
         };
         setScores({ left: data.scoreLeft, right: data.scoreRight, top: data.scoreTop, bottom: data.scoreBottom });
-        if (data.winnerId) {
-          // find which side lost (has max score)
+        if (status === "FINISHED") {
+          // find which side lost (has max score); covers both winnerId=null (human lost) and winnerId!=null
           const s = data.scoreLeft >= scoreLimit ? "left" : data.scoreRight >= scoreLimit ? "right" : data.scoreTop >= scoreLimit ? "top" : "bottom";
           setLoser(s);
+        } else if (status === "IN_PROGRESS") {
+          setLoser(null);
         }
       } else {
         // Host only reads guest paddles
@@ -251,6 +257,17 @@ export default function PongGameScreen() {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, isHost, uid]);
+
+  // ── Guest: host-disconnect watchdog ──────────────────────────────────────────
+  useEffect(() => {
+    if (!gameId || isHost) return;
+    lastHbRef.current = Date.now();
+    const id = setInterval(() => {
+      setHostGone(Date.now() - lastHbRef.current > 15_000);
+    }, 5_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId, isHost]);
 
   const writeHost = useCallback(() => {
     if (!gameId) return;
@@ -268,6 +285,7 @@ export default function PongGameScreen() {
       scoreLeft: g.scores.left, scoreRight: g.scores.right,
       scoreTop: g.scores.top, scoreBottom: g.scores.bottom,
       paused: g.paused, pauseTimer: g.pauseTimer,
+      lastHeartbeat: serverTimestamp(),
     }).catch(() => {});
   }, [gameId]);
 
@@ -504,7 +522,8 @@ export default function PongGameScreen() {
 
     // Left paddle
     const lpx = MARGIN + PADDLE_THICK;
-    if (g.bvx < 0 && g.bx - BALL_R < lpx && g.bx - BALL_R > MARGIN - 2 &&
+    const prevBxL = g.bx - g.bvx;
+    if (g.bvx < 0 && g.bx - BALL_R < lpx && prevBxL - BALL_R >= MARGIN - 2 &&
         inRange(g.by, g.paddles.left - PADDLE_LEN / 2 - BALL_R, g.paddles.left + PADDLE_LEN / 2 + BALL_R)) {
       const rel = (g.by - g.paddles.left) / (PADDLE_LEN / 2);
       g.speed = Math.min(g.speed + 0.35, MAX_SPEED);
@@ -516,7 +535,8 @@ export default function PongGameScreen() {
 
     // Right paddle
     const rpx = cw - MARGIN - PADDLE_THICK;
-    if (g.bvx > 0 && g.bx + BALL_R > rpx && g.bx + BALL_R < cw - MARGIN + 2 &&
+    const prevBxR = g.bx - g.bvx;
+    if (g.bvx > 0 && g.bx + BALL_R > rpx && prevBxR + BALL_R <= cw - MARGIN + 2 &&
         inRange(g.by, g.paddles.right - PADDLE_LEN / 2 - BALL_R, g.paddles.right + PADDLE_LEN / 2 + BALL_R)) {
       const rel = (g.by - g.paddles.right) / (PADDLE_LEN / 2);
       g.speed = Math.min(g.speed + 0.35, MAX_SPEED);
@@ -549,7 +569,7 @@ export default function PongGameScreen() {
     const lx = MARGIN + PADDLE_THICK;
     if (g.bvx < 0 && g.bx - BALL_R < lx) {
       if (wall === "left") { g.bvx = Math.abs(g.bvx); g.bx = lx + BALL_R; audioManager.playSound("land"); }
-      else if (inRange(g.bx - BALL_R, MARGIN - 2, lx) && inRange(g.by, g.paddles.left - PADDLE_LEN/2 - BALL_R, g.paddles.left + PADDLE_LEN/2 + BALL_R)) {
+      else if (inRange(g.bx - g.bvx - BALL_R, MARGIN - 2, lx) && inRange(g.by, g.paddles.left - PADDLE_LEN/2 - BALL_R, g.paddles.left + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.by - g.paddles.left) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvx =  g.speed * Math.cos(rel * 0.7);
@@ -563,7 +583,7 @@ export default function PongGameScreen() {
     const rx = size - MARGIN - PADDLE_THICK;
     if (g.bvx > 0 && g.bx + BALL_R > rx) {
       if (wall === "right") { g.bvx = -Math.abs(g.bvx); g.bx = rx - BALL_R; audioManager.playSound("land"); }
-      else if (inRange(g.bx + BALL_R, rx, size - MARGIN + 2) && inRange(g.by, g.paddles.right - PADDLE_LEN/2 - BALL_R, g.paddles.right + PADDLE_LEN/2 + BALL_R)) {
+      else if (inRange(g.bx - g.bvx + BALL_R, rx, size - MARGIN + 2) && inRange(g.by, g.paddles.right - PADDLE_LEN/2 - BALL_R, g.paddles.right + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.by - g.paddles.right) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvx = -g.speed * Math.cos(rel * 0.7);
@@ -577,7 +597,7 @@ export default function PongGameScreen() {
     const ty = MARGIN + PADDLE_THICK;
     if (g.bvy < 0 && g.by - BALL_R < ty) {
       if (wall === "top") { g.bvy = Math.abs(g.bvy); g.by = ty + BALL_R; audioManager.playSound("land"); }
-      else if (inRange(g.by - BALL_R, MARGIN - 2, ty) && inRange(g.bx, g.paddles.top - PADDLE_LEN/2 - BALL_R, g.paddles.top + PADDLE_LEN/2 + BALL_R)) {
+      else if (inRange(g.by - g.bvy - BALL_R, MARGIN - 2, ty) && inRange(g.bx, g.paddles.top - PADDLE_LEN/2 - BALL_R, g.paddles.top + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.bx - g.paddles.top) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvy =  g.speed * Math.cos(rel * 0.7);
@@ -591,7 +611,7 @@ export default function PongGameScreen() {
     const by_ = size - MARGIN - PADDLE_THICK;
     if (g.bvy > 0 && g.by + BALL_R > by_) {
       if (wall === "bottom") { g.bvy = -Math.abs(g.bvy); g.by = by_ - BALL_R; audioManager.playSound("land"); }
-      else if (inRange(g.by + BALL_R, by_, size - MARGIN + 2) && inRange(g.bx, g.paddles.bottom - PADDLE_LEN/2 - BALL_R, g.paddles.bottom + PADDLE_LEN/2 + BALL_R)) {
+      else if (inRange(g.by - g.bvy + BALL_R, by_, size - MARGIN + 2) && inRange(g.bx, g.paddles.bottom - PADDLE_LEN/2 - BALL_R, g.paddles.bottom + PADDLE_LEN/2 + BALL_R)) {
         const rel = (g.bx - g.paddles.bottom) / (PADDLE_LEN / 2);
         g.speed = Math.min(g.speed + 0.3, MAX_SPEED);
         g.bvy = -g.speed * Math.cos(rel * 0.7);
@@ -617,15 +637,25 @@ export default function PongGameScreen() {
 
   // ── Restart ──────────────────────────────────────────────────────────────────
   function handleRestart() {
-    gsRef.current = initGS(totalPaddles, humanCount);
+    const newGs = initGS(totalPaddles, humanCount);
+    gsRef.current = newGs;
     setScores({ left: 0, right: 0, top: 0, bottom: 0 });
     setLoser(null);
     frameRef.current = 0;
+    resultWrittenRef.current = false;
+    if (gameId) {
+      updateDoc(doc(db, "pongGames", gameId), {
+        status: "IN_PROGRESS",
+        winnerId: null,
+        scoreLeft: 0, scoreRight: 0, scoreTop: 0, scoreBottom: 0,
+        ballX: newGs.bx, ballY: newGs.by, ballVX: newGs.bvx, ballVY: newGs.bvy,
+        paused: true, pauseTimer: 90,
+        wallSide: newGs.wallSide ?? null,
+      }).catch(() => {});
+    }
   }
 
   // ── Score display ─────────────────────────────────────────────────────────────
-  const activeSidesList = sidesForPaddles(totalPaddles, gsRef.current.wallSide);
-
   function labelForSide(side: PongSide): string {
     if (humanCount === 1) {
       return side === mySide ? "Du" : `KI`;
@@ -634,7 +664,7 @@ export default function PongGameScreen() {
     return opponentNames[side] ?? "Gegner";
   }
 
-  const winnerSides = loser ? activeSidesList.filter((s) => s !== loser) : [];
+  const winnerSides = loser ? activeSides.filter((s) => s !== loser) : [];
 
   return (
     <div style={{ background: "#0a1628", height: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none" }}>
@@ -647,14 +677,14 @@ export default function PongGameScreen() {
 
         {/* Scores */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflowX: "auto" }}>
-          {activeSidesList.map((side, i) => (
+          {activeSides.map((side, i) => (
             <div key={side} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {i > 0 && <span style={{ color: "#1e3050", fontWeight: 900 }}>·</span>}
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 9, color: SIDE_COLOR[side], fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {labelForSide(side)}
                 </div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: scores[side] >= scoreLimit - 1 ? "var(--danger)" : "#e2e8f0", lineHeight: 1 }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: scores[side] >= scoreLimit ? "var(--danger)" : "#e2e8f0", lineHeight: 1 }}>
                   {scores[side]}
                 </div>
               </div>
@@ -759,7 +789,7 @@ export default function PongGameScreen() {
 
           {/* Score summary */}
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-            {activeSidesList.map((side) => (
+            {activeSides.map((side) => (
               <div key={side} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: SIDE_COLOR[side], fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{labelForSide(side)}</div>
                 <div style={{ fontSize: 28, fontWeight: 900, color: side === loser ? "var(--danger)" : "#e2e8f0" }}>{scores[side]}</div>
@@ -780,6 +810,27 @@ export default function PongGameScreen() {
               borderRadius: "var(--radius)", color: "var(--text)",
               fontSize: 15, fontWeight: 700, padding: "15px 22px", cursor: "pointer",
             }}>Lobby</button>
+          </div>
+        </div>
+      )}
+
+      {hostGone && !loser && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(10,22,40,0.93)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50,
+        }}>
+          <div style={{ textAlign: "center", padding: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🔌</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#e2e8f0", marginBottom: 8 }}>Host nicht erreichbar</div>
+            <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 24 }}>Verbindung zum Host unterbrochen.</div>
+            <button
+              onClick={() => navigate("/pong/lobby")}
+              style={{
+                background: "linear-gradient(135deg, var(--coral), #e8501a)",
+                border: "none", borderRadius: "var(--radius)", color: "#fff",
+                fontSize: 15, fontWeight: 800, padding: "14px 28px", cursor: "pointer",
+              }}
+            >Zur Lobby</button>
           </div>
         </div>
       )}
