@@ -1411,7 +1411,7 @@ export default function StrandturmGameScreen() {
   const touchXRef = useRef<number | null>(null); // game-X where finger is held
 
   // Zones: top 25% = up/jump, bottom 25% = down, middle 50% = horizontal tracking
-  function scanTouches(touches: TouchList, rect: DOMRect) {
+  function scanTouches(touches: React.TouchList, rect: DOMRect) {
     let hasHoriz = false, hasJump = false, hasDown = false;
     for (const t of Array.from(touches)) {
       const ly = (t.clientY - rect.top) * (CH / rect.height);
