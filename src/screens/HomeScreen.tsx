@@ -388,7 +388,7 @@ export default function HomeScreen() {
                     key={save.id}
                     save={save}
                     info={info}
-                    onClick={() => navigate(`/raetsel/${save.gameType}/lobby`)}
+                    onClick={() => navigate(save.gameType === "mahjong" ? "/mahjong/lobby" : `/raetsel/${save.gameType}/lobby`)}
                     onDelete={() => { deletePuzzleSave(save.id); setSavedPuzzles((p) => p.filter((s) => s.id !== save.id)); }}
                   />
                 );

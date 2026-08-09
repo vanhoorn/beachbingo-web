@@ -30,9 +30,9 @@ const STATUS_COLORS: Record<LetterStatus, { bg: string; border: string; text: st
 };
 
 const KEYBOARD_ROWS = [
-  ["Q","W","E","R","T","Z","U","I","O","P","←"],
+  ["Q","W","E","R","T","Z","U","I","O","P"],
   ["A","S","D","F","G","H","J","K","L"],
-  ["Y","X","C","V","B","N","M","↵"],
+  ["Y","X","C","V","B","N","M"],
 ];
 
 const RULES_TEXT = [
@@ -379,33 +379,29 @@ export default function WortWelleGameScreen() {
       </div>
 
       {/* Tastatur */}
-      <div style={{ flexShrink: 0, padding: "8px 8px 16px", background: "var(--surface)" }}>
+      <div style={{ flexShrink: 0, padding: "8px 8px 14px", background: "var(--surface)" }}>
         {KEYBOARD_ROWS.map((row, ri) => (
-          <div key={ri} style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: ri < 2 ? 4 : 0 }}>
+          <div key={ri} style={{ display: "flex", gap: 4, marginBottom: ri < 2 ? 4 : 0 }}>
             {row.map(key => {
               const status = keyStatuses[key];
-              const isAction = key === "←" || key === "↵";
               const c = status ? STATUS_COLORS[status] : { bg: "var(--surface2)", border: "var(--border)", text: "var(--text)" };
-
               return (
                 <button
                   key={key}
                   onPointerDown={e => { e.preventDefault(); handleKey(key); }}
                   style={{
-                    minWidth: isAction ? 52 : 30,
-                    height: 48,
+                    flex: 1, minWidth: 0,
+                    height: 50,
                     background: c.bg,
                     border: `1.5px solid ${c.border}`,
                     borderRadius: 8,
                     cursor: "pointer",
-                    fontSize: isAction ? 16 : 14,
-                    fontWeight: 800,
+                    fontSize: 14, fontWeight: 800,
                     color: c.text,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     userSelect: "none",
                     touchAction: "manipulation",
-                    padding: "0 4px",
-                    flexShrink: 0,
+                    padding: 0,
                   }}
                 >
                   {key}
@@ -414,6 +410,33 @@ export default function WortWelleGameScreen() {
             })}
           </div>
         ))}
+        {/* Aktionsleiste */}
+        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+          <button
+            onPointerDown={e => { e.preventDefault(); handleKey("←"); }}
+            style={{
+              flex: 2, minWidth: 0, height: 52,
+              background: "rgba(239,68,68,0.12)",
+              border: "1.5px solid rgba(239,68,68,0.4)",
+              borderRadius: 8,
+              cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#f87171",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              userSelect: "none", touchAction: "manipulation",
+            }}
+          >✕&nbsp;&nbsp;Löschen</button>
+          <button
+            onPointerDown={e => { e.preventDefault(); handleKey("↵"); }}
+            style={{
+              flex: 3, minWidth: 0, height: 52,
+              background: "rgba(34,197,94,0.12)",
+              border: "1.5px solid rgba(34,197,94,0.4)",
+              borderRadius: 8,
+              cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#22c55e",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              userSelect: "none", touchAction: "manipulation",
+            }}
+          >✓&nbsp;&nbsp;Bestätigen</button>
+        </div>
       </div>
 
       {/* Quit-Dialog */}

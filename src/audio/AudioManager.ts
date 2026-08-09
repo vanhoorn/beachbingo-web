@@ -25,7 +25,7 @@ export type SoundId =
   | "turn_ping"
   | "sp_gameover";
 
-export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier" | "brandung" | "strandraeuber";
+export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier" | "brandung" | "strandraeuber" | "mahjong";
 
 type SoundDef = (ctx: AudioContext) => void;
 
@@ -473,6 +473,36 @@ const TRACKS: Record<TrackId, TrackConfig> = {
       ],
       wave: "sine",
       gain: 0.030,
+    },
+  },
+
+  // Pentatonic zen, C pentatonic, ~80 BPM — contemplative sine melody + triangle bass
+  mahjong: {
+    notes: [
+      [392, 0.38], [440, 0.38], [523, 0.75], [440, 0.38], [0, 0.38],
+      [392, 0.38], [329, 0.38], [392, 0.75], [0, 0.75],
+      [440, 0.38], [523, 0.38], [587, 0.75], [523, 0.38], [440, 0.38],
+      [392, 1.50], [0, 0.38],
+      [523, 0.38], [440, 0.38], [392, 0.38], [329, 0.38], [293, 0.75], [0, 0.38],
+      [329, 0.38], [392, 0.38], [440, 0.38], [392, 0.38], [329, 0.75], [0, 0.38],
+      [261, 0.38], [293, 0.38], [329, 0.38], [392, 0.38], [440, 0.38], [392, 0.38], [329, 0.75],
+      [261, 1.50], [0, 0.75],
+    ],
+    wave: "sine",
+    gain: 0.05,
+    bass: {
+      notes: [
+        [130, 0.75], [0, 0.38], [196, 0.38], [0, 0.75],
+        [130, 0.75], [0, 0.38], [110, 0.38], [0, 0.75],
+        [130, 0.75], [0, 0.38], [146, 0.38], [0, 0.75],
+        [130, 1.50], [0, 0.75],
+        [130, 0.75], [0, 0.38], [196, 0.38], [0, 0.75],
+        [98, 0.75], [0, 0.38], [110, 0.38], [0, 0.75],
+        [130, 0.75], [0, 0.38], [98, 0.38], [0, 0.75],
+        [130, 1.50], [0, 0.75],
+      ],
+      wave: "triangle",
+      gain: 0.03,
     },
   },
 

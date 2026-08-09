@@ -5,7 +5,8 @@ export type PuzzleGameType =
   | "kuestenkrieg_ki"
   | "duenenschatten"
   | "inselbruecke"
-  | "wortwelle";
+  | "wortwelle"
+  | "mahjong";
 
 export type PuzzleDifficulty = "leicht" | "mittel" | "schwer" | "experte";
 
@@ -111,6 +112,7 @@ export const PUZZLE_GAME_INFO: Record<
   duenenschatten:  { title: "DünenSchatten",  emoji: "◼",  color: "#fbbf24" },
   inselbruecke:   { title: "Inselbrücke",   emoji: "🌉", color: "#4ade80" },
   wortwelle:      { title: "WortWelle",     emoji: "🌊", color: "#06b6d4" },
+  mahjong:        { title: "GezeitenSteine", emoji: "🀄", color: "#D4A820" },
 };
 
 export const PUZZLE_DIFFICULTY_LABELS: Record<PuzzleDifficulty, string> = {

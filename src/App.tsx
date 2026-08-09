@@ -69,6 +69,9 @@ import KuestenkriegBattleScreen from "./screens/raetsel/kuestenkrieg/Kuestenkrie
 import KuestenkriegOnlineBattleScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegOnlineBattleScreen";
 import WortWelleLobbyScreen from "./screens/raetsel/wortwelle/WortWelleLobbyScreen";
 import WortWelleGameScreen from "./screens/raetsel/wortwelle/WortWelleGameScreen";
+import MahjongLobbyScreen from "./screens/mahjong/MahjongLobbyScreen";
+import MahjongGameScreen from "./screens/mahjong/MahjongGameScreen";
+import MahjongSettingsScreen from "./screens/mahjong/MahjongSettingsScreen";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -165,6 +168,9 @@ function App() {
         <Route path="/raetsel/kuestenkrieg/online-battle" element={loggedIn ? <KuestenkriegOnlineBattleScreen /> : <Navigate to="/login" />} />
         <Route path="/raetsel/wortwelle/lobby" element={loggedIn ? <WortWelleLobbyScreen /> : <Navigate to="/login" />} />
         <Route path="/raetsel/wortwelle/game"  element={loggedIn ? <WortWelleGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/mahjong/lobby"    element={loggedIn ? <MahjongLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/mahjong/game"     element={loggedIn ? <MahjongGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/mahjong/settings" element={loggedIn ? <MahjongSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

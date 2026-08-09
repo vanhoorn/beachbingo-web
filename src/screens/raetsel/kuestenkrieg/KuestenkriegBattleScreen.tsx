@@ -54,6 +54,7 @@ export default function KuestenkriegBattleScreen() {
   const [aiThinking, setAiThinking] = useState(false);
   const [lastHit, setLastHit] = useState<string | null>(null);
   const [showQuit, setShowQuit] = useState(false);
+  const [aiFireCount, setAiFireCount] = useState(0);
 
   useEffect(() => {
     if (gs.turn === "ai" && !gs.gameOver) {
@@ -75,10 +76,14 @@ export default function KuestenkriegBattleScreen() {
             }
           }
         }
+        // Re-trigger effect if AI hit and must shoot again
+        if (next.turn === "ai" && !next.gameOver) {
+          setAiFireCount(n => n + 1);
+        }
       }, delay);
       return () => clearTimeout(timer);
     }
-  }, [gs.turn, gs.gameOver]);
+  }, [gs.turn, gs.gameOver, aiFireCount]);
 
   useEffect(() => {
     if (gs.gameOver) {

@@ -116,6 +116,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"],
     genres: ["PARTY", "CARD"],
   },
+  {
+    id: "mahjong",
+    emoji: "🀄",
+    title: "GezeitenSteine",
+    description: "Mahjong Solitaire am Strand — entferne alle 144 Steine durch Paare.",
+    color: "#D4A820",
+    path: "/mahjong/lobby",
+    playerCounts: ["ONE_TWO"],
+    genres: ["COUCH", "LOGICAL"],
+  },
   // ── Rätsel-Spiele ──────────────────────────────────────────────────────────
   {
     id: "strandoku",
@@ -169,7 +179,7 @@ export const ALL_GAMES: GameMetadata[] = [
   },
   {
     id: "wortwelle",
-    emoji: "🌊",
+    emoji: "💬",
     title: "WortWelle",
     description: "Errate das deutsche Wort in wenigen Versuchen — Wordle auf Deutsch mit Hard Mode.",
     color: "#06b6d4",
