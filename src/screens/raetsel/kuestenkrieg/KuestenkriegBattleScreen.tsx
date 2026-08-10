@@ -211,7 +211,7 @@ export default function KuestenkriegBattleScreen() {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => navigate("/raetsel/kuestenkrieg/lobby")}
+                onClick={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })}
                 style={{ flex: 1, padding: "12px", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--text)" }}
               >
                 Lobby
@@ -230,8 +230,8 @@ export default function KuestenkriegBattleScreen() {
         <GameSaveQuitDialog
           emoji="⚓"
           onContinue={() => setShowQuit(false)}
-          onSaveAndQuit={() => navigate("/raetsel/kuestenkrieg/lobby")}
-          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/kuestenkrieg/lobby"); }}
+          onSaveAndQuit={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/kuestenkrieg/lobby", { replace: true }); }}
         />
       )}
     </div>

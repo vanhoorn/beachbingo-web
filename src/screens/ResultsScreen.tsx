@@ -105,7 +105,7 @@ export default function ResultsScreen() {
   return (
     <div className="screen" style={{ gap: 16, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 12 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby")}>‹ Zurück</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby", { replace: true })}>‹ Zurück</button>
         <h2 style={{ fontSize: 20 }}>BeachBingo Ergebnisse 🏆</h2>
       </div>
 

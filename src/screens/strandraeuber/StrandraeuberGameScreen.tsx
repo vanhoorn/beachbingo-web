@@ -567,7 +567,7 @@ export default function StrandraeuberGameScreen() {
       selectedFanIndex={selectedFanIndex}
       setSelectedFanIndex={setSelectedFanIndex}
       onDraw={handleOnlineDraw}
-      onQuit={() => navigate("/strandraeuber/lobby")}
+      onQuit={() => navigate("/strandraeuber/lobby", { replace: true })}
     />;
   }
 
@@ -643,7 +643,7 @@ export default function StrandraeuberGameScreen() {
         totalRounds: local.totalRounds,
         loserUserId: Object.entries(local.roundScores).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
       }));
-      navigate("/strandraeuber/results");
+      navigate("/strandraeuber/results", { replace: true });
     } else {
       setLocal(startNextRound(local));
       audioManager.playSound("card_deal");
@@ -812,8 +812,8 @@ export default function StrandraeuberGameScreen() {
           gs={gs}
           humanPlayer={humanPlayer}
           onContinue={handleContinueRound}
-          onHome={() => navigate("/home")}
-          onLobby={() => navigate("/strandraeuber/lobby")}
+          onHome={() => navigate("/home", { replace: true })}
+          onLobby={() => navigate("/strandraeuber/lobby", { replace: true })}
         />
       )}
 
@@ -832,11 +832,11 @@ export default function StrandraeuberGameScreen() {
               displayLabel: `Runde ${local.roundNumber} · ${local.players.length} Spieler`,
               savedAt: Date.now(),
             });
-            navigate("/strandraeuber/lobby");
+            navigate("/strandraeuber/lobby", { replace: true });
           }}
           onQuitWithoutSave={() => {
             deleteGameSave("strandraeuber");
-            navigate("/strandraeuber/lobby");
+            navigate("/strandraeuber/lobby", { replace: true });
           }}
         />
       )}
@@ -852,7 +852,7 @@ export default function StrandraeuberGameScreen() {
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Weiter</button>
               <button className="btn" style={{ flex: 1, background: SP_COLOR, color: "white" }}
-                onClick={() => navigate("/strandraeuber/lobby")}>Verlassen</button>
+                onClick={() => navigate("/strandraeuber/lobby", { replace: true })}>Verlassen</button>
             </div>
           </div>
         </div>
@@ -1096,9 +1096,9 @@ function OnlineGameView({
             </div>
             {isLastRound ? (
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/home")}>🏠 Home</button>
+                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/home", { replace: true })}>🏠 Home</button>
                 <button className="btn" style={{ flex: 1, background: SP_COLOR, color: "white" }}
-                  onClick={() => navigate("/strandraeuber/lobby")}>Nochmal</button>
+                  onClick={() => navigate("/strandraeuber/lobby", { replace: true })}>Nochmal</button>
               </div>
             ) : (
               <div style={{ marginTop: 16, fontSize: 13, color: "var(--text-muted)" }}>

@@ -1400,11 +1400,11 @@ export default function StrandturmGameScreen() {
       displayLabel: `Score: ${gs.score} · Level ${gs.level} · Leben: ${gs.lives}`,
       savedAt: Date.now(),
     });
-    navigate("/strandturm/lobby");
+    navigate("/strandturm/lobby", { replace: true });
   }
   function handleQuitWithoutSave() {
     deleteGameSave("strandturm");
-    navigate("/strandturm/lobby");
+    navigate("/strandturm/lobby", { replace: true });
   }
 
   // ── Touch controls (TOUCH mode) ───────────────────────────────────────────
@@ -1455,6 +1455,7 @@ export default function StrandturmGameScreen() {
     const gs = gsRef.current;
     navigate("/strandturm/results", {
       state: { score: gs.score, level: gs.level },
+      replace: true,
     });
   }
 
@@ -1534,7 +1535,7 @@ export default function StrandturmGameScreen() {
         paused={paused}
         onPauseToggle={togglePause}
         onQuit={() => {
-          if (isOver) { navigate("/strandturm/lobby"); return; }
+          if (isOver) { navigate("/strandturm/lobby", { replace: true }); return; }
           setPaused(true); setQuit(true);
         }}
       >

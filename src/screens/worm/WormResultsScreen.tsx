@@ -77,12 +77,12 @@ export default function WormResultsScreen() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <button
           className="btn btn-primary"
-          onClick={() => navigate("/worm/game", { state: { difficulty, controlMode } })}
+          onClick={() => navigate("/worm/game", { state: { difficulty, controlMode }, replace: true })}
           style={{ background: WORM_GREEN, borderColor: WORM_GREEN }}
         >
           🔄 Nochmal spielen
         </button>
-        <button className="btn btn-outline" onClick={() => navigate("/home")}>
+        <button className="btn btn-outline" onClick={() => navigate("/home", { replace: true })}>
           🏠 Zurück zum Menü
         </button>
       </div>

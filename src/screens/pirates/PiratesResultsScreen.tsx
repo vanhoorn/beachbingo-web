@@ -76,14 +76,14 @@ export default function PiratesResultsScreen() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
         <button
           className="btn btn-primary"
-          onClick={() => navigate("/pirates/lobby")}
+          onClick={() => navigate("/pirates/lobby", { replace: true })}
           style={{ background: "#a855f7", borderColor: "#a855f7" }}
         >
           🔄 Nochmal spielen
         </button>
         <button
           className="btn btn-outline"
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/home", { replace: true })}
         >
           🏠 Zurück zum Menü
         </button>

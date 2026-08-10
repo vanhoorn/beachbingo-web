@@ -5,113 +5,17 @@ import { auth, db } from "../../firebase";
 import type { BrandungGame, BrandungSettings } from "../../types";
 import {
   type BCard, type BrandungDifficulty, calcScore, dealCards,
-  formatScore, isFeuerBlitz, isThirtyOne, bestAIMove, RED_SUITS,
+  formatScore, isFeuerBlitz, isThirtyOne, bestAIMove,
 } from "./brandungLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
 import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { PlayingCard } from "../../components/PlayingCard";
+import { CardFanRow } from "../../components/CardFanRow";
 
 const TEAL = "#0d9488";
 const LIVES_START = 3;
 const AI_DELAY = 1100;
-
-// ── Card Component ────────────────────────────────────────────────────────────
-
-function PlayingCard({
-  card, faceUp = true, selected = false, selectable = false, onClick, style = {},
-}: {
-  card?: BCard; faceUp?: boolean; selected?: boolean; selectable?: boolean;
-  onClick?: () => void; style?: React.CSSProperties;
-}) {
-  const isRed = card && RED_SUITS.has(card.suit);
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        width: 58, height: 84, borderRadius: 8, flexShrink: 0,
-        cursor: (selectable || onClick) ? "pointer" : "default",
-        userSelect: "none", position: "relative",
-        transition: "transform 0.15s, box-shadow 0.15s",
-        transform: selected ? "translateY(-8px)" : undefined,
-        ...(faceUp ? {
-          background: "#f8f5ee",
-          border: `2px solid ${selected ? TEAL : "rgba(0,0,0,0.12)"}`,
-          boxShadow: selected
-            ? `0 0 0 2px ${TEAL}, 0 6px 18px rgba(0,0,0,0.35)`
-            : "0 3px 10px rgba(0,0,0,0.3)",
-        } : {
-          background: "linear-gradient(to bottom, #1a72c8 0%, #5ab8e8 55%, #1a8ab8 56%, #0a4a7a 100%)",
-          border: "2px solid rgba(13,148,136,0.4)",
-          boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-          overflow: "hidden",
-        }),
-        ...style,
-      }}
-    >
-      {faceUp && card ? (
-        <>
-          <div style={{
-            position: "absolute", top: 4, left: 5,
-            color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1, fontSize: 13,
-          }}>
-            <div style={{ fontWeight: 900 }}>{card.rank}</div>
-            <div style={{ fontSize: 11 }}>{card.suit}</div>
-          </div>
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            transform: "translate(-50%,-50%)",
-            fontSize: 26, color: isRed ? "#d63031" : "#1a1a2e",
-          }}>{card.suit}</div>
-          <div style={{
-            position: "absolute", bottom: 4, right: 5,
-            color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1,
-            fontSize: 13, transform: "rotate(180deg)",
-          }}>
-            <div style={{ fontWeight: 900 }}>{card.rank}</div>
-            <div style={{ fontSize: 11 }}>{card.suit}</div>
-          </div>
-        </>
-      ) : !faceUp ? (
-        // Island & palm card back (daytime)
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 58 84">
-          {/* Sun glow */}
-          <circle cx="45" cy="11" r="9.5" fill="rgba(255,224,51,0.28)"/>
-          {/* Sun core */}
-          <circle cx="45" cy="11" r="5.8" fill="#ffd700"/>
-          <circle cx="43.3" cy="9.8" r="3.4" fill="#ffed4a"/>
-          {/* Sun rays */}
-          <line x1="45" y1="2.5" x2="45" y2="0.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="52.2" y1="4.8" x2="53.8" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="54.5" y1="11" x2="57" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="52.2" y1="17.2" x2="53.8" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="45" y1="19.5" x2="45" y2="21.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="37.8" y1="17.2" x2="36.2" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="35.5" y1="11" x2="33" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="37.8" y1="4.8" x2="36.2" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          {/* Ocean waves */}
-          <path d="M0,57 Q7,54.5 14,57 Q21,59.5 29,57 Q37,54.5 44,57 Q51,59.5 58,57"
-            stroke="rgba(255,255,255,0.35)" strokeWidth="0.9" fill="none"/>
-          <path d="M0,67 Q8,64.5 16,67 Q24,69.5 32,67 Q40,64.5 48,67 Q56,69.5 58,67"
-            stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" fill="none"/>
-          <path d="M0,76 Q9,73.5 18,76 Q27,78.5 36,76 Q45,73.5 54,76"
-            stroke="rgba(255,255,255,0.18)" strokeWidth="0.7" fill="none"/>
-          {/* Island */}
-          <ellipse cx="29" cy="72" rx="12" ry="4.5" fill="#c8942a"/>
-          <ellipse cx="26" cy="70.5" rx="6.5" ry="2.5" fill="#e4b44a" opacity="0.5"/>
-          {/* Palm trunk */}
-          <path d="M29,70 Q27,60 28,49 Q29.5,42 32,34"
-            stroke="#7a5c2e" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-          {/* Palm fronds — filled leaf shapes */}
-          <path d="M31,33 Q19,38 8,52 Q25,45 33,35 Z" fill="#2a7828"/>
-          <path d="M31,35 Q38,45 54,52 Q44,38 33,33 Z" fill="#2a7828"/>
-          <path d="M33,33 Q25,26 10,22 Q21,33 31,35 Z" fill="#36963a"/>
-          <path d="M33,35 Q42,32 52,22 Q38,26 31,33 Z" fill="#36963a"/>
-          <path d="M34,34 Q35,24 30,12 Q28,25 31,34 Z" fill="#2a7828"/>
-        </svg>
-      ) : null}
-    </div>
-  );
-}
 
 // ── Local game state types ─────────────────────────────────────────────────────
 
@@ -774,7 +678,7 @@ export default function BrandungGameScreen() {
                 {showFaceUp ? (
                   <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap" }}>
                     {opp.hand.map((c, i) => (
-                      <PlayingCard key={i} card={c} faceUp style={{ width: SMALL_W, height: SMALL_H }} />
+                      <PlayingCard key={i} card={c} faceUp small w={SMALL_W} h={SMALL_H} />
                     ))}
                   </div>
                 ) : (
@@ -790,7 +694,7 @@ export default function BrandungGameScreen() {
                           transform: `rotate(${angle}deg)`,
                           transformOrigin: "bottom center",
                         }}>
-                          <PlayingCard faceUp={false} style={{ width: SMALL_W, height: SMALL_H }} />
+                          <PlayingCard faceUp={false} small w={SMALL_W} h={SMALL_H} />
                         </div>
                       );
                     })}
@@ -817,7 +721,7 @@ export default function BrandungGameScreen() {
                 selectable={isMyTurn && gs.phase === "TURN"}
                 selected={selectedTableIdx === i}
                 onClick={() => handleTableCard(i)}
-                style={{ width: CARD_W, height: CARD_H }}
+                w={CARD_W} h={CARD_H}
               />
               {isMyTurn && gs.phase === "TURN" && selectedHandIdx !== null && (
                 <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", textAlign: "center" }}>antippen</div>
@@ -825,7 +729,7 @@ export default function BrandungGameScreen() {
             </div>
           ))}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <PlayingCard faceUp={false} style={{ width: Math.round(44 * cardScale), height: Math.round(62 * cardScale) }} />
+            <PlayingCard faceUp={false} w={Math.round(44 * cardScale)} h={Math.round(62 * cardScale)} />
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>{deckCount} 🂠</div>
           </div>
         </div>
@@ -837,15 +741,19 @@ export default function BrandungGameScreen() {
           border: `1px solid ${isMyTurn && gs.phase === "TURN" ? TEAL + "55" : "var(--border)"}`,
           flexShrink: 0, marginBottom: 8,
         }}>
-          <div style={{ display: "flex", gap: Math.round(12 * cardScale), justifyContent: "center" }}>
-            {(myPlayer?.hand ?? []).map((c, i) => (
-              <PlayingCard key={i} card={c} faceUp
-                selectable={isMyTurn && gs.phase === "TURN"}
-                selected={selectedHandIdx === i}
-                onClick={() => handleHandCard(i)}
-                style={{ width: CARD_W, height: CARD_H }}
-              />
-            ))}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <CardFanRow
+              cards={myPlayer?.hand ?? []}
+              cardWidth={CARD_W} cardHeight={CARD_H}
+              renderCard={(c, i) => (
+                <PlayingCard card={c} faceUp
+                  selectable={isMyTurn && gs.phase === "TURN"}
+                  selected={selectedHandIdx === i}
+                  onClick={() => handleHandCard(i)}
+                  w={CARD_W} h={CARD_H}
+                />
+              )}
+            />
           </div>
           <div style={{ fontSize: 10, color: "var(--text-sub)", textAlign: "center", marginTop: 6 }}>
             {myPlayer?.displayName} · {myPlayer?.eliminated ? "❌ Ausgeschieden" : `${Array(myPlayer?.lives ?? 0).fill("🌊").join("")}${Array(LIVES_START - (myPlayer?.lives ?? 0)).fill("🤍").join("")}`}
@@ -921,8 +829,8 @@ export default function BrandungGameScreen() {
                   {gs.round} Runden gespielt
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/brandung/results")}>Ergebnisse</button>
-                  <button className="btn" style={{ flex: 1, background: TEAL, color: "white" }} onClick={() => navigate("/brandung/lobby")}>Nochmal</button>
+                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/brandung/results", { replace: true })}>Ergebnisse</button>
+                  <button className="btn" style={{ flex: 1, background: TEAL, color: "white" }} onClick={() => navigate("/brandung/lobby", { replace: true })}>Nochmal</button>
                 </div>
               </>
             ) : (
@@ -983,11 +891,11 @@ export default function BrandungGameScreen() {
               displayLabel: `Runde ${local.round} · ${local.players.length} Spieler · ${local.players[0]?.lives ?? 0}♥`,
               savedAt: Date.now(),
             });
-            navigate("/brandung/lobby");
+            navigate("/brandung/lobby", { replace: true });
           }}
           onQuitWithoutSave={() => {
             deleteGameSave("brandung");
-            navigate("/brandung/lobby");
+            navigate("/brandung/lobby", { replace: true });
           }}
         />
       )}
@@ -1003,7 +911,7 @@ export default function BrandungGameScreen() {
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Weiter spielen</button>
               <button className="btn" style={{ flex: 1, background: "#ef4444", color: "white" }}
-                onClick={() => navigate("/brandung/lobby")}>Verlassen</button>
+                onClick={() => navigate("/brandung/lobby", { replace: true })}>Verlassen</button>
             </div>
           </div>
         </div>

@@ -349,11 +349,11 @@ export default function VierGameScreen() {
       displayLabel: `KI · ${local.board.filter(x => x !== 0).length} Steine`,
       savedAt: Date.now(),
     });
-    navigate("/vier/lobby");
+    navigate("/vier/lobby", { replace: true });
   }
   function handleQuitWithoutSave() {
     deleteGameSave("vier");
-    navigate("/vier/lobby");
+    navigate("/vier/lobby", { replace: true });
   }
 
   // ── Determine display values ──
@@ -420,7 +420,7 @@ export default function VierGameScreen() {
 
       {/* Top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/vier/lobby")}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/vier/lobby", { replace: true })}>
           ‹ Lobby
         </button>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-muted)" }}>
@@ -592,7 +592,7 @@ export default function VierGameScreen() {
                 Nochmal spielen
               </button>
             )}
-            <button className="btn btn-outline" onClick={() => navigate("/vier/lobby")}>
+            <button className="btn btn-outline" onClick={() => navigate("/vier/lobby", { replace: true })}>
               Zur Lobby
             </button>
           </div>
@@ -623,7 +623,7 @@ export default function VierGameScreen() {
         <QuitConfirmDialog
           emoji="🍺"
           message="Das laufende Spiel wird beendet."
-          onConfirm={() => navigate("/vier/lobby")}
+          onConfirm={() => navigate("/vier/lobby", { replace: true })}
           onDismiss={() => setShowQuitDialog(false)}
         />
       )}

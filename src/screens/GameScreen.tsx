@@ -192,7 +192,7 @@ export default function GameScreen() {
   useEffect(() => {
     if (!gameId) return;
     return onSnapshot(doc(db, "games", gameId), (snap) => {
-      if (!snap.exists()) { navigate("/lobby"); return; }
+      if (!snap.exists()) { navigate("/lobby", { replace: true }); return; }
       const data = snap.data() as Record<string, unknown>;
       if (data.players && !Array.isArray(data.players)) {
         data.players = Object.values(data.players as Record<string, unknown>);
@@ -349,7 +349,7 @@ export default function GameScreen() {
   async function deleteGame() {
     if (!gameId || !confirm("Spiel wirklich löschen?")) return;
     await deleteDoc(doc(db, "games", gameId));
-    navigate("/lobby");
+    navigate("/lobby", { replace: true });
   }
 
   // ── LOBBY ────────────────────────────────────────────
@@ -357,7 +357,7 @@ export default function GameScreen() {
     return (
       <div className="screen">
         <div className="flex items-center justify-between">
-          <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby")}>
+          <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby", { replace: true })}>
             ‹ Zurück
           </button>
           <h2>Lobby</h2>
@@ -429,7 +429,7 @@ export default function GameScreen() {
       <div className="screen justify-center text-center">
         <Fireworks winner={winner} />
         <div style={{ position: "relative", zIndex: 101, marginTop: "60vh" }}>
-          <button className="btn btn-accent" style={{ maxWidth: 240, margin: "0 auto" }} onClick={() => navigate("/lobby")}>
+          <button className="btn btn-accent" style={{ maxWidth: 240, margin: "0 auto" }} onClick={() => navigate("/lobby", { replace: true })}>
             Super! 🎉
           </button>
         </div>
@@ -466,7 +466,7 @@ export default function GameScreen() {
 
       {/* Header mit Zurück */}
       <div className="flex items-center justify-between">
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby")}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby", { replace: true })}>
           ‹ Lobby
         </button>
         <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
@@ -633,7 +633,7 @@ export default function GameScreen() {
         <QuitConfirmDialog
           emoji="🎱"
           message="Du verlässt das Spiel."
-          onConfirm={() => navigate("/lobby")}
+          onConfirm={() => navigate("/lobby", { replace: true })}
           onDismiss={() => setShowQuitDialog(false)}
         />
       )}

@@ -671,7 +671,7 @@ export default function PongGameScreen() {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", padding: "12px 16px 8px", borderBottom: "1px solid #1e3050", flexShrink: 0, gap: 8 }}>
-        <button onClick={() => navigate("/pong/lobby")} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}>
+        <button onClick={() => navigate("/pong/lobby", { replace: true })} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}>
           ‹ Lobby
         </button>
 
@@ -766,7 +766,7 @@ export default function PongGameScreen() {
         <QuitConfirmDialog
           emoji="🏓"
           message="Das laufende Spiel wird beendet."
-          onConfirm={() => navigate("/pong/lobby")}
+          onConfirm={() => navigate("/pong/lobby", { replace: true })}
           onDismiss={() => { setShowQuitDialog(false); setManualPaused(false); manualPausedRef.current = false; }}
         />
       )}
@@ -805,7 +805,7 @@ export default function PongGameScreen() {
                 fontSize: 15, fontWeight: 800, padding: "15px 28px", cursor: "pointer",
               }}>🔄 Nochmal</button>
             )}
-            <button onClick={() => navigate("/pong/lobby")} style={{
+            <button onClick={() => navigate("/pong/lobby", { replace: true })} style={{
               background: "var(--surface2)", border: "1.5px solid var(--border)",
               borderRadius: "var(--radius)", color: "var(--text)",
               fontSize: 15, fontWeight: 700, padding: "15px 22px", cursor: "pointer",
@@ -824,7 +824,7 @@ export default function PongGameScreen() {
             <div style={{ fontSize: 22, fontWeight: 900, color: "#e2e8f0", marginBottom: 8 }}>Host nicht erreichbar</div>
             <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 24 }}>Verbindung zum Host unterbrochen.</div>
             <button
-              onClick={() => navigate("/pong/lobby")}
+              onClick={() => navigate("/pong/lobby", { replace: true })}
               style={{
                 background: "linear-gradient(135deg, var(--coral), #e8501a)",
                 border: "none", borderRadius: "var(--radius)", color: "#fff",

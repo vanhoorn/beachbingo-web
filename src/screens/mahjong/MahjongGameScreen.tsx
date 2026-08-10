@@ -173,12 +173,12 @@ export default function MahjongGameScreen() {
 
   function doSaveAndQuit() {
     doSave();
-    navigate("/mahjong/lobby");
+    navigate("/mahjong/lobby", { replace: true });
   }
 
   function doQuitWithoutSave() {
     deletePuzzleSave(saveIdRef.current);
-    navigate("/mahjong/lobby");
+    navigate("/mahjong/lobby", { replace: true });
   }
 
   const btnStyle = (enabled: boolean, accent?: string): React.CSSProperties => ({
@@ -304,7 +304,7 @@ export default function MahjongGameScreen() {
                 : best ? <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Bestzeit: {formatElapsed(best)}</div>
                 : null;
             })()}
-            <button onClick={() => navigate("/mahjong/lobby")} style={{
+            <button onClick={() => navigate("/mahjong/lobby", { replace: true })} style={{
               padding: "12px 28px", background: ACCENT, border: "none",
               borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#0a1628",
             }}>Zurueck zur Lobby</button>

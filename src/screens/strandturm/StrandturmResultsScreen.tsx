@@ -100,11 +100,11 @@ export default function StrandturmResultsScreen() {
         <button
           className="btn btn-primary"
           style={{ background: RED, borderColor: RED }}
-          onClick={() => navigate("/strandturm/lobby")}
+          onClick={() => navigate("/strandturm/lobby", { replace: true })}
         >
           🔄 Nochmal spielen
         </button>
-        <button className="btn btn-outline" onClick={() => navigate("/home")}>
+        <button className="btn btn-outline" onClick={() => navigate("/home", { replace: true })}>
           🏠 Zurück zum Menü
         </button>
       </div>

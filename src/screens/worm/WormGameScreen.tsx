@@ -344,6 +344,7 @@ export default function WormGameScreen() {
         highScore: finalHighScore,
         newHighScore: isNewHighScore,
       },
+      replace: true,
     });
   }
 
@@ -423,7 +424,7 @@ export default function WormGameScreen() {
         paused={paused}
         onPauseToggle={togglePause}
         onQuit={() => {
-          if (dead) { navigate("/worm/lobby"); return; }
+          if (dead) { navigate("/worm/lobby", { replace: true }); return; }
           statusRef.current = "PAUSED";
           setPaused(true);
           setQuitDialog(true);
@@ -469,9 +470,9 @@ export default function WormGameScreen() {
             saveGame({ id: generateGameSaveId(), gameType: "worm", difficulty,
               gameState: JSON.stringify({ snake: s, dirX: d.x, dirY: d.y, foodX: f.x, foodY: f.y, foodEmoji: f.emoji, foodPoints: f.points, score: scoreRef.current }),
               displayLabel: `Score: ${scoreRef.current} · Länge: ${s.length}`, savedAt: Date.now() });
-            navigate("/worm/lobby");
+            navigate("/worm/lobby", { replace: true });
           }}
-          onQuitWithoutSave={() => { deleteGameSave("worm"); navigate("/worm/lobby"); }}
+          onQuitWithoutSave={() => { deleteGameSave("worm"); navigate("/worm/lobby", { replace: true }); }}
         />
       )}
     </div>

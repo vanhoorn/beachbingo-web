@@ -26,7 +26,7 @@ export default function StrandraeuberResultsScreen() {
         <div style={{ fontSize: 42 }}>🦹</div>
         <div style={{ marginTop: 12, color: "var(--text-sub)" }}>Keine Ergebnisse vorhanden.</div>
         <button className="btn" style={{ marginTop: 20, background: SP_COLOR, color: "white" }}
-          onClick={() => navigate("/strandraeuber/lobby")}>Neue Runde</button>
+          onClick={() => navigate("/strandraeuber/lobby", { replace: true })}>Neue Runde</button>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function StrandraeuberResultsScreen() {
         padding: "12px 16px",
         display: "flex", alignItems: "center", gap: 12,
       }}>
-        <button onClick={() => navigate("/home")} style={{
+        <button onClick={() => navigate("/home", { replace: true })} style={{
           background: "none", border: "none", color: "white", fontSize: 20, cursor: "pointer", padding: 4,
         }}>←</button>
         <div>
@@ -106,9 +106,9 @@ export default function StrandraeuberResultsScreen() {
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/home")}>🏠 Home</button>
+          <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate("/home", { replace: true })}>🏠 Home</button>
           <button className="btn" style={{ flex: 2, background: SP_COLOR, color: "white", fontWeight: 700 }}
-            onClick={() => navigate("/strandraeuber/lobby")}>
+            onClick={() => navigate("/strandraeuber/lobby", { replace: true })}>
             Nochmal spielen 🦹
           </button>
         </div>

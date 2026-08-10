@@ -5,108 +5,18 @@ import { auth, db } from "../../firebase";
 import type { MeermauGame } from "../../types";
 import {
   type MCard, type MSuit, type MeerMauDifficulty, type MeerMauSettings,
-  MSUITS, MRED_SUITS, canPlayMCard, calcHandPoints, getAIMMove, dealMCards,
+  MSUITS, canPlayMCard, calcHandPoints, getAIMMove, dealMCards,
   DEFAULT_MM_SETTINGS,
 } from "./meermauLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
 import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { PlayingCard, SuitIcon, SUIT_COLORS, SUIT_NAMES } from "../../components/PlayingCard";
+import { CardFanRow } from "../../components/CardFanRow";
 
 const VIOLET = "#7c3aed";
 const AI_DELAY_MS = 1200;
 const ELIMINATION_SCORE = 100;
-
-// ── Card component ────────────────────────────────────────────────────────────
-
-function PlayingCard({
-  card, faceUp = true, selected = false, playable = true, small = false,
-  onClick, style = {}, w, h,
-}: {
-  card?: MCard; faceUp?: boolean; selected?: boolean; playable?: boolean;
-  small?: boolean; onClick?: () => void; style?: React.CSSProperties;
-  w?: number; h?: number;
-}) {
-  const isRed = card ? MRED_SUITS.has(card.suit) : false;
-  const W = w ?? (small ? 36 : 58);
-  const H = h ?? (small ? 52 : 84);
-  const fontScale = W / 58;
-  return (
-    <div onClick={onClick} style={{
-      width: W, height: H, borderRadius: small ? 5 : 8, flexShrink: 0,
-      cursor: onClick ? "pointer" : "default",
-      userSelect: "none", position: "relative",
-      transition: "transform 0.15s, box-shadow 0.15s, opacity 0.15s",
-      transform: selected ? "translateY(-10px)" : undefined,
-      opacity: faceUp && !playable ? 0.38 : 1,
-      ...(faceUp ? {
-        background: "#f8f5ee",
-        border: `${small ? 1 : 2}px solid ${selected ? VIOLET : "rgba(0,0,0,0.12)"}`,
-        boxShadow: selected
-          ? `0 0 0 2px ${VIOLET}, 0 6px 18px rgba(0,0,0,0.4)`
-          : "0 2px 8px rgba(0,0,0,0.25)",
-      } : {
-        background: "linear-gradient(to bottom, #1a72c8 0%, #5ab8e8 55%, #1a8ab8 56%, #0a4a7a 100%)",
-        border: `${small ? 1 : 2}px solid rgba(124,58,237,0.4)`,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-        overflow: "hidden",
-      }),
-      ...style,
-    }}>
-      {faceUp && card ? (
-        <>
-          <div style={{
-            position: "absolute", top: small ? 2 : Math.round(4 * fontScale), left: small ? 3 : Math.round(5 * fontScale),
-            color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1,
-            fontSize: small ? Math.round(9 * (W / 36)) : Math.round(13 * fontScale),
-          }}>
-            <div style={{ fontWeight: 900 }}>{card.rank}</div>
-            {!small && <div style={{ fontSize: Math.round(10 * fontScale) }}>{card.suit}</div>}
-          </div>
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            transform: "translate(-50%,-50%)",
-            fontSize: small ? Math.round(16 * (W / 36)) : Math.round(26 * fontScale), color: isRed ? "#d63031" : "#1a1a2e",
-          }}>{card.suit}</div>
-          {!small && (
-            <div style={{
-              position: "absolute", bottom: Math.round(4 * fontScale), right: Math.round(5 * fontScale),
-              color: isRed ? "#d63031" : "#1a1a2e", lineHeight: 1,
-              fontSize: Math.round(13 * fontScale), transform: "rotate(180deg)",
-            }}>
-              <div style={{ fontWeight: 900 }}>{card.rank}</div>
-              <div style={{ fontSize: Math.round(10 * fontScale) }}>{card.suit}</div>
-            </div>
-          )}
-        </>
-      ) : !faceUp ? (
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 58 84">
-          <circle cx="45" cy="11" r="9.5" fill="rgba(255,224,51,0.28)"/>
-          <circle cx="45" cy="11" r="5.8" fill="#ffd700"/>
-          <circle cx="43.3" cy="9.8" r="3.4" fill="#ffed4a"/>
-          <line x1="45" y1="2.5" x2="45" y2="0.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="52.2" y1="4.8" x2="53.8" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="54.5" y1="11" x2="57" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="52.2" y1="17.2" x2="53.8" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="45" y1="19.5" x2="45" y2="21.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="37.8" y1="17.2" x2="36.2" y2="18.8" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="35.5" y1="11" x2="33" y2="11" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <line x1="37.8" y1="4.8" x2="36.2" y2="3.2" stroke="#ffd700" strokeWidth="1.4" opacity="0.75"/>
-          <path d="M0,57 Q7,54.5 14,57 Q21,59.5 29,57 Q37,54.5 44,57 Q51,59.5 58,57" stroke="rgba(255,255,255,0.35)" strokeWidth="0.9" fill="none"/>
-          <path d="M0,67 Q8,64.5 16,67 Q24,69.5 32,67 Q40,64.5 48,67 Q56,69.5 58,67" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" fill="none"/>
-          <path d="M0,76 Q9,73.5 18,76 Q27,78.5 36,76 Q45,73.5 54,76" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7" fill="none"/>
-          <ellipse cx="29" cy="72" rx="12" ry="4.5" fill="#c8942a"/>
-          <ellipse cx="26" cy="70.5" rx="6.5" ry="2.5" fill="#e4b44a" opacity="0.5"/>
-          <path d="M29,70 Q27,60 28,49 Q29.5,42 32,34" stroke="#7a5c2e" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-          <path d="M31,33 Q19,38 8,52 Q25,45 33,35 Z" fill="#2a7828"/>
-          <path d="M31,35 Q38,45 54,52 Q44,38 33,33 Z" fill="#2a7828"/>
-          <path d="M33,33 Q25,26 10,22 Q21,33 31,35 Z" fill="#36963a"/>
-          <path d="M33,35 Q42,32 52,22 Q38,26 31,33 Z" fill="#36963a"/>
-          <path d="M34,34 Q35,24 30,12 Q28,25 31,34 Z" fill="#2a7828"/>
-        </svg>
-      ) : null}
-    </div>
-  );
-}
 
 // ── Local state types ─────────────────────────────────────────────────────────
 
@@ -781,7 +691,7 @@ export default function MeermauGameScreen() {
                           transform: `rotate(${angle}deg)`,
                           transformOrigin: "bottom center",
                         }}>
-                          <PlayingCard faceUp={false} small w={SMALL_W} h={SMALL_H} />
+                          <PlayingCard faceUp={false} small accentColor={VIOLET} w={SMALL_W} h={SMALL_H} />
                         </div>
                       );
                     })}
@@ -806,7 +716,7 @@ export default function MeermauGameScreen() {
             {/* Draw pile */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{ position: "relative" }}>
-                <PlayingCard faceUp={false} w={CARD_W} h={CARD_H} style={{ cursor: isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? "pointer" : "default" }} onClick={isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? handleDraw : undefined} />
+                <PlayingCard faceUp={false} accentColor={VIOLET} w={CARD_W} h={CARD_H} style={{ cursor: isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? "pointer" : "default" }} onClick={isMyTurn && st.phase === "PLAYING" && !st.drawnCard ? handleDraw : undefined} />
                 {st.drawPending > 0 && (
                   <div style={{
                     position: "absolute", top: -8, right: -8,
@@ -824,8 +734,12 @@ export default function MeermauGameScreen() {
               {st.wishSuit && (
                 <div style={{
                   background: VIOLET, color: "white", borderRadius: 8,
-                  padding: "4px 12px", fontSize: 22, fontWeight: 900,
-                }}>{st.wishSuit}</div>
+                  padding: "4px 10px", fontSize: 12, fontWeight: 700,
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  <SuitIcon suit={st.wishSuit} size={18} />
+                  {SUIT_NAMES[st.wishSuit] ?? st.wishSuit}
+                </div>
               )}
               {st.drawPending > 0 && !st.wishSuit && (
                 <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
@@ -841,7 +755,7 @@ export default function MeermauGameScreen() {
 
             {/* Discard pile */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              {topCard && <PlayingCard card={topCard} faceUp w={CARD_W} h={CARD_H} />}
+              {topCard && <PlayingCard card={topCard} faceUp accentColor={VIOLET} w={CARD_W} h={CARD_H} />}
               <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)" }}>Ablage</div>
             </div>
           </div>
@@ -862,22 +776,26 @@ export default function MeermauGameScreen() {
             border: `1px solid ${isMyTurn && st.phase === "PLAYING" ? VIOLET + "55" : "var(--border)"}`,
             flexShrink: 0,
           }}>
-            <div style={{ display: "flex", gap: HAND_GAP, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-              {humanPlayer?.hand.map(card => (
-                <PlayingCard
-                  key={card.id} card={card} faceUp
-                  selected={selectedCardId === card.id}
-                  playable={isMyTurn && st.phase === "PLAYING" && playableIds.has(card.id)}
-                  onClick={() => handleCardClick(card.id)}
-                  w={HAND_W} h={HAND_H}
-                />
-              ))}
+            <div style={{ display: "flex", gap: HAND_GAP, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" as const, justifyContent: "center" }}>
+              <CardFanRow
+                cards={humanPlayer?.hand ?? []}
+                cardWidth={HAND_W} cardHeight={HAND_H}
+                renderCard={(card, _i) => (
+                  <PlayingCard
+                    card={card} faceUp accentColor={VIOLET}
+                    selected={selectedCardId === card.id}
+                    playable={isMyTurn && st.phase === "PLAYING" && playableIds.has(card.id)}
+                    onClick={() => handleCardClick(card.id)}
+                    w={HAND_W} h={HAND_H}
+                  />
+                )}
+              />
               {/* Drawn card offer */}
               {st.drawnCard && isMyTurn && (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginLeft: Math.round(6 * cardScale), flexShrink: 0 }}>
                   <div style={{ fontSize: Math.round(9 * cardScale), color: VIOLET, marginBottom: 3, fontWeight: 700 }}>GEZOGEN</div>
                   <PlayingCard
-                    card={st.drawnCard} faceUp
+                    card={st.drawnCard} faceUp accentColor={VIOLET}
                     playable={!!topCard && canPlayMCard(st.drawnCard, topCard, st.wishSuit, 0, st.settings)}
                     style={{ border: `2px dashed ${VIOLET}` }}
                     onClick={handleDrawnCardPlay}
@@ -1024,16 +942,17 @@ export default function MeermauGameScreen() {
             <div style={{ fontWeight: 900, fontSize: 20, textAlign: "center" }}>Farbe wählen</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {(["♥", "♦", "♣", "♠"] as MSuit[]).map(suit => {
-                const isRed = suit === "♥" || suit === "♦";
+                const sc = SUIT_COLORS[suit] ?? "#1a1a2e";
                 return (
                   <button key={suit} onClick={() => handleWishSelect(suit)} style={{
-                    padding: "20px 8px", borderRadius: 12, fontSize: 36, fontWeight: 900,
-                    background: isRed ? "#fff5f5" : "#f8f9fa",
-                    color: isRed ? "#d63031" : "#1a1a2e",
-                    border: `2px solid ${isRed ? "#d6303133" : "#1a1a2e22"}`,
-                    cursor: "pointer", transition: "transform 0.1s",
+                    padding: "14px 8px", borderRadius: 12, cursor: "pointer",
+                    background: `${sc}18`,
+                    border: `2px solid ${sc}44`,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    transition: "transform 0.1s",
                   }}>
-                    {suit}
+                    <SuitIcon suit={suit} size={40} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: sc }}>{SUIT_NAMES[suit]}</span>
                   </button>
                 );
               })}
@@ -1098,7 +1017,7 @@ export default function MeermauGameScreen() {
 
             {st.phase === "GAME_OVER" ? (
               <button className="btn" style={{ background: VIOLET, color: "white", fontWeight: 700, padding: "14px" }}
-                onClick={() => navigate("/meermau/lobby")}>
+                onClick={() => navigate("/meermau/lobby", { replace: true })}>
                 Zum Menü
               </button>
             ) : (
@@ -1126,11 +1045,11 @@ export default function MeermauGameScreen() {
               displayLabel: `Runde ${st.round} · ${st.players.length} Spieler · ${st.players[0]?.totalScore ?? 0}P`,
               savedAt: Date.now(),
             });
-            navigate("/meermau/lobby");
+            navigate("/meermau/lobby", { replace: true });
           }}
           onQuitWithoutSave={() => {
             deleteGameSave("meermau");
-            navigate("/meermau/lobby");
+            navigate("/meermau/lobby", { replace: true });
           }}
         />
       )}
@@ -1149,7 +1068,7 @@ export default function MeermauGameScreen() {
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Bleiben</button>
               <button className="btn" style={{ flex: 1, background: VIOLET, color: "white" }}
-                onClick={() => navigate("/meermau/lobby")}>Verlassen</button>
+                onClick={() => navigate("/meermau/lobby", { replace: true })}>Verlassen</button>
             </div>
           </div>
         </div>

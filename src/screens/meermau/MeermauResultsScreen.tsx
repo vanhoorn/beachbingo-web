@@ -72,7 +72,7 @@ export default function MeermauResultsScreen() {
             <div style={{ fontSize: 48 }}>🂠</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginTop: 12 }}>Noch keine Spiele</div>
             <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>Spiel deine erste Runde MeerMau!</div>
-            <button className="btn" onClick={() => navigate("/meermau/lobby")}
+            <button className="btn" onClick={() => navigate("/meermau/lobby", { replace: true })}
               style={{ marginTop: 20, background: VIOLET, color: "white", padding: "12px 28px" }}>
               Jetzt spielen
             </button>
@@ -112,7 +112,7 @@ export default function MeermauResultsScreen() {
 
       {!loading && results.length > 0 && (
         <div style={{ padding: "12px 16px" }}>
-          <button className="btn" onClick={() => navigate("/meermau/lobby")}
+          <button className="btn" onClick={() => navigate("/meermau/lobby", { replace: true })}
             style={{ width: "100%", background: VIOLET, color: "white", padding: "13px" }}>
             Neue Runde 🂠
           </button>

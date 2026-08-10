@@ -581,11 +581,11 @@ export default function PiratesGameScreen() {
       displayLabel: `Score: ${gs.score} · Wave: ${gs.wave} · Leben: ${gs.lives}`,
       savedAt: Date.now(),
     });
-    navigate("/pirates/lobby");
+    navigate("/pirates/lobby", { replace: true });
   }
   function handleQuitWithoutSave() {
     deleteGameSave("pirates");
-    navigate("/pirates/lobby");
+    navigate("/pirates/lobby", { replace: true });
   }
 
   const livesDisplay = Array.from({ length: 3 }, (_, i) => i < uiLives ? "🐙" : "💀").join(" ");
@@ -683,7 +683,7 @@ export default function PiratesGameScreen() {
       )}
 
       {uiPhase === "game_over" && (
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/pirates/lobby")}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/pirates/lobby", { replace: true })}>
           ‹ Zurück zur Lobby
         </button>
       )}

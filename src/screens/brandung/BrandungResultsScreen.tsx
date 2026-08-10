@@ -72,7 +72,7 @@ export default function BrandungResultsScreen() {
             <div style={{ fontSize: 48 }}>🌊</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginTop: 12 }}>Noch keine Spiele</div>
             <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>Spiel deine erste Runde Brandung!</div>
-            <button className="btn" onClick={() => navigate("/brandung/lobby")}
+            <button className="btn" onClick={() => navigate("/brandung/lobby", { replace: true })}
               style={{ marginTop: 20, background: TEAL, color: "white", padding: "12px 28px" }}>
               Jetzt spielen
             </button>
@@ -112,7 +112,7 @@ export default function BrandungResultsScreen() {
 
       {!loading && results.length > 0 && (
         <div style={{ padding: "12px 16px" }}>
-          <button className="btn" onClick={() => navigate("/brandung/lobby")}
+          <button className="btn" onClick={() => navigate("/brandung/lobby", { replace: true })}
             style={{ width: "100%", background: TEAL, color: "white", padding: "13px" }}>
             Neue Runde 🌊
           </button>
