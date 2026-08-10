@@ -305,7 +305,6 @@ function doStartNewRound(st: LocalState): LocalState {
 function parseOnlineState(
   g: MeermauGame & { roundWinnerId?: string | null; lastSkippedId?: string | null },
   diff: MeerMauDifficulty,
-  settings: MeerMauSettings,
 ): LocalState {
   const players: LocalPlayer[] = g.playerIds.map(pid => {
     const p = g.players[pid];
@@ -479,7 +478,7 @@ export default function MeermauGameScreen() {
       setOnlineGame(g);
       setOnlineAdminId(g.adminId);
       if (!g.discardPile?.length) return; // Karten noch nicht ausgeteilt
-      const parsed = parseOnlineState(g, difficulty, initSettings);
+      const parsed = parseOnlineState(g, difficulty);
       setLocalState(prev => {
         // Preserve drawn card if the current player still has a pending decision
         if (prev?.drawnCard && parsed.players[parsed.currentPlayerIndex]?.userId === uid) {
