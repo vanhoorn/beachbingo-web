@@ -43,8 +43,10 @@ function useBoardMetrics(state: MahjongState, containerW: number, containerH: nu
 
   const tileWFromWidth  = availW / (colSpan / 2);
   const tileWFromHeight = (availH / (rowSpan / 2)) / TILE_ASPECT;
-  const tileW = Math.max(16, Math.min(52, Math.min(tileWFromWidth, tileWFromHeight)));
-  const tileH = tileW * TILE_ASPECT;
+  const naturalTileW = Math.min(52, Math.min(tileWFromWidth, tileWFromHeight));
+  const tileW        = Math.max(26, naturalTileW);
+  const tileH        = tileW * TILE_ASPECT;
+  const initialZoom  = Math.max(0.25, Math.min(1, naturalTileW / tileW));
   const halfW = tileW / 2;
   const halfH = tileH / 2;
 
@@ -59,7 +61,7 @@ function useBoardMetrics(state: MahjongState, containerW: number, containerH: nu
     };
   }
 
-  return { tileW, tileH, boardW, boardH, tilePos, minCol, minRow };
+  return { tileW, tileH, boardW, boardH, tilePos, minCol, minRow, initialZoom };
 }
 
 // ── Render order: lower layers first, within layer row-major, then col ─────
@@ -87,9 +89,9 @@ export default function MahjongBoard({
   const activePointers      = useRef<Map<number, { x: number; y: number }>>(new Map());
 
   // Reset zoom when layout changes
-  useEffect(() => { setZoom(1); setPanX(0); setPanY(0); }, [state.layoutId]);
+  useEffect(() => { setZoom(metrics?.initialZoom ?? 1); setPanX(0); setPanY(0); }, [state.layoutId]);
 
-  const clampZoom = (z: number) => Math.min(3, Math.max(0.4, z));
+  const clampZoom = (z: number) => Math.min(3, Math.max(metrics?.initialZoom ?? 0.25, z));
 
   // ── Wheel zoom ─────────────────────────────────────────────────────────────
   const onWheel = useCallback((e: React.WheelEvent) => {
@@ -180,26 +182,15 @@ export default function MahjongBoard({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {/* Zoom hint */}
-      {zoom === 1 && (
-        <div style={{
-          position: "absolute", bottom: 6, right: 8, zIndex: 10,
-          fontSize: 10, color: "var(--text-muted)", pointerEvents: "none",
-        }}>
-          Pinch / Scroll zum Zoomen
-        </div>
-      )}
-
-      {/* Zoom indicator */}
-      {zoom !== 1 && (
-        <div style={{
-          position: "absolute", bottom: 6, right: 8, zIndex: 10,
-          fontSize: 10, color: "var(--text-muted)", pointerEvents: "none",
-          background: "var(--surface2)", borderRadius: 4, padding: "2px 6px",
-        }}>
-          {Math.round(zoom * 100)}%
-        </div>
-      )}
+      {/* Zoom hint / indicator */}
+      <div style={{
+        position: "absolute", bottom: 6, right: 8, zIndex: 10,
+        fontSize: 10, color: "var(--text-muted)", pointerEvents: "none",
+        background: zoom !== (metrics?.initialZoom ?? 1) ? "var(--surface2)" : undefined,
+        borderRadius: 4, padding: zoom !== (metrics?.initialZoom ?? 1) ? "2px 6px" : undefined,
+      }}>
+        {zoom !== (metrics?.initialZoom ?? 1) ? `${Math.round(zoom * 100)}%` : "Pinch / Scroll zum Zoomen"}
+      </div>
 
       {/* Board canvas */}
       <div

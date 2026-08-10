@@ -50,8 +50,8 @@ export const ALL_TILE_TYPES: TileType[] = [
 
   // ── Drachen ──────────────────────────────────────────────────────────────────
   { id: "drache_rot",   group: "drachen", rank: 1, label: "Roter Hai",     svgIcon: "drache_rot",   color: "#ef4444", copies: 4 },
-  { id: "drache_gruen", group: "drachen", rank: 2, label: "Blauer Delfin", svgIcon: "drache_gruen", color: "#22c55e", copies: 4 },
-  { id: "drache_weiss", group: "drachen", rank: 3, label: "Oktopus",       svgIcon: "drache_weiss", color: "#a855f7", copies: 4 },
+  { id: "drache_gruen", group: "drachen", rank: 2, label: "Blauer Delfin", svgIcon: "drache_gruen", color: "#2563eb", copies: 4 },
+  { id: "drache_weiss", group: "drachen", rank: 3, label: "Oktopus",       svgIcon: "drache_weiss", color: "#0d9488", copies: 4 },
 
   // ── Jahreszeiten (Wildcards) ──────────────────────────────────────────────
   { id: "jahreszeit_fruehling", group: "jahreszeiten", rank: 1, label: "Fruehling", svgIcon: "jahreszeit_fruehling", color: C_JAHRESZEIT, copies: 1 },

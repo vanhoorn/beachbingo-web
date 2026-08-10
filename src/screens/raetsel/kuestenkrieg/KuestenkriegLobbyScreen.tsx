@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, query, where, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "../../../firebase";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
 import type { KriegDifficulty } from "./kuestenkriegLogic";
@@ -36,6 +36,42 @@ const AI_MODES: { id: AiMode; label: string; desc: string; emoji: string }[] = [
 
 const PUZZLE_DIFFICULTIES: KriegDifficulty[] = ["leicht", "mittel", "schwer", "experte"];
 
+interface OnlineResultItem {
+  opponentId: string; opponentName: string; opponentAvatar: string;
+  myWins: number; theirWins: number; totalGames: number;
+  lastGameAt: number; lastWinnerId: string; constellationTitle: string;
+}
+
+const KK_CONSTELLATION_NAMES = [
+  "Korallenflotte|Sandburgbataillon", "SprottenGirls|DorschBabys",
+  "PalmenBoys|SchlauchbootMatrosen", "Wattjäger|Muschelsammler",
+  "Möwenpiraten|Krakenflüsterer", "Brandungsreiter|Sandkastenkapitäne",
+  "Tintenfischbande|Strandwächter", "Nordseeadler|Wattwurmbrigade",
+  "Barrakuda-Crew|Seepferdchen-Staffel", "Wellenreiter|Sanddünenkommando",
+  "Heringsjäger|Austernretter", "Salzwasserwölfe|Bademeister-Union",
+  "Kormorantruppe|Strandkorbverteidiger", "Anker-Asse|Flaggen-Flatterer",
+  "Neptunsgarde|Strandräuber-Koalition", "Krabbenklau-Clan|Muschelpiraten",
+  "Tiefseebande|Flachlandmatrosen", "Sturmflut-Staffel|Sandburg-Söldner",
+  "Möwenkönige|Plastikenten-Piraten", "Blauwal-Brigade|Minigolf-Miliz",
+  "Sardellen-Syndrom|Lachs-Legion", "Schaumkronen-Crew|Treibholz-Truppe",
+  "Quallen-Quartier|Sonnencrème-Söldner", "Brandungs-Barbaren|Wellenbrecher",
+  "Ebbe-Allianz|Flut-Front",
+];
+
+function kkConstellationTitle(uid1: string, uid2: string): string {
+  const sorted = [uid1, uid2].sort();
+  const key = sorted.join("|");
+  let hash = 0n;
+  for (const c of key) hash = (hash * 31n + BigInt(c.charCodeAt(0))) & 0x7FFFFFFFFFFFFFFFn;
+  const idx = Number(hash % 25n);
+  const pair = KK_CONSTELLATION_NAMES[idx].split("|");
+  return Number((hash / 25n) % 2n) === 0 ? `${pair[0]} vs. ${pair[1]}` : `${pair[1]} vs. ${pair[0]}`;
+}
+
+function formatGameDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+}
+
 export default function KuestenkriegLobbyScreen() {
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid ?? "";
@@ -54,6 +90,9 @@ export default function KuestenkriegLobbyScreen() {
   const [_myName, setMyName] = useState("Du");
 
   const [showStats, setShowStats] = useState(false);
+  const [statsTab, setStatsTab] = useState(0);
+  const [onlineResultItems, setOnlineResultItems] = useState<OnlineResultItem[]>([]);
+  const [loadingOnline, setLoadingOnline] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const saves = getPuzzleSaves().filter(s => s.gameType === "kuestenkrieg");
   const kiSaves = getPuzzleSaves().filter(s => s.gameType === "kuestenkrieg_ki");
@@ -105,6 +144,47 @@ export default function KuestenkriegLobbyScreen() {
         resumeSaveId: save.id, resumeState: save.puzzleState,
       },
     });
+
+  useEffect(() => {
+    if (!showStats || !uid) return;
+    setLoadingOnline(true);
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, "kuestenkriegResults"), where("playerIds", "array-contains", uid)));
+        const docs = snap.docs.sort((a, b) => (b.data().createdAt ?? 0) - (a.data().createdAt ?? 0));
+        const grouped = new Map<string, typeof docs>();
+        for (const d of docs) {
+          const pIds = (d.data().playerIds ?? []) as string[];
+          const oppId = pIds.find(id => id !== uid);
+          if (!oppId) continue;
+          if (!grouped.has(oppId)) grouped.set(oppId, []);
+          grouped.get(oppId)!.push(d);
+        }
+        const items: OnlineResultItem[] = [];
+        for (const [oppId, gameDocs] of grouped.entries()) {
+          const myWins = gameDocs.filter(d => d.data().winnerId === uid).length;
+          const theirWins = gameDocs.filter(d => d.data().winnerId === oppId).length;
+          const last = gameDocs[0].data();
+          const pIds = (last.playerIds ?? []) as string[];
+          const pNames = (last.playerNames ?? []) as string[];
+          const pAvatars = (last.playerAvatars ?? []) as string[];
+          const oppIdx = pIds.indexOf(oppId);
+          items.push({
+            opponentId: oppId,
+            opponentName: pNames[oppIdx] ?? "Gegner",
+            opponentAvatar: pAvatars[oppIdx] ?? "👤",
+            myWins, theirWins,
+            totalGames: gameDocs.length,
+            lastGameAt: last.createdAt ?? 0,
+            lastWinnerId: last.winnerId ?? "",
+            constellationTitle: kkConstellationTitle(pIds[0] ?? "", pIds[1] ?? ""),
+          });
+        }
+        setOnlineResultItems(items.sort((a, b) => b.lastGameAt - a.lastGameAt));
+      } catch { /* ignore */ }
+      setLoadingOnline(false);
+    })();
+  }, [showStats, uid]);
 
   async function createOnlineGame() {
     if (!uid) return;
@@ -512,24 +592,68 @@ export default function KuestenkriegLobbyScreen() {
       </div>
 
       {showStats && (
-        <div style={overlayStyle} onClick={() => setShowStats(false)}>
-          <div style={dialogStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>🏆 Bestzeiten</span>
-              <button onClick={() => setShowStats(false)} style={closeBtnStyle}>✕</button>
+        <div style={overlayStyle} onClick={() => { setShowStats(false); setStatsTab(0); }}>
+          <div style={{ ...dialogStyle, maxHeight: "80vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>🏆 Statistik</span>
+              <button onClick={() => { setShowStats(false); setStatsTab(0); }} style={closeBtnStyle}>✕</button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {(["leicht", "mittel", "schwer", "experte"] as const).map(d => {
-                const best = getBestTimeAny("kuestenkrieg", d);
-                return (
-                  <div key={d} style={{ background: "var(--surface2)", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase" }}>{PUZZLE_DIFFICULTY_LABELS[d]}</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: best ? ACCENT : "var(--text-muted)" }}>{best ? formatElapsed(best) : "—"}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Bestzeit</div>
-                  </div>
-                );
-              })}
+
+            {/* Tabs */}
+            <div style={{ display: "flex", background: "var(--surface2)", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
+              {["Bestzeiten", "Online Duelle"].map((label, i) => (
+                <button key={i} onClick={() => setStatsTab(i)} style={{
+                  flex: 1, padding: "8px 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+                  background: statsTab === i ? ACCENT : "transparent",
+                  color: statsTab === i ? "#0a1628" : "var(--text-muted)",
+                  borderRadius: statsTab === i ? 8 : 0,
+                }}>{label}</button>
+              ))}
             </div>
+
+            {statsTab === 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {(["leicht", "mittel", "schwer", "experte"] as const).map(d => {
+                  const best = getBestTimeAny("kuestenkrieg", d);
+                  return (
+                    <div key={d} style={{ background: "var(--surface2)", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase" }}>{PUZZLE_DIFFICULTY_LABELS[d]}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: best ? ACCENT : "var(--text-muted)" }}>{best ? formatElapsed(best) : "—"}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Bestzeit</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {statsTab === 1 && (
+              loadingOnline ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>Lade…</div>
+              ) : onlineResultItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>Noch keine Online-Duelle gespielt.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {onlineResultItems.map(item => (
+                    <div key={item.opponentId} style={{ background: "var(--surface2)", borderRadius: 12, padding: "14px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.constellationTitle}</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.totalGames} Spiele</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 18 }}>{item.myWins >= item.theirWins ? "🥇" : "🥈"}</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: item.myWins > item.theirWins ? ACCENT : "var(--text-sub)" }}>Du: {item.myWins}</span>
+                        <span style={{ color: "var(--text-muted)" }}>·</span>
+                        <span style={{ fontSize: 18 }}>{item.opponentAvatar}</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: item.theirWins > item.myWins ? ACCENT : "var(--text-sub)" }}>{item.opponentName}: {item.theirWins}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        Letztes: {item.lastWinnerId === uid ? "Du" : item.opponentName} gewonnen · {formatGameDate(item.lastGameAt)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         </div>
       )}

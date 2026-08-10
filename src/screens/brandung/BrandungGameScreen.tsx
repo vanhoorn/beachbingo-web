@@ -161,6 +161,8 @@ export default function BrandungGameScreen() {
   const [selectedHandIdx, setSelectedHandIdx] = useState<number | null>(null);
   const [selectedTableIdx, setSelectedTableIdx] = useState<number | null>(null);
   const [showQuit, setShowQuit] = useState(false);
+  const [abandonedByOpponent, setAbandonedByOpponent] = useState(false);
+  const [abandonedByName, setAbandonedByName] = useState("");
 
   const resultWrittenRef = useRef(false);
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -219,10 +221,18 @@ export default function BrandungGameScreen() {
     if (mode !== "online" || !gameId) return;
     const unsub = onSnapshot(doc(db, "brandungGames", gameId), (snap) => {
       if (!snap.exists()) return;
-      setOnline({ gameId: snap.id, ...snap.data() } as BrandungGame);
+      const data = snap.data();
+      if (data.abandoned && data.abandonedBy !== uid) {
+        const playersMap = data.players ?? {};
+        const quitter = playersMap[data.abandonedBy]?.displayName ?? "Dein Gegner";
+        setAbandonedByName(quitter);
+        setAbandonedByOpponent(true);
+        return;
+      }
+      setOnline({ gameId: snap.id, ...data } as BrandungGame);
     });
     return () => unsub();
-  }, [mode, gameId]);
+  }, [mode, gameId, uid]);
 
   // ── AI turn trigger ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -616,6 +626,27 @@ export default function BrandungGameScreen() {
     setLocal(prev => prev ? startNewRound(prev) : prev);
   }
 
+  async function handleOnlineQuit() {
+    if (gameId && online) {
+      const winnerId = online.playerIds.find(id => id !== uid) ?? "";
+      try {
+        await updateDoc(doc(db, "brandungGames", gameId), {
+          abandoned: true,
+          abandonedBy: uid,
+          status: "FINISHED",
+        });
+        await addDoc(collection(db, "brandungResults"), {
+          playerIds: online.playerIds,
+          winnerId,
+          rounds: online.round,
+          mode: "abandoned",
+          createdAt: Date.now(),
+        });
+      } catch { /* ignore */ }
+    }
+    navigate("/brandung/lobby", { replace: true });
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, paddingBottom: 0, height: "100dvh", overflow: "hidden" }}>
@@ -911,8 +942,23 @@ export default function BrandungGameScreen() {
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowQuit(false)}>Weiter spielen</button>
               <button className="btn" style={{ flex: 1, background: "#ef4444", color: "white" }}
-                onClick={() => navigate("/brandung/lobby", { replace: true })}>Verlassen</button>
+                onClick={() => { void handleOnlineQuit(); }}>Verlassen</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {abandonedByOpponent && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(10,22,40,0.88)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 70,
+        }}>
+          <div className="card" style={{ width: "min(300px, 90vw)", padding: "24px", textAlign: "center" }}>
+            <div style={{ fontSize: 36 }}>🏆</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Du gewinnst!</div>
+            <div style={{ fontSize: 13, color: "var(--text-sub)", marginTop: 6 }}>{abandonedByName} hat das Spiel verlassen.</div>
+            <button className="btn" style={{ width: "100%", marginTop: 20 }}
+              onClick={() => navigate("/brandung/lobby", { replace: true })}>Weiter</button>
           </div>
         </div>
       )}

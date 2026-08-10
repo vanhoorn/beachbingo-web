@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../../../firebase";
 import { shipCells, GRID } from "./kuestenkriegBattleLogic";
 import type { PlacedShip } from "./kuestenkriegBattleLogic";
@@ -8,6 +8,32 @@ import type { KriegOnlineGame } from "../../../types";
 
 const ACCENT = "#fb7185";
 const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
+
+const KK_CONSTELLATION_NAMES = [
+  "Korallenflotte|Sandburgbataillon", "SprottenGirls|DorschBabys",
+  "PalmenBoys|SchlauchbootMatrosen", "Wattjäger|Muschelsammler",
+  "Möwenpiraten|Krakenflüsterer", "Brandungsreiter|Sandkastenkapitäne",
+  "Tintenfischbande|Strandwächter", "Nordseeadler|Wattwurmbrigade",
+  "Barrakuda-Crew|Seepferdchen-Staffel", "Wellenreiter|Sanddünenkommando",
+  "Heringsjäger|Austernretter", "Salzwasserwölfe|Bademeister-Union",
+  "Kormorantruppe|Strandkorbverteidiger", "Anker-Asse|Flaggen-Flatterer",
+  "Neptunsgarde|Strandräuber-Koalition", "Krabbenklau-Clan|Muschelpiraten",
+  "Tiefseebande|Flachlandmatrosen", "Sturmflut-Staffel|Sandburg-Söldner",
+  "Möwenkönige|Plastikenten-Piraten", "Blauwal-Brigade|Minigolf-Miliz",
+  "Sardellen-Syndrom|Lachs-Legion", "Schaumkronen-Crew|Treibholz-Truppe",
+  "Quallen-Quartier|Sonnencrème-Söldner", "Brandungs-Barbaren|Wellenbrecher",
+  "Ebbe-Allianz|Flut-Front",
+];
+
+function constellationTitle(uid1: string, uid2: string): string {
+  const sorted = [uid1, uid2].sort();
+  const key = sorted.join("|");
+  let hash = 0n;
+  for (const c of key) hash = (hash * 31n + BigInt(c.charCodeAt(0))) & 0x7FFFFFFFFFFFFFFFn;
+  const idx = Number(hash % 25n);
+  const pair = KK_CONSTELLATION_NAMES[idx].split("|");
+  return Number((hash / 25n) % 2n) === 0 ? `${pair[0]} vs. ${pair[1]}` : `${pair[1]} vs. ${pair[0]}`;
+}
 
 interface LocState { gameCode: string }
 type CellView = "unknown" | "miss" | "hit" | "sunk" | "myship";
@@ -145,6 +171,24 @@ export default function KuestenkriegOnlineBattleScreen() {
       update.status = "FINISHED";
     }
     await updateDoc(doc(db, "kuestenkriegGames", gameCode), update);
+    if (winner) {
+      const myName = game.players[uid]?.displayName ?? "";
+      const myAvatar = game.players[uid]?.avatarUrl ?? "";
+      const oppAvatar = game.players[oppId]?.avatarUrl ?? "";
+      void addDoc(collection(db, "kuestenkriegResults"), {
+        gameCode,
+        winnerId: uid,
+        loserId: oppId,
+        playerIds: [uid, oppId],
+        playerNames: [myName, oppName],
+        playerAvatars: [myAvatar, oppAvatar],
+        shotsFiredByWinner: newShots.filter(s => s !== "unknown").length,
+        shotsFiredByLoser: (game.shots[oppId] ?? []).filter(s => s !== "unknown").length,
+        constellationTitle: constellationTitle(uid, oppId),
+        mode: "online",
+        createdAt: Date.now(),
+      });
+    }
     setShooting(false);
   };
 

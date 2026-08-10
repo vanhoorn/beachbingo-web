@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, onSnapshot, addDoc, collection, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, addDoc, collection, getDoc, updateDoc } from "firebase/firestore";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { MeermauGame } from "../../types";
@@ -300,6 +300,54 @@ function doStartNewRound(st: LocalState): LocalState {
   };
 }
 
+// ── Online state parser ───────────────────────────────────────────────────────
+
+function parseOnlineState(
+  g: MeermauGame & { roundWinnerId?: string | null; lastSkippedId?: string | null },
+  diff: MeerMauDifficulty,
+  settings: MeerMauSettings,
+): LocalState {
+  const players: LocalPlayer[] = g.playerIds.map(pid => {
+    const p = g.players[pid];
+    return {
+      userId: pid,
+      displayName: p?.displayName ?? "Spieler",
+      avatarUrl: p?.avatarUrl ?? "🃏",
+      hand: (p?.hand ?? []) as MCard[],
+      isAI: p?.isAI ?? false,
+      totalScore: p?.totalScore ?? 0,
+      eliminated: p?.eliminated ?? false,
+    };
+  });
+  return {
+    players,
+    drawPile: (g.drawPile ?? []) as MCard[],
+    discardPile: (g.discardPile ?? []) as MCard[],
+    currentPlayerIndex: g.currentPlayerIndex ?? 0,
+    direction: (g.direction ?? 1) as 1 | -1,
+    drawPending: g.drawPending ?? 0,
+    wishSuit: (g.wishSuit ?? null) as MSuit | null,
+    phase: (g.phase as LocalState["phase"]) ?? "PLAYING",
+    mauPlayerId: g.mauPlayerId ?? null,
+    pendingMau: null, pendingMauMau: null, mauMauReady: false,
+    drawnCard: null,
+    roundWinnerId: g.roundWinnerId ?? null,
+    gameWinnerId: g.gameWinnerId ?? null,
+    roundScores: g.roundScores ?? {},
+    round: g.round ?? 1,
+    lastActionText: g.lastActionText ?? "",
+    aiThinking: false,
+    difficulty: diff,
+    settings: {
+      reverseOn9: g.settings?.reverseOn9 ?? false,
+      stopperOn8: g.settings?.stopperOn8 ?? false,
+      wildOn10: g.settings?.wildOn10 ?? false,
+    },
+    lastSkippedId: g.lastSkippedId ?? null,
+    moveLog: [],
+  };
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface LocState {
@@ -324,10 +372,42 @@ export default function MeermauGameScreen() {
 
   const [localState, setLocalState] = useState<LocalState | null>(null);
   const [_onlineGame, setOnlineGame] = useState<MeermauGame | null>(null);
+  const [onlineAdminId, setOnlineAdminId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
+
+  const writeOnlineState = async (newSt: LocalState) => {
+    if (!gameId) return;
+    const playersUpdate: Record<string, unknown> = {};
+    for (const p of newSt.players) {
+      playersUpdate[p.userId] = {
+        userId: p.userId, displayName: p.displayName, avatarUrl: p.avatarUrl,
+        hand: p.hand, isAI: p.isAI, totalScore: p.totalScore, eliminated: p.eliminated,
+      };
+    }
+    try {
+      await updateDoc(doc(db, "meermauGames", gameId), {
+        status: newSt.phase === "GAME_OVER" ? "FINISHED" : "RUNNING",
+        phase: newSt.phase,
+        players: playersUpdate,
+        drawPile: newSt.drawPile,
+        discardPile: newSt.discardPile,
+        currentPlayerIndex: newSt.currentPlayerIndex,
+        direction: newSt.direction,
+        drawPending: newSt.drawPending,
+        wishSuit: newSt.wishSuit ?? null,
+        mauPlayerId: newSt.mauPlayerId ?? null,
+        roundScores: newSt.roundScores,
+        gameWinnerId: newSt.gameWinnerId ?? null,
+        roundWinnerId: newSt.roundWinnerId ?? null,
+        round: newSt.round,
+        lastActionText: newSt.lastActionText,
+        lastSkippedId: newSt.lastSkippedId ?? null,
+      });
+    } catch { /* ignore */ }
+  };
 
   // Responsive card sizing for tablets
   const [winW, setWinW] = useState(window.innerWidth);
@@ -394,11 +474,23 @@ export default function MeermauGameScreen() {
   useEffect(() => {
     if (mode !== "online" || !gameId) return;
     const unsub = onSnapshot(doc(db, "meermauGames", gameId), snap => {
-      if (snap.exists()) setOnlineGame({ gameId: snap.id, ...snap.data() } as MeermauGame);
+      if (!snap.exists()) return;
+      const g = { gameId: snap.id, ...snap.data() } as MeermauGame;
+      setOnlineGame(g);
+      setOnlineAdminId(g.adminId);
+      if (!g.discardPile?.length) return; // Karten noch nicht ausgeteilt
+      const parsed = parseOnlineState(g, difficulty, initSettings);
+      setLocalState(prev => {
+        // Preserve drawn card if the current player still has a pending decision
+        if (prev?.drawnCard && parsed.players[parsed.currentPlayerIndex]?.userId === uid) {
+          return { ...parsed, drawnCard: prev.drawnCard };
+        }
+        return parsed;
+      });
     });
     unsubRef.current = unsub;
     return () => unsub();
-  }, [mode, gameId]);
+  }, [mode, gameId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── AI turn ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -467,9 +559,23 @@ export default function MeermauGameScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localState?.drawnCard]);
 
+  // ── Online: admin auto-starts next round after ROUND_END ───────────────────
+  useEffect(() => {
+    if (mode !== "online" || !localState || localState.phase !== "ROUND_END") return;
+    if (onlineAdminId !== uid) return;
+    const t = setTimeout(() => {
+      const newRound = doStartNewRound(localState);
+      setLocalState(newRound);
+      void writeOnlineState(newRound);
+    }, 3000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localState?.phase, localState?.round]);
+
   // ── Save result on game over ────────────────────────────────────────────────
   useEffect(() => {
     if (!localState || localState.phase !== "GAME_OVER" || !uid) return;
+    if (mode === "online" && localState.gameWinnerId !== uid) return;
     const playerIds = localState.players.map(p => p.userId);
     const finalScores: Record<string, number> = {};
     localState.players.forEach(p => { finalScores[p.userId] = p.totalScore; });
@@ -506,11 +612,12 @@ export default function MeermauGameScreen() {
     if (!st || !isMyTurn || st.phase !== "PLAYING") return;
     if (!playableIds.has(cardId)) { setSelectedCardId(prev => prev === cardId ? null : cardId); audioManager.playSound("card_select"); return; }
     if (selectedCardId !== cardId) { setSelectedCardId(cardId); audioManager.playSound("card_select"); return; }
-    // Second click → play (all cards including last — MAU MAU can be pressed separately)
     const card = humanPlayer?.hand.find(c => c.id === cardId);
     if (!card) return;
     audioManager.playSound("card_place");
-    setLocalState(prev => prev ? doPlayCard(prev, 0, cardId) : prev);
+    const newSt = doPlayCard(st, 0, cardId);
+    setLocalState(newSt);
+    if (mode === "online" && newSt.phase !== "WISH") void writeOnlineState(newSt);
     if (card.rank !== "J" && !(st.settings.wildOn10 && card.rank === "10")) setSelectedCardId(null);
   }
 
@@ -519,17 +626,16 @@ export default function MeermauGameScreen() {
     audioManager.playSound("card_feuer");
     // Post-play: human played last card, now pressing MAU MAU → win
     if (st.pendingMauMau === uid) {
-      setLocalState(prev => {
-        if (!prev || prev.pendingMauMau !== uid) return prev;
-        const ph = prev.players.find(p => p.userId === uid);
-        if (!ph || ph.hand.length !== 0) return prev;
-        const entry: MoveLogEntry = { round: prev.round, playerName: ph.displayName, detail: `🏆 ${ph.displayName}: MAU MAU!`, ts: Date.now() };
-        const result = resolveRound({ ...prev, pendingMauMau: null, roundWinnerId: uid, lastActionText: `🏆 ${ph.displayName}: MAU MAU!` });
-        return { ...result, moveLog: [...result.moveLog, entry] };
-      });
+      const ph = st.players.find(p => p.userId === uid);
+      if (!ph || ph.hand.length !== 0) return;
+      const entry: MoveLogEntry = { round: st.round, playerName: ph.displayName, detail: `🏆 ${ph.displayName}: MAU MAU!`, ts: Date.now() };
+      const result = resolveRound({ ...st, pendingMauMau: null, roundWinnerId: uid, lastActionText: `🏆 ${ph.displayName}: MAU MAU!` });
+      const newSt = { ...result, moveLog: [...result.moveLog, entry] };
+      setLocalState(newSt);
+      if (mode === "online") void writeOnlineState(newSt);
       return;
     }
-    // Pre-play: declare MAU MAU before playing the last card
+    // Pre-play: declare MAU MAU before playing the last card (local only, no Firestore write)
     if (!isMyTurn || st.phase !== "PLAYING" || humanPlayer?.hand.length !== 1 || playableIds.size === 0) return;
     const mp = st.players[0];
     setLocalState(prev => {
@@ -542,7 +648,10 @@ export default function MeermauGameScreen() {
   function handleDraw() {
     if (!st || !isMyTurn || st.phase !== "PLAYING") return;
     audioManager.playSound("card_draw");
-    setLocalState(prev => prev ? doDrawCard(prev, 0) : prev);
+    const newSt = doDrawCard(st, 0);
+    setLocalState(newSt);
+    // Penalty draw advances turn → write; normal draw shows drawnCard locally → no write yet
+    if (mode === "online" && !newSt.drawnCard) void writeOnlineState(newSt);
     setSelectedCardId(null);
   }
 
@@ -551,35 +660,38 @@ export default function MeermauGameScreen() {
     const dc = st.drawnCard;
     if (!canPlayMCard(dc, topCard, st.wishSuit, 0, st.settings)) return;
     audioManager.playSound("card_place");
-    setLocalState(prev => prev ? doPlayCard(prev, 0, dc.id) : prev);
+    const newSt = doPlayCard(st, 0, dc.id);
+    setLocalState(newSt);
+    if (mode === "online" && newSt.phase !== "WISH") void writeOnlineState(newSt);
   }
 
   function handleDrawnCardPass() {
     if (!st) return;
     const np = nextIdx(0, st.direction, st.players);
-    setLocalState(prev => prev ? { ...prev, drawnCard: null, currentPlayerIndex: np, phase: "PLAYING" } : prev);
+    const newSt: LocalState = { ...st, drawnCard: null, currentPlayerIndex: np, phase: "PLAYING" };
+    setLocalState(newSt);
+    if (mode === "online") void writeOnlineState(newSt);
   }
 
   function handleWishSelect(suit: MSuit) {
     if (!st || st.phase !== "WISH") return;
-    const human = st.players[0];
+    const h = st.players[0];
     const sn: Record<MSuit, string> = { "♣": "Kreuz", "♠": "Pik", "♥": "Herz", "♦": "Karo" };
     const np = nextIdx(0, st.direction, st.players);
-    setLocalState(prev => {
-      if (!prev || prev.phase !== "WISH") return prev;
-      const h = prev.players[0];
-      if (h.hand.length === 0) {
-        if (prev.mauMauReady) {
-          return resolveRound({ ...prev, wishSuit: suit, roundWinnerId: h.userId, mauMauReady: false, lastActionText: `🏆 ${h.displayName} gewinnt die Runde!` });
-        }
-        return { ...prev, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, pendingMauMau: h.userId, mauMauReady: false, lastActionText: `${h.displayName} spielt letzte Karte!` };
-      } else if (h.hand.length === 1) {
-        // Played J as second-to-last card → must call MAU
-        return { ...prev, wishSuit: suit, phase: "PLAYING", mauPlayerId: null, pendingMau: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+    let newSt: LocalState;
+    if (h.hand.length === 0) {
+      if (st.mauMauReady) {
+        newSt = resolveRound({ ...st, wishSuit: suit, roundWinnerId: h.userId, mauMauReady: false, lastActionText: `🏆 ${h.displayName} gewinnt die Runde!` });
+      } else {
+        newSt = { ...st, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, pendingMauMau: h.userId, mauMauReady: false, lastActionText: `${h.displayName} spielt letzte Karte!` };
       }
-      return { ...prev, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
-    });
-    void human; // used implicitly above
+    } else if (h.hand.length === 1) {
+      newSt = { ...st, wishSuit: suit, phase: "PLAYING", mauPlayerId: null, pendingMau: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+    } else {
+      newSt = { ...st, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+    }
+    setLocalState(newSt);
+    if (mode === "online") void writeOnlineState(newSt);
     setSelectedCardId(null);
   }
 
@@ -1020,6 +1132,10 @@ export default function MeermauGameScreen() {
                 onClick={() => navigate("/meermau/lobby", { replace: true })}>
                 Zum Menü
               </button>
+            ) : mode === "online" ? (
+              <div style={{ textAlign: "center", fontSize: 13, color: "var(--text-sub)", padding: "10px 0" }}>
+                Nächste Runde startet in Kürze…
+              </div>
             ) : (
               <button className="btn" style={{ background: VIOLET, color: "white", fontWeight: 700, padding: "14px" }}
                 onClick={() => setLocalState(prev => prev ? doStartNewRound(prev) : prev)}>
