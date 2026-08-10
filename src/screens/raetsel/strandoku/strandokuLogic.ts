@@ -203,18 +203,31 @@ function removeClues(solution: number[][], size: number, difficulty: StrandokuDi
     rng
   );
 
+  // Large boards (12×12, 16×16) and irregular hard/expert time out in countSolutions,
+  // returning 0 (count never increments before the step cap) → every cell is "non-unique"
+  // → zero cells removed. Skip the uniqueness check for these cases.
+  const skipUniqueness =
+    (size > 9 || regions !== undefined) &&
+    (difficulty === "schwer" || difficulty === "experte");
+
   let removed = 0;
   for (const [r, c] of cells) {
     if (removed >= toRemove) break;
-    const backup = grid[r][c];
-    grid[r][c] = 0;
-    given[r][c] = false;
-    const temp = grid.map(row => [...row]);
-    if (countSolutions(temp, size, 2, diagonal, regions) !== 1) {
-      grid[r][c] = backup;
-      given[r][c] = true;
-    } else {
+    if (skipUniqueness) {
+      grid[r][c] = 0;
+      given[r][c] = false;
       removed++;
+    } else {
+      const backup = grid[r][c];
+      grid[r][c] = 0;
+      given[r][c] = false;
+      const temp = grid.map(row => [...row]);
+      if (countSolutions(temp, size, 2, diagonal, regions) !== 1) {
+        grid[r][c] = backup;
+        given[r][c] = true;
+      } else {
+        removed++;
+      }
     }
   }
   return { grid, given };

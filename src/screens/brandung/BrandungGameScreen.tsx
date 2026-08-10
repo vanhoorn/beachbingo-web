@@ -310,6 +310,7 @@ export default function BrandungGameScreen() {
         lastAction = `${curPlayer.displayName} schiebt.`;
         audioManager.playSound("card_select");
       } else if (type === "KNOCK") {
+        if (s.knockedByUserId !== null) return prev;
         newKnockedBy = curPlayer.userId;
         const alivePlayers = s.players.filter(p => !p.eliminated && p.userId !== curPlayer.userId);
         newKnockRemaining = alivePlayers.map(p => p.userId);
@@ -428,6 +429,7 @@ export default function BrandungGameScreen() {
       lastAction = `${myPlayer.displayName} schiebt.`;
       audioManager.playSound("card_select");
     } else if (type === "KNOCK") {
+      if (online.knockedByUserId !== null) return;
       newKnockedBy = uid;
       const alivePlayers = online.playerIds.map(id => online.players[id]).filter(p => !p.eliminated && p.userId !== uid);
       newKnockRemaining = alivePlayers.map(p => p.userId);
@@ -828,10 +830,12 @@ export default function BrandungGameScreen() {
                       border: "1px solid var(--border)", fontSize: 13, padding: "10px 6px",
                     }} onClick={handlePass}>Schieben</button>
                   )}
-                  <button className="btn" style={{
-                    flex: 1, background: "rgba(239,68,68,0.12)", color: "#ef4444",
-                    border: "1px solid rgba(239,68,68,0.3)", fontSize: 13, padding: "10px 6px", fontWeight: 700,
-                  }} onClick={handleKnock}>✊ Klopfen</button>
+                  {gs.knockedByUserId === null && (
+                    <button className="btn" style={{
+                      flex: 1, background: "rgba(239,68,68,0.12)", color: "#ef4444",
+                      border: "1px solid rgba(239,68,68,0.3)", fontSize: 13, padding: "10px 6px", fontWeight: 700,
+                    }} onClick={handleKnock}>✊ Klopfen</button>
+                  )}
                 </div>
               </>
             ) : gs.phase === "TURN" ? (
