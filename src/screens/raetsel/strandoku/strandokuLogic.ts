@@ -147,9 +147,11 @@ function fillBoard(board: number[][], size: number, rng: () => number, diagonal 
 // Count solutions (up to max); uses MRV heuristic
 function countSolutions(board: number[][], size: number, max = 2, diagonal = false, regions?: number[][]): number {
   let count = 0;
+  let steps = 0;
 
   function solve(): boolean {
     if (count >= max) return true;
+    if (++steps > 60_000) return true;
     // Find cell with fewest candidates
     let bestR = -1, bestC = -1, bestCount = size + 1;
     for (let r = 0; r < size; r++) {
