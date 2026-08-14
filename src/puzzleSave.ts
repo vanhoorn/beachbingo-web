@@ -111,7 +111,7 @@ export const PUZZLE_GAME_INFO: Record<
   kuestenkrieg_ki: { title: "Küstenkrieg KI", emoji: "⚓", color: "#fb7185" },
   duenenschatten:  { title: "DünenSchatten",  emoji: "◼",  color: "#fbbf24" },
   inselbruecke:   { title: "Inselbrücke",   emoji: "🌉", color: "#4ade80" },
-  wortwelle:      { title: "WortWelle",     emoji: "🌊", color: "#06b6d4" },
+  wortwelle:      { title: "WortWelle",     emoji: "💬", color: "#06b6d4" },
   mahjong:        { title: "GezeitenSteine", emoji: "🀄", color: "#D4A820" },
 };
 

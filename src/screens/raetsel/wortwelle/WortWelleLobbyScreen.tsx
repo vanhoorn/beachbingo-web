@@ -5,8 +5,10 @@ import {
   getStats, initWwWordLists, isWwReady, type WortWelleDifficulty,
 } from "./wortwelleLogic";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed } from "../../../puzzleSave";
+import { ALL_GAMES } from "../../../gameMetadata";
 
 const ACCENT = "#06b6d4";
+const GAME_EMOJI = ALL_GAMES.find(g => g.id === "wortwelle")?.emoji ?? "💬";
 
 const RULES_TEXT = [
   "Errate das versteckte Wort — Buchstabe für Buchstabe.",
@@ -78,7 +80,7 @@ export default function WortWelleLobbyScreen() {
         borderRadius: "var(--radius)", padding: "20px",
         display: "flex", alignItems: "center", gap: 16,
       }}>
-        <div style={{ fontSize: 44 }}>🌊</div>
+        <div style={{ fontSize: 44 }}>{GAME_EMOJI}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Rätsel</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "white" }}>WortWelle</div>
@@ -173,7 +175,7 @@ export default function WortWelleLobbyScreen() {
             fontWeight: 800, fontSize: 16,
           }}
         >
-          {wordBankReady ? "🌊 Zufälliges Spiel starten" : "⏳ Wörter werden geladen…"}
+          {wordBankReady ? `${GAME_EMOJI} Zufälliges Spiel starten` : "⏳ Wörter werden geladen…"}
         </button>
 
         {/* Gespeicherte Spiele */}
@@ -238,7 +240,7 @@ function RulesDialog({ onClose }: { onClose: () => void }) {
       <div style={{ ...dialogStyle, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 24 }}>🌊</span>
+            <span style={{ fontSize: 24 }}>{GAME_EMOJI}</span>
             <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Spielregeln</span>
           </div>
           <button onClick={onClose} style={closeBtnStyle}>✕</button>

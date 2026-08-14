@@ -8,8 +8,10 @@ import {
 } from "./wortwelleLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
 import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { ALL_GAMES } from "../../../gameMetadata";
 
 const ACCENT = "#06b6d4";
+const GAME_EMOJI = ALL_GAMES.find(g => g.id === "wortwelle")?.emoji ?? "💬";
 
 interface LocationState {
   difficulty: WortWelleDifficulty;
@@ -273,7 +275,7 @@ export default function WortWelleGameScreen() {
       }}>
         <button onClick={() => setShowQuit(true)} style={headerBtnStyle}>‹</button>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20 }}>🌊</span>
+          <span style={{ fontSize: 20 }}>{GAME_EMOJI}</span>
           <div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>WortWelle</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>
