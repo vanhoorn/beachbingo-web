@@ -197,6 +197,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
+  {
+    id: "sonnenrad",
+    emoji: "☀️",
+    title: "Sonnenrad",
+    description: "Tagesbonus: Drehe drei Muschelkarten auf und klettere die Bonusleiter hinauf!",
+    color: "#D4A820",
+    path: "/sonnenrad/lobby",
+    playerCounts: ["ONE_TWO"],
+    genres: ["COUCH"],
+  },
 ];
 
 export const CARD_GAMES   = ALL_GAMES.filter((g) => g.genres.includes("CARD"));

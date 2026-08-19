@@ -23,7 +23,12 @@ export type SoundId =
   | "card_shuffle"
   | "pair_discard"
   | "turn_ping"
-  | "sp_gameover";
+  | "sp_gameover"
+  // Sonnenrad
+  | "sr_reveal"
+  | "sr_step_up"
+  | "sr_secure"
+  | "sr_tick";
 
 export type TrackId = "strandturm" | "pirates" | "worm" | "menu" | "bingo" | "pong" | "vier" | "brandung" | "strandraeuber" | "mahjong";
 
@@ -286,6 +291,47 @@ const SOUNDS: Record<SoundId, SoundDef> = {
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
       osc.start(t); osc.stop(t + 0.22);
     });
+  },
+
+  // ── Sonnenrad ──────────────────────────────────────────────────────────────
+  sr_reveal: (ctx) => {
+    // Card flip reveal — 660 Hz square burst
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "square"; osc.frequency.value = 660;
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.10);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.10);
+  },
+
+  sr_step_up: (ctx) => {
+    // Ladder step secured — 784 Hz square burst
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "square"; osc.frequency.value = 784;
+    g.gain.setValueAtTime(0.20, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
+  },
+
+  sr_secure: (ctx) => {
+    // Round finished with points — 988 Hz square burst (celebratory)
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "square"; osc.frequency.value = 988;
+    g.gain.setValueAtTime(0.22, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.20);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.20);
+  },
+
+  sr_tick: (ctx) => {
+    // Climbing marker toggle — 440 Hz square very short
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = "square"; osc.frequency.value = 440;
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.05);
   },
 };
 

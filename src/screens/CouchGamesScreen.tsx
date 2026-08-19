@@ -3,15 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { COUCH_GAMES, type GameMetadata } from "../gameMetadata";
 import { GAME_RULES } from "../gameRules";
 import GameRulesModal from "../components/GameRulesModal";
+import { isBonusAvailable } from "./sonnenrad/sonnenradLogic";
 
 export default function CouchGamesScreen() {
   const navigate = useNavigate();
   const games = [...COUCH_GAMES].sort((a, b) => a.title.localeCompare(b.title));
   const [rulesGameId, setRulesGameId] = useState<string | null>(null);
   const activeRule = rulesGameId ? GAME_RULES[rulesGameId] : null;
+  const sonnenradBonus = isBonusAvailable();
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
+      <style>{`@keyframes sr-lobby-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }`}</style>
       <div style={{
         background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
         padding: "20px 20px",
@@ -43,6 +46,7 @@ export default function CouchGamesScreen() {
             game={game}
             onClick={() => navigate(game.path)}
             onInfo={() => setRulesGameId(game.id)}
+            badge={game.id === "sonnenrad" && sonnenradBonus ? "🌟" : undefined}
           />
         ))}
       </div>
@@ -58,10 +62,12 @@ function GameRow({
   game,
   onClick,
   onInfo,
+  badge,
 }: {
   game: GameMetadata;
   onClick: () => void;
   onInfo: () => void;
+  badge?: string;
 }) {
   const [hovered, setHovered] = useState(false);
   const [infoHovered, setInfoHovered] = useState(false);
@@ -79,13 +85,24 @@ function GameRow({
         transition: "border-color 0.15s",
       }}
     >
-      <div style={{
-        width: 64, height: 64, flexShrink: 0, borderRadius: 14,
-        background: game.color + "26",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 32,
-      }}>
-        {game.emoji}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 14,
+          background: game.color + "26",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 32,
+        }}>
+          {game.emoji}
+        </div>
+        {badge && (
+          <div style={{
+            position: "absolute", top: -6, right: -6,
+            fontSize: 16, lineHeight: 1,
+            animation: "sr-lobby-pulse 1.4s ease-in-out infinite",
+          }}>
+            {badge}
+          </div>
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{game.title}</div>

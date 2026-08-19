@@ -41,6 +41,7 @@ export default function ProfileScreen() {
   const [saved, setSaved]         = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
+  const sonnenradPoints = Number(localStorage.getItem("sonnenrad_total_points") ?? "0");
 
   useEffect(() => {
     if (!uid) return;
@@ -217,6 +218,19 @@ export default function ProfileScreen() {
           placeholder="Dein Name"
         />
       </div>
+
+      {/* Sonnenrad Tagesbonus */}
+      {sonnenradPoints > 0 && (
+        <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+          <div style={{ fontSize: 14, color: "var(--text-sub)" }}>☀️ Tagesbonus gesamt</div>
+          <div style={{
+            fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20,
+            background: "rgba(212,168,32,0.15)", color: "#D4A820",
+          }}>
+            {sonnenradPoints} Pkt.
+          </div>
+        </div>
+      )}
 
       {/* Audio */}
       <div className="card flex flex-col gap-0" style={{ padding: 0, overflow: "hidden" }}>
