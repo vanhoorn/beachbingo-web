@@ -6,7 +6,8 @@ export type PuzzleGameType =
   | "duenenschatten"
   | "inselbruecke"
   | "wortwelle"
-  | "mahjong";
+  | "mahjong"
+  | "perlentaucher";
 
 export type PuzzleDifficulty = "leicht" | "mittel" | "schwer" | "experte";
 
@@ -113,6 +114,7 @@ export const PUZZLE_GAME_INFO: Record<
   inselbruecke:   { title: "Inselbrücke",   emoji: "🌉", color: "#4ade80" },
   wortwelle:      { title: "WortWelle",     emoji: "💬", color: "#06b6d4" },
   mahjong:        { title: "GezeitenSteine", emoji: "🀄", color: "#D4A820" },
+  perlentaucher:  { title: "Perlentaucher",  emoji: "🤿", color: "#0EA5E9" },
 };
 
 export const PUZZLE_DIFFICULTY_LABELS: Record<PuzzleDifficulty, string> = {
@@ -121,3 +123,39 @@ export const PUZZLE_DIFFICULTY_LABELS: Record<PuzzleDifficulty, string> = {
   schwer:  "Schwer",
   experte: "Experte",
 };
+
+// ── Perlentaucher-spezifische Speicherfunktionen ────────────────────────────
+
+const PERLENTAUCHER_HIGHEST_KEY = "perlentaucher_highest_level";
+const PERLENTAUCHER_BEST_SCORES_KEY = "perlentaucher_best_scores";
+
+export function getHighestPerlentaucherLevel(): number {
+  try { return Math.max(1, parseInt(localStorage.getItem(PERLENTAUCHER_HIGHEST_KEY) ?? "1") || 1); }
+  catch { return 1; }
+}
+
+export function saveHighestPerlentaucherLevel(level: number): void {
+  try {
+    const current = getHighestPerlentaucherLevel();
+    if (level > current) localStorage.setItem(PERLENTAUCHER_HIGHEST_KEY, level.toString());
+  } catch { }
+}
+
+export function getBestPerlentaucherScore(level: number): number | null {
+  try {
+    const raw = localStorage.getItem(PERLENTAUCHER_BEST_SCORES_KEY);
+    const scores: Record<number, number> = raw ? JSON.parse(raw) : {};
+    return scores[level] ?? null;
+  } catch { return null; }
+}
+
+export function saveBestPerlentaucherScore(level: number, score: number): void {
+  try {
+    const raw = localStorage.getItem(PERLENTAUCHER_BEST_SCORES_KEY);
+    const scores: Record<number, number> = raw ? JSON.parse(raw) : {};
+    if (!scores[level] || score > scores[level]) {
+      scores[level] = score;
+      localStorage.setItem(PERLENTAUCHER_BEST_SCORES_KEY, JSON.stringify(scores));
+    }
+  } catch { }
+}

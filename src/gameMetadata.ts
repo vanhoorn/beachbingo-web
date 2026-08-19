@@ -187,6 +187,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
+  {
+    id: "perlentaucher",
+    emoji: "🤿",
+    title: "Perlentaucher",
+    description: "Match-3 am Meeresgrund — tausche Schätze aus, bilde Reihen und knacke 150 Level.",
+    color: "#0EA5E9",
+    path: "/raetsel/perlentaucher",
+    playerCounts: ["ONE_TWO"],
+    genres: ["RIDDLE", "LOGICAL"],
+  },
 ];
 
 export const CARD_GAMES   = ALL_GAMES.filter((g) => g.genres.includes("CARD"));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -69,9 +69,19 @@ import KuestenkriegBattleScreen from "./screens/raetsel/kuestenkrieg/Kuestenkrie
 import KuestenkriegOnlineBattleScreen from "./screens/raetsel/kuestenkrieg/KuestenkriegOnlineBattleScreen";
 import WortWelleLobbyScreen from "./screens/raetsel/wortwelle/WortWelleLobbyScreen";
 import WortWelleGameScreen from "./screens/raetsel/wortwelle/WortWelleGameScreen";
+import PerlentaucherLobbyScreen from "./screens/raetsel/perlentaucher/PerlentaucherLobbyScreen";
+import PerlentaucherGameScreen from "./screens/raetsel/perlentaucher/PerlentaucherGameScreen";
+import PerlentaucherResultsScreen from "./screens/raetsel/perlentaucher/PerlentaucherResultsScreen";
 import MahjongLobbyScreen from "./screens/mahjong/MahjongLobbyScreen";
 import MahjongGameScreen from "./screens/mahjong/MahjongGameScreen";
 import MahjongSettingsScreen from "./screens/mahjong/MahjongSettingsScreen";
+
+// Wrapper: forces full remount when navigating to a new/retried level (key changes per instance)
+function PerlentaucherGameKey() {
+  const { state } = useLocation();
+  const { level = 1, _instance = 0 } = (state ?? {}) as { level?: number; _instance?: number };
+  return <PerlentaucherGameScreen key={`pearl-${level}-${_instance}`} />;
+}
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
@@ -168,6 +178,9 @@ function App() {
         <Route path="/raetsel/kuestenkrieg/online-battle" element={loggedIn ? <KuestenkriegOnlineBattleScreen /> : <Navigate to="/login" />} />
         <Route path="/raetsel/wortwelle/lobby" element={loggedIn ? <WortWelleLobbyScreen /> : <Navigate to="/login" />} />
         <Route path="/raetsel/wortwelle/game"  element={loggedIn ? <WortWelleGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/raetsel/perlentaucher/lobby"   element={loggedIn ? <PerlentaucherLobbyScreen />   : <Navigate to="/login" />} />
+        <Route path="/raetsel/perlentaucher/game"    element={loggedIn ? <PerlentaucherGameKey />       : <Navigate to="/login" />} />
+        <Route path="/raetsel/perlentaucher/results" element={loggedIn ? <PerlentaucherResultsScreen /> : <Navigate to="/login" />} />
         <Route path="/mahjong/lobby"    element={loggedIn ? <MahjongLobbyScreen />    : <Navigate to="/login" />} />
         <Route path="/mahjong/game"     element={loggedIn ? <MahjongGameScreen />     : <Navigate to="/login" />} />
         <Route path="/mahjong/settings" element={loggedIn ? <MahjongSettingsScreen /> : <Navigate to="/login" />} />
