@@ -153,9 +153,9 @@ export const ALL_GAMES: GameMetadata[] = [
     title: "Küstenkrieg",
     description: "Solo-Logik-Rätsel oder klassisches 2-Spieler-Duell — Flotten versenken!",
     color: "#fb7185",
-    path: "/raetsel/kuestenkrieg",
+    path: "/raetsel/kuestenkrieg/lobby",
     playerCounts: ["ONE_TWO"],
-    genres: ["RIDDLE", "LOGICAL"],
+    genres: ["COUCH", "LOGICAL"],
   },
   {
     id: "duenenschatten",
@@ -193,9 +193,9 @@ export const ALL_GAMES: GameMetadata[] = [
     title: "Perlentaucher",
     description: "Match-3 am Meeresgrund — tausche Schätze aus, bilde Reihen und knacke 150 Level.",
     color: "#0EA5E9",
-    path: "/raetsel/perlentaucher",
+    path: "/raetsel/perlentaucher/lobby",
     playerCounts: ["ONE_TWO"],
-    genres: ["RIDDLE", "LOGICAL"],
+    genres: ["COUCH", "LOGICAL"],
   },
   {
     id: "sonnenrad",
