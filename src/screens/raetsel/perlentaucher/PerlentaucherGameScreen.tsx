@@ -421,6 +421,7 @@ export default function PerlentaucherGameScreen() {
                     bestScore: getBestPerlentaucherScore(level) ?? score,
                     newBestScore: newBest,
                   },
+                  replace: true,
                 })}
                 style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "14px 0", textAlign: "center", fontSize: 15, fontWeight: 700 }}
               >
@@ -441,12 +442,12 @@ export default function PerlentaucherGameScreen() {
               Erreicht: {score.toLocaleString()} von {targetScore.toLocaleString()} Punkten
             </div>
             <button
-              onClick={() => navigate("/raetsel/perlentaucher/game", { state: { level, _instance: Date.now() } })}
+              onClick={() => navigate("/raetsel/perlentaucher/game", { state: { level, _instance: Date.now() }, replace: true })}
               style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "14px 0", textAlign: "center", marginBottom: 8 }}
             >
               Nochmal versuchen
             </button>
-            <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--text-muted)"), width: "100%", padding: "12px 0", textAlign: "center" }}>
+            <button onClick={() => navigate("/raetsel/perlentaucher/lobby", { replace: true })} style={{ ...ctrlBtn("var(--text-muted)"), width: "100%", padding: "12px 0", textAlign: "center" }}>
               Zurück zur Lobby
             </button>
           </div>
@@ -457,8 +458,8 @@ export default function PerlentaucherGameScreen() {
         <GameSaveQuitDialog
           emoji="🤿"
           onContinue={() => { setShowQuit(false); setPaused(false); }}
-          onSaveAndQuit={() => { autoSave(); navigate(-1); }}
-          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }}
+          onSaveAndQuit={() => { autoSave(); navigate("/raetsel/perlentaucher/lobby", { replace: true }); }}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/perlentaucher/lobby", { replace: true }); }}
         />
       )}
     </div>

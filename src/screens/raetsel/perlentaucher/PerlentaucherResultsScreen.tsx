@@ -49,16 +49,16 @@ export default function PerlentaucherResultsScreen() {
   const stars = starCount(movesLeft);
 
   function goNextLevel() {
-    navigate("/raetsel/perlentaucher/game", { state: { level: level + 1, _instance: Date.now() } });
+    navigate("/raetsel/perlentaucher/game", { state: { level: level + 1, _instance: Date.now() }, replace: true });
   }
 
   function saveAndQuit() {
     if (level < 150) createFreshPerlentaucherSave(level + 1);
-    navigate("/raetsel/perlentaucher/lobby");
+    navigate("/raetsel/perlentaucher/lobby", { replace: true });
   }
 
   function goLobby() {
-    navigate("/raetsel/perlentaucher/lobby");
+    navigate("/raetsel/perlentaucher/lobby", { replace: true });
   }
 
   const starRow = useMemo(() => Array.from({ length: 3 }, (_, i) => i < stars), [stars]);
