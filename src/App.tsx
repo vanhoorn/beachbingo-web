@@ -77,6 +77,9 @@ import MahjongGameScreen from "./screens/mahjong/MahjongGameScreen";
 import MahjongSettingsScreen from "./screens/mahjong/MahjongSettingsScreen";
 import SonnenradLobbyScreen from "./screens/sonnenrad/SonnenradLobbyScreen";
 import SonnenradGameScreen from "./screens/sonnenrad/SonnenradGameScreen";
+import KlontauschLobbyScreen from "./screens/klontausch/KlontauschLobbyScreen";
+import KlontauschGameScreen from "./screens/klontausch/KlontauschGameScreen";
+import KlontauschResultsScreen from "./screens/klontausch/KlontauschResultsScreen";
 
 // Wrapper: forces full remount when navigating to a new/retried level (key changes per instance)
 function PerlentaucherGameKey() {
@@ -186,8 +189,11 @@ function App() {
         <Route path="/mahjong/lobby"    element={loggedIn ? <MahjongLobbyScreen />    : <Navigate to="/login" />} />
         <Route path="/mahjong/game"     element={loggedIn ? <MahjongGameScreen />     : <Navigate to="/login" />} />
         <Route path="/mahjong/settings" element={loggedIn ? <MahjongSettingsScreen /> : <Navigate to="/login" />} />
-        <Route path="/sonnenrad/lobby"  element={loggedIn ? <SonnenradLobbyScreen /> : <Navigate to="/login" />} />
-        <Route path="/sonnenrad/game"   element={loggedIn ? <SonnenradGameScreen />  : <Navigate to="/login" />} />
+        <Route path="/sonnenrad/lobby"     element={loggedIn ? <SonnenradLobbyScreen />    : <Navigate to="/login" />} />
+        <Route path="/sonnenrad/game"      element={loggedIn ? <SonnenradGameScreen />     : <Navigate to="/login" />} />
+        <Route path="/klontausch/lobby"    element={loggedIn ? <KlontauschLobbyScreen />   : <Navigate to="/login" />} />
+        <Route path="/klontausch/game"     element={loggedIn ? <KlontauschGameScreen />    : <Navigate to="/login" />} />
+        <Route path="/klontausch/results"  element={loggedIn ? <KlontauschResultsScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

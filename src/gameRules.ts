@@ -280,6 +280,23 @@ export const GAME_RULES: Record<string, GameRule> = {
     ],
     proTip: "Den Buben (J) aufheben für kritische Momente. Nichts ist befriedigender, als im richtigen Moment die Farbe zu wechseln.",
   },
+  klontausch: {
+    id: "klontausch",
+    title: "Klontausch",
+    emoji: "🃏",
+    color: "#8B5CF6",
+    tagline: "Kopf, Körper, Beine — wer mopst am cleversten?",
+    goal: "Als Erster alle 3 geheimen Zielfiguren (Kopf + Körper + Beine) vollständig auf der Hand halten.",
+    rules: [
+      "Jeder Spieler bekommt 3 geheime Zielfiguren und 9 Karten (je 3 Köpfe, 3 Körper, 3 Beine).",
+      "Am Zug: tippe auf einen Mitspieler, um ihm blind eine Karte zu mopsen.",
+      "Du siehst nie, welche Karte du mopst — erst danach liegt sie auf deiner Hand.",
+      "Der Mitspieler verliert die gemopste Karte; deine Hand wächst um eins.",
+      "Deine Zielkarten sind nur für dich sichtbar — verrate nichts über deinen Fortschritt!",
+      "Wer als Erster alle 3 Zielfiguren vollständig hält (je Kopf, Körper, Beine), gewinnt!",
+    ],
+    proTip: "Beobachte, wie viele Karten die anderen haben — wer viele Karten hält, ist oft nah am Ziel. Mopse gezielt, um ihn zu bremsen!",
+  },
   sonnenrad: {
     id: "sonnenrad",
     title: "Sonnenrad",

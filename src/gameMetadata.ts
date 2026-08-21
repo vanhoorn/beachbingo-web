@@ -207,6 +207,16 @@ export const ALL_GAMES: GameMetadata[] = [
     playerCounts: ["ONE_TWO"],
     genres: ["COUCH"],
   },
+  {
+    id: "klontausch",
+    emoji: "🃏",
+    title: "Klontausch",
+    description: "Tausch Figuren-Teile blind mit anderen — wer als Erstes seine 3 Zielfiguren komplett hat, gewinnt!",
+    color: "#8B5CF6",
+    path: "/klontausch/lobby",
+    playerCounts: ["TWO_FOUR"],
+    genres: ["PARTY", "CARD"],
+  },
 ];
 
 export const CARD_GAMES   = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
