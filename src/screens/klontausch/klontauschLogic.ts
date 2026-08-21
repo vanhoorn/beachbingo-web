@@ -323,6 +323,7 @@ export function offerToFirestore(o: KlonOffer): DocumentData {
     part: o.part,
     committedCardId: o.committedCardId,
     responderIds: o.responderIds,
+    declinedIds: o.declinedIds,
     selectedResponderId: o.selectedResponderId,
     responderCardId: o.responderCardId,
   };
