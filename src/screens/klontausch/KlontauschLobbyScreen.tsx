@@ -47,6 +47,7 @@ export default function KlontauschLobbyScreen() {
   const [step, setStep]           = useState<Step>("mode");
   const [mode, setMode]           = useState<Mode>("ai");
   const [aiCount, setAiCount]     = useState(2);
+  const [difficulty, setDifficulty] = useState("SNIPER");
   const [isFavorite, setIsFavorite] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [klonSave, setKlonSave]   = useState(() => getGameSave("klontausch"));
@@ -85,7 +86,7 @@ export default function KlontauschLobbyScreen() {
 
   function startVsAi() {
     sessionStorage.setItem("klontauschGame", JSON.stringify({
-      mode: "ai", aiCount, myName, myAvatar,
+      mode: "ai", aiCount, difficulty, myName, myAvatar,
     }));
     navigate("/klontausch/game");
   }
@@ -329,6 +330,34 @@ export default function KlontauschLobbyScreen() {
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
               {aiCount + 1} Spieler · {(aiCount + 1) * 3} Figuren · {(aiCount + 1) * 9} Karten
             </div>
+          </div>
+
+          {/* Difficulty picker */}
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-sub)" }}>KI-Schwierigkeit</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {([
+              { id: "ROOKIE",     emoji: "🐣", label: "Rookie",     desc: "Mopst zufällig, keine Strategie" },
+              { id: "SNIPER",     emoji: "🎯", label: "Sniper",     desc: "Taktisch klug, bevorzugt Zielkarten" },
+              { id: "BOSS_LEVEL", emoji: "💀", label: "Boss Level", desc: "Unerbittlich – kennt deine Schwächen" },
+            ] as const).map(d => {
+              const sel = difficulty === d.id;
+              return (
+                <button key={d.id} onClick={() => setDifficulty(d.id)} style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "12px 16px", borderRadius: 8, cursor: "pointer",
+                  border: `2px solid ${sel ? KT_COLOR : "var(--border)"}`,
+                  background: sel ? KT_DIM : "var(--surface)",
+                  textAlign: "left", width: "100%",
+                }}>
+                  <span style={{ fontSize: 22 }}>{d.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>{d.label}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{d.desc}</div>
+                  </div>
+                  {sel && <span style={{ color: KT_COLOR, fontWeight: 700 }}>✓</span>}
+                </button>
+              );
+            })}
           </div>
 
           <button className="btn"

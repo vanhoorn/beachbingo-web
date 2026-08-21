@@ -114,14 +114,16 @@ export function hasWon(player: KlonPlayerState, targetCharacterIds: string[]): b
 
 // ── Game actions ──────────────────────────────────────────────────────────────
 
-export function executeNehmen(state: KlonGameState, activeUid: string): KlonGameState {
-  const idx = state.playerIds.indexOf(activeUid);
-  const leftUid = state.playerIds[(idx - 1 + state.playerIds.length) % state.playerIds.length];
-  const leftP = state.players[leftUid];
-  if (!leftP || leftP.heldCards.length === 0) return state;
+export function executeNehmen(state: KlonGameState, activeUid: string, targetUid?: string): KlonGameState {
+  const effectiveTargetUid = targetUid ?? (() => {
+    const idx = state.playerIds.indexOf(activeUid);
+    return state.playerIds[(idx - 1 + state.playerIds.length) % state.playerIds.length];
+  })();
+  const targetP = state.players[effectiveTargetUid];
+  if (!targetP || targetP.heldCards.length === 0) return state;
 
-  const takenCard = leftP.heldCards[Math.floor(Math.random() * leftP.heldCards.length)];
-  const newLeftCards = leftP.heldCards.filter(c => c.cardId !== takenCard.cardId);
+  const takenCard = targetP.heldCards[Math.floor(Math.random() * targetP.heldCards.length)];
+  const newTargetCards = targetP.heldCards.filter(c => c.cardId !== takenCard.cardId);
   const activeP = state.players[activeUid];
   if (!activeP) return state;
   const newActiveCards = [...activeP.heldCards, takenCard];
@@ -130,7 +132,7 @@ export function executeNehmen(state: KlonGameState, activeUid: string): KlonGame
     ...state,
     players: {
       ...state.players,
-      [leftUid]: { ...leftP, heldCards: newLeftCards, cardCount: newLeftCards.length },
+      [effectiveTargetUid]: { ...targetP, heldCards: newTargetCards, cardCount: newTargetCards.length },
       [activeUid]: { ...activeP, heldCards: newActiveCards, cardCount: newActiveCards.length },
     },
     turnIndex: state.turnIndex + 1,
