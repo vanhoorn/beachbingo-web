@@ -85,6 +85,12 @@ function TargetPager({
     if (w > 0) setCurrentPage(Math.round(pagerRef.current.scrollLeft / w));
   }
 
+  function goToPage(idx: number) {
+    if (!pagerRef.current) return;
+    const clamped = Math.max(0, Math.min(idx, myTargets.length - 1));
+    pagerRef.current.scrollTo({ left: pagerRef.current.clientWidth * clamped, behavior: "smooth" });
+  }
+
   const targetFillCards = useMemo(() => {
     const stockCards = humanHand.filter(c => !myTargets.includes(c.characterId));
     const result: Record<string, Partial<Record<KlonPart, KlonCard | null>>> = {};
@@ -114,14 +120,30 @@ function TargetPager({
     );
   }
 
+  const arrowBtn: React.CSSProperties = {
+    position: "absolute", top: "50%", transform: "translateY(-50%)",
+    zIndex: 2, width: 28, height: 28, borderRadius: 14,
+    background: "rgba(0,0,0,0.45)", border: `1px solid ${KT_COLOR}55`,
+    color: "white", fontSize: 14, cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    userSelect: "none",
+  };
+
   return (
     <div style={{ flex: "0 0 53%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {/* Slides */}
+      {/* Slides + arrows */}
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {myTargets.length > 1 && currentPage > 0 && (
+          <button style={{ ...arrowBtn, left: 2 }} onClick={() => goToPage(currentPage - 1)}>‹</button>
+        )}
+        {myTargets.length > 1 && currentPage < myTargets.length - 1 && (
+          <button style={{ ...arrowBtn, right: 2 }} onClick={() => goToPage(currentPage + 1)}>›</button>
+        )}
       <div
         ref={pagerRef}
         onScroll={handleScroll}
         style={{
-          flex: 1, display: "flex", minHeight: 0,
+          height: "100%", display: "flex",
           overflowX: "auto", scrollSnapType: "x mandatory",
           scrollbarWidth: "none",
         }}
@@ -171,6 +193,7 @@ function TargetPager({
           );
         })}
       </div>
+      </div>{/* end relative wrapper */}
 
       {/* Pager dots */}
       <div style={{
@@ -178,9 +201,10 @@ function TargetPager({
         gap: 4, height: 16, flexShrink: 0,
       }}>
         {myTargets.map((_, i) => (
-          <div key={i} style={{
-            width: 8, height: 8, borderRadius: 4,
+          <div key={i} onClick={() => goToPage(i)} style={{
+            width: i === currentPage ? 16 : 8, height: 8, borderRadius: 4,
             background: i === currentPage ? KT_COLOR : "#3A5070",
+            cursor: "pointer", transition: "width 0.2s",
           }} />
         ))}
       </div>
