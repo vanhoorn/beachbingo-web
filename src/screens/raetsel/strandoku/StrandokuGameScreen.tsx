@@ -119,8 +119,8 @@ export default function StrandokuGameScreen() {
   // Large grids (mega12/mega16/Samurai) break out of the 520px .screen cap to fill the screen
   const isLargeGrid = size > 9;
   // .screen padding: 16px L+R = 32px; board container padding: 8px L+R = 16px; total = 48px horizontal overhead
-  // Subtract 4 more for the 2px grid border on each side so grid+border never exceeds available space
-  const availW = Math.max(160, (isLargeGrid || window.innerWidth > 640) ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48);
+  // For standard grids the .screen is capped at 520px — use that cap, not window.innerWidth
+  const availW = Math.max(160, isLargeGrid ? window.innerWidth - 48 : Math.min(window.innerWidth, 520) - 48);
   const availH = Math.max(160, window.innerHeight - 210);
   const cellPx = Math.max(10, Math.floor((Math.min(availW, availH) - 4) / size));
 
