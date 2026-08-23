@@ -11,7 +11,7 @@ import {
 import type { LayoutId } from "./MahjongLayouts";
 import { LAYOUTS } from "./MahjongLayouts";
 import MahjongBoard from "./MahjongBoard";
-import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import {
@@ -198,38 +198,26 @@ export default function MahjongGameScreen() {
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
 
       {/* Top bar */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "8px 12px",
-        background: "var(--surface)", borderBottom: "1px solid var(--border)",
-        flexShrink: 0,
-      }}>
-        <button onClick={() => setShowQuit(true)} style={{
-          width: 36, height: 36, background: "var(--surface2)",
-          border: "1px solid var(--border)", borderRadius: 8,
-          cursor: "pointer", fontSize: 16, color: "var(--text-muted)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>✕</button>
-
+      <GameHudBar
+        paused={paused}
+        onPauseToggle={() => setPaused(p => !p)}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
         <span style={{ fontSize: 18 }}>{layout.emoji}</span>
-        <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", flex: 1 }}>
-          GezeitenSteine
-        </span>
-
-        {/* Remaining count */}
+        <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", flex: 1 }}>GezeitenSteine</span>
         <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>
           <div style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, color: "var(--text)" }}>{remaining}</div>
           <div>Steine</div>
         </div>
-
-        {/* Timer */}
         {showTimer && (
           <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right", minWidth: 44 }}>
             <div style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, color: ACCENT }}>{formatElapsed(elapsed)}</div>
             <div>Zeit</div>
           </div>
         )}
-      </div>
+      </GameHudBar>
 
       {/* Board area */}
       <div ref={boardAreaRef} style={{ flex: 1, overflow: "hidden", position: "relative" }}>

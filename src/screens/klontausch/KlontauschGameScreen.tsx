@@ -10,7 +10,9 @@ import {
 import type { KlonGameState, KlonCard, KlonPart } from "./klontauschLogic";
 import { klonCharacterById } from "./klontauschCharacterLibrary";
 import { KlontauschCharacterPart, KlontauschSilhouette } from "./KlontauschCharacterPart";
-import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
 import { audioManager } from "../../audio/AudioManager";
 
@@ -406,6 +408,7 @@ export default function KlontauschGameScreen() {
   const [online, setOnline]         = useState<KlonGameState | null>(null);
   const [paused, setPaused]         = useState(false);
   const [showQuit, setShowQuit]     = useState(false);
+  const [showRules, setShowRules]   = useState(false);
   const [events, setEvents]         = useState<KlonEvent[]>([]);
 
   const aiTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -685,42 +688,24 @@ export default function KlontauschGameScreen() {
     }}>
 
       {/* ── Header ── */}
-      <div style={{
-        background: `linear-gradient(135deg, #3b0764 0%, ${KT_COLOR} 100%)`,
-        padding: "8px 12px", flexShrink: 0,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🃏</span>
-          <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 1 }}>KLONTAUSCH</div>
-            <div style={{
-              fontSize: 12, fontWeight: 700,
-              color: isGameOver ? "#f59e0b" : isMyTurn ? "#a78bfa" : "white",
-            }}>
-              {isGameOver
-                ? `${state.players[state.winnerId]?.displayName} gewinnt!`
-                : isMyTurn
-                  ? "Dein Zug"
-                  : `${state.players[currentTurnUid]?.displayName} ist dran`}
-            </div>
+      <GameHudBar
+        paused={paused}
+        onPauseToggle={() => setPaused(p => !p)}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <span style={{ fontSize: 18 }}>🃏</span>
+        <div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: 1 }}>KLONTAUSCH</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: isGameOver ? "var(--accent)" : isMyTurn ? KT_COLOR : "var(--text)" }}>
+            {isGameOver
+              ? `${state.players[state.winnerId]?.displayName} gewinnt!`
+              : isMyTurn
+                ? "Dein Zug"
+                : `${state.players[currentTurnUid]?.displayName} ist dran`}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={() => {}} style={{
-            width: 32, height: 32, borderRadius: 6, fontSize: 14, cursor: "pointer",
-            background: "rgba(255,255,255,0.15)", border: "none", color: "white",
-          }}>ℹ️</button>
-          <button onClick={() => setPaused(p => !p)} style={{
-            width: 32, height: 32, borderRadius: 6, fontSize: 14, cursor: "pointer",
-            background: "rgba(255,255,255,0.15)", border: "none", color: "white",
-          }}>{paused ? "▶" : "⏸"}</button>
-          <button onClick={() => setShowQuit(true)} style={{
-            width: 32, height: 32, borderRadius: 6, fontSize: 14, cursor: "pointer",
-            background: "rgba(220,38,38,0.35)", border: "none", color: "white", fontWeight: 700,
-          }}>✕</button>
-        </div>
-      </div>
+      </GameHudBar>
 
       {paused ? (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -840,6 +825,10 @@ export default function KlontauschGameScreen() {
           onHome={() => navigate("/home", { replace: true })}
           onLobby={() => navigate("/klontausch/lobby", { replace: true })}
         />
+      )}
+
+      {showRules && GAME_RULES["klontausch"] && (
+        <GameRulesModal rule={GAME_RULES["klontausch"]} onClose={() => setShowRules(false)} />
       )}
 
       {/* ── Quit dialog ── */}

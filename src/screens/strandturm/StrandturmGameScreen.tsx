@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
@@ -784,6 +786,7 @@ export default function StrandturmGameScreen() {
   const [bonusTimer, setBonus] = useState(BONUS_START);
   const [paused, setPaused]    = useState(false);
   const [quitDialog, setQuit]  = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [phase, setPhase]      = useState<GS["phase"]>("PLAYING");
 
   const isOver = phase === "GAME_OVER";
@@ -1538,6 +1541,7 @@ export default function StrandturmGameScreen() {
           if (isOver) { navigate("/strandturm/lobby", { replace: true }); return; }
           setPaused(true); setQuit(true);
         }}
+        onShowRules={() => setShowRules(true)}
       >
         <span style={{ fontSize: 14, fontWeight: 700, color: RED }}>{score}</span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Pts</span>
@@ -1631,6 +1635,10 @@ export default function StrandturmGameScreen() {
         <div style={{ padding: "8px 0", fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
           Oben = Springen/Hoch · Mitte = Laufen · Unten = Leiter runter
         </div>
+      )}
+
+      {showRules && GAME_RULES["strandturm"] && (
+        <GameRulesModal rule={GAME_RULES["strandturm"]} onClose={() => setShowRules(false)} />
       )}
 
       {quitDialog && (

@@ -129,6 +129,13 @@ export default function WormSettingsScreen() {
         />
       </div>
 
+      <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+        Musik & Soundeffekte →{" "}
+        <button onClick={() => navigate("/profile")} style={{
+          background: "none", border: "none", color: WORM_GREEN, cursor: "pointer", padding: 0, fontSize: 12,
+        }}>Profil-Einstellungen</button>
+      </div>
+
       {saved && (
         <div style={{
           background: "rgba(34,197,94,0.12)", border: "1px solid var(--success)",

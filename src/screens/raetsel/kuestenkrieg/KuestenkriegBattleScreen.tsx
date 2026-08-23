@@ -7,7 +7,9 @@ import {
 } from "./kuestenkriegBattleLogic";
 import { GRID, FLEET_DEFS } from "./kuestenkriegBattleLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 const ACCENT = "#fb7185";
 const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
@@ -54,6 +56,7 @@ export default function KuestenkriegBattleScreen() {
   const [aiThinking, setAiThinking] = useState(false);
   const [lastHit, setLastHit] = useState<string | null>(null);
   const [showQuit, setShowQuit] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [aiFireCount, setAiFireCount] = useState(0);
 
   useEffect(() => {
@@ -133,8 +136,13 @@ export default function KuestenkriegBattleScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={() => setShowQuit(true)} style={backBtn}>‹</button>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
         <span style={{ fontSize: 24 }}>⚓</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>KÜSTENKRIEG</div>
@@ -152,7 +160,7 @@ export default function KuestenkriegBattleScreen() {
           <div>Du: {myRemaining} ❤️</div>
           <div>KI: {aisRemaining} 💀</div>
         </div>
-      </div>
+      </GameHudBar>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 8px", display: "flex", flexDirection: "column", gap: 14 }}>
 
@@ -226,6 +234,9 @@ export default function KuestenkriegBattleScreen() {
           </div>
         )}
       </div>
+      {showRules && GAME_RULES["kuestenkrieg"] && (
+        <GameRulesModal rule={GAME_RULES["kuestenkrieg"]} onClose={() => setShowRules(false)} />
+      )}
       {showQuit && (
         <GameSaveQuitDialog
           emoji="⚓"
@@ -281,9 +292,3 @@ function GridView(
     </div>
   );
 }
-
-const backBtn: React.CSSProperties = {
-  width: 36, height: 36, flexShrink: 0, background: "var(--surface2)",
-  border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
-  fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)",
-};

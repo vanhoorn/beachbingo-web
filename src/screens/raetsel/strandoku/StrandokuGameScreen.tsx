@@ -7,7 +7,9 @@ import {
   type StrandokuVariant, type StrandokuDifficulty, type StrandokuState, type StrandokuPuzzle,
 } from "./strandokuLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 interface LocationState {
   variant: StrandokuVariant;
@@ -151,25 +153,24 @@ export default function StrandokuGameScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none", ...(isLargeGrid && { maxWidth: "none" }) }}>
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
-        padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={backBtn}>‹</button>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => { setRunning(false); setShowQuit(true); }}
+      >
         <span style={{ fontSize: 22 }}>🔢</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>
             Strandoku · {variant === "classic" ? "9×9" : variant === "mega12" ? "12×12" : variant === "mega16" ? "16×16" : variant.charAt(0).toUpperCase() + variant.slice(1)}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Zeit</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: ACCENT, fontVariantNumeric: "tabular-nums" }}>{formatElapsed(elapsed)}</div>
         </div>
-      </div>
+      </GameHudBar>
 
       {/* Board */}
       <div style={{ display: "flex", justifyContent: "center", padding: "8px 8px 0" }}>
@@ -334,24 +335,8 @@ export default function StrandokuGameScreen() {
         </div>
       )}
 
-      {showHelp && (
-        <div style={overlayStyle}>
-          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
-            <div style={{ fontSize: 24, marginBottom: 4, textAlign: "center" }}>🔢 Strandoku</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: ACCENT, marginBottom: 12, textAlign: "center" }}>{variant === "samurai" ? "Samurai-Sudoku" : variant === "killer" ? "Killer-Sudoku" : variant === "diagonal" ? "Diagonal-Sudoku" : variant === "irregular" ? "Irregular-Sudoku" : variant === "mega12" ? "12×12 Sudoku" : variant === "mega16" ? "16×16 Sudoku" : "Classic Sudoku"}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
-              <div>🔢 Fülle das Gitter so, dass jede Zeile, Spalte {variant === "classic" || variant === "diagonal" || variant === "killer" || variant === "irregular" ? "und jedes 3×3-Feld" : variant === "mega12" ? "und jedes 3×4-Feld" : variant === "mega16" ? "und jedes 4×4-Feld" : "und jedes Sub-Gitter"} jede Zahl genau einmal enthält.</div>
-              {variant === "killer" && <div>➕ Die Zahlen in jedem Käfig müssen die angegebene Summe ergeben. Keine Zahl darf sich im Käfig wiederholen.</div>}
-              {variant === "diagonal" && <div>↗ Zusätzlich müssen auch beide Hauptdiagonalen jede Zahl einmal enthalten.</div>}
-              {variant === "irregular" && <div>🔷 Statt quadratischer Boxen gibt es unregelmäßig geformte Regionen — jede Region muss jede Zahl einmal enthalten.</div>}
-              {variant === "samurai" && <div>🏯 Fünf überlappende 9×9-Sudokus. Die Ecken teilen sich gemeinsame 3×3-Felder.</div>}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippe eine Zelle → dann eine Zahl. Hinweis-Modus: Notizen für mehrere Kandidaten eintragen.</div>
-            </div>
-            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
-              Verstanden!
-            </button>
-          </div>
-        </div>
+      {showHelp && GAME_RULES["strandoku"] && (
+        <GameRulesModal rule={GAME_RULES["strandoku"]} onClose={() => { setShowHelp(false); setRunning(true); }} />
       )}
 
       {showQuit && (
@@ -368,11 +353,6 @@ export default function StrandokuGameScreen() {
   function setGsErase() { setGs(prev => prev ? eraseCell(prev) : prev); }
 }
 
-const backBtn: React.CSSProperties = {
-  width: 36, height: 36, flexShrink: 0, background: "var(--surface2)",
-  border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
-  fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)",
-};
 const ctrlBtn = (color: string): React.CSSProperties => ({
   padding: "9px 14px", background: color + "22", border: `1px solid ${color}55`,
   borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color,

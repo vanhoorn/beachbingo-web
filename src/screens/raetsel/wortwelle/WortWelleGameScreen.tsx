@@ -7,7 +7,9 @@ import {
   type WortWelleDifficulty, type LetterStatus, type GameStatus,
 } from "./wortwelleLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 import { ALL_GAMES } from "../../../gameMetadata";
 
 const ACCENT = "#06b6d4";
@@ -37,13 +39,6 @@ const KEYBOARD_ROWS = [
   ["Y","X","C","V","B","N","M"],
 ];
 
-const RULES_TEXT = [
-  "Errate das versteckte Wort in möglichst wenigen Versuchen.",
-  "🟩 Grün: Buchstabe ist richtig und an der richtigen Stelle.",
-  "🟨 Gelb: Buchstabe ist im Wort, aber an der falschen Stelle.",
-  "⬛ Grau: Buchstabe kommt im Wort nicht vor.",
-  "Umlaute werden ersetzt: Ä→AE, Ö→OE, Ü→UE, ß→SS (z.B. BÖSE = BOESE).",
-];
 
 export default function WortWelleGameScreen() {
   const navigate = useNavigate();
@@ -269,26 +264,25 @@ export default function WortWelleGameScreen() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
       {/* Header */}
-      <div style={{
-        background: "var(--surface)", borderBottom: "1px solid var(--border)",
-        padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
-      }}>
-        <button onClick={() => setShowQuit(true)} style={headerBtnStyle}>‹</button>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20 }}>{GAME_EMOJI}</span>
-          <div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>WortWelle</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>
-              {DIFFICULTY_CONFIG[difficulty].label}
-              {mode === "daily" ? " · Tageswort" : ""}
-              {" · "}{formatElapsed(elapsed)}
-            </div>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+      >
+        <span style={{ fontSize: 20 }}>{GAME_EMOJI}</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>WortWelle</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>
+            {DIFFICULTY_CONFIG[difficulty].label}
+            {mode === "daily" ? " · Tageswort" : ""}
+            {" · "}{formatElapsed(elapsed)}
           </div>
         </div>
         {bestTime !== null && (
           <div style={{ fontSize: 11, color: ACCENT }}>⏱ {formatElapsed(bestTime)}</div>
         )}
-      </div>
+      </GameHudBar>
 
       {/* Fehlermeldung */}
       {errorMsg && (
@@ -452,19 +446,8 @@ export default function WortWelleGameScreen() {
         />
       )}
 
-      {/* Hilfe-Dialog */}
-      {showHelp && (
-        <div style={overlayStyle} onClick={() => { setShowHelp(false); if (gs.gameStatus === "playing") setRunning(true); }}>
-          <div style={{ ...dialogStyle, maxWidth: 380 }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center" }}>
-              <span style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>Spielregeln</span>
-              <button onClick={() => { setShowHelp(false); if (gs.gameStatus === "playing") setRunning(true); }} style={closeBtnStyle}>✕</button>
-            </div>
-            {RULES_TEXT.map((r, i) => (
-              <div key={i} style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 8 }}>{r}</div>
-            ))}
-          </div>
-        </div>
+      {showHelp && GAME_RULES["wortwelle"] && (
+        <GameRulesModal rule={GAME_RULES["wortwelle"]} onClose={() => { setShowHelp(false); if (gs.gameStatus === "playing") setRunning(true); }} />
       )}
 
       {/* Gewinn-Dialog */}
@@ -556,13 +539,6 @@ function ResultDialog({
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const headerBtnStyle: React.CSSProperties = {
-  width: 36, height: 36, flexShrink: 0,
-  background: "var(--surface2)", border: "1px solid var(--border)",
-  borderRadius: 10, cursor: "pointer", fontSize: 18,
-  display: "flex", alignItems: "center", justifyContent: "center",
-  color: "var(--text)",
-};
 
 const ctrlBtn = (color: string): React.CSSProperties => ({
   padding: "9px 14px", background: color + "22", border: `1px solid ${color}55`,
@@ -581,9 +557,3 @@ const dialogStyle: React.CSSProperties = {
   maxHeight: "90vh", overflowY: "auto",
 };
 
-const closeBtnStyle: React.CSSProperties = {
-  background: "var(--surface2)", border: "1px solid var(--border)",
-  borderRadius: 8, width: 30, height: 30, cursor: "pointer",
-  color: "var(--text-muted)", fontSize: 13,
-  display: "flex", alignItems: "center", justifyContent: "center",
-};

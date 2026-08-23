@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
 import { audioManager } from "../../audio/AudioManager";
 import type { SonnenradPhase, SonnenradSymbol } from "./sonnenradLogic";
 import {
@@ -286,6 +287,8 @@ export default function SonnenradGameScreen() {
   const [isBonusRound, setIsBonusRound] = useState(() => isBonusAvailable());
   const [nextBonusMs, setNextBonusMs]   = useState(() => msUntilBonus());
   const [roundPoints, setRoundPoints]   = useState(0);
+  const [showQuit, setShowQuit]         = useState(false);
+  const [showRules, setShowRules]       = useState(false);
 
   const climbRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -404,27 +407,32 @@ export default function SonnenradGameScreen() {
   }
 
   const bonusGlow = isBonusRound ? `0 0 16px ${GOLD}66` : "none";
-  const headerBadge = isBonusRound ? (
-    <div style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${GOLD}33`, color: GOLD, letterSpacing: 0.5 }}>
-      🌟 TAGESBONUS
-    </div>
-  ) : null;
 
   return (
-    <div className="screen" style={{ gap: 20 }}>
+    <div className="screen" style={{ gap: 20, padding: 0 }}>
       <style>{CSS_KEYFRAMES}</style>
 
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button className="btn btn-outline btn-sm"
-          style={{ width: 40, height: 40, padding: 0, fontSize: 20, flexShrink: 0 }}
-          onClick={() => navigate(-1)}>‹</button>
-        <div style={{ fontSize: 28, lineHeight: 1 }}>☀️</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>Sonnenrad</div>
-          {headerBadge}
+      <GameHudBar
+        showPause={false}
+        paused={false}
+        onPauseToggle={() => {}}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <div style={{ fontSize: 22, lineHeight: 1 }}>☀️</div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: 1.5 }}>TAGESBONUS</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Sonnenrad</div>
         </div>
-      </div>
+        {isBonusRound && (
+          <div style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${GOLD}33`, color: GOLD, letterSpacing: 0.5 }}>
+            🌟 BONUS
+          </div>
+        )}
+      </GameHudBar>
+
+      <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/* ── BONUS_READY ──────────────────────────────────────────────────────── */}
       {phase === "BONUS_READY" && (
@@ -556,10 +564,36 @@ export default function SonnenradGameScreen() {
           <button className="btn btn-primary" style={{ background: "#0ea5e9", fontWeight: 800 }} onClick={handleReset}>
             Nochmal spielen
           </button>
-          <button className="btn btn-outline" onClick={() => navigate(-1)}>
+          <button className="btn btn-outline" onClick={() => setShowQuit(true)}>
             Zurück
           </button>
         </>
+      )}
+      </div>
+
+      {showQuit && (
+        <QuitConfirmDialog
+          emoji="☀️"
+          message="Das Sonnenrad-Spiel wird beendet."
+          onConfirm={() => navigate(-1)}
+          onDismiss={() => setShowQuit(false)}
+        />
+      )}
+      {showRules && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+          <div style={{ background: "var(--surface)", borderRadius: 20, padding: "28px 24px", maxWidth: 360, width: "90%", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 32, textAlign: "center" }}>☀️</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", textAlign: "center" }}>Sonnenrad — Regeln</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
+              <p><strong style={{ color: "var(--text)" }}>Ziel:</strong> Dreimal täglich Bonuskarten ziehen und auf der Leiter aufsteigen.</p>
+              <p><strong style={{ color: "var(--text)" }}>Symbole:</strong> Sonne ☀️, Welle 🌊, Palme 🌴, Muschel 🐚, Sonnenschirm ⛱</p>
+              <p><strong style={{ color: "var(--text)" }}>Treffer:</strong> 2× oder 3× gleiches Symbol = Einstieg auf der Leiter.</p>
+              <p><strong style={{ color: "var(--text)" }}>Klettern:</strong> Tippe "Jetzt!" genau wenn der Balken oben leuchtet, um aufzusteigen.</p>
+              <p><strong style={{ color: "var(--text)" }}>Einsammeln:</strong> Nimm deine Punkte vor dem Klettern — oder riskiere einen Fehlschlag.</p>
+            </div>
+            <button className="btn btn-outline" style={{ marginTop: 4 }} onClick={() => setShowRules(false)}>Schließen</button>
+          </div>
+        </div>
       )}
     </div>
   );

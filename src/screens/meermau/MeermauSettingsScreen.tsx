@@ -101,6 +101,13 @@ export default function MeermauSettingsScreen() {
         >
           {saving ? "Speichere…" : saved ? "✓ Gespeichert" : "Einstellungen speichern"}
         </button>
+
+        <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>
+          Musik & Soundeffekte →{" "}
+          <button onClick={() => navigate("/profile")} style={{
+            background: "none", border: "none", color: VIOLET, cursor: "pointer", padding: 0, fontSize: 12,
+          }}>Profil-Einstellungen</button>
+        </div>
       </div>
     </div>
   );

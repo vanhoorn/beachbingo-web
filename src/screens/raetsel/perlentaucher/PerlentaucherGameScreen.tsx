@@ -9,7 +9,9 @@ import {
   savePuzzle, deletePuzzleSave, generateSaveId,
   getBestPerlentaucherScore, saveBestPerlentaucherScore, saveHighestPerlentaucherLevel,
 } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 interface LocationState {
   level: number;
@@ -60,6 +62,7 @@ export default function PerlentaucherGameScreen() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [paused, setPaused] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [newBest, setNewBest] = useState(false);
@@ -287,16 +290,16 @@ export default function PerlentaucherGameScreen() {
         }
       `}</style>
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
-        padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <button onClick={() => { setPaused(true); setShowQuit(true); }} style={backBtn}>‹</button>
+      <GameHudBar
+        paused={paused}
+        onPauseToggle={() => setPaused(p => !p)}
+        showPause={false}
+        onQuit={() => { setPaused(true); setShowQuit(true); }}
+        onShowRules={() => setShowRules(true)}
+      >
         <span style={{ fontSize: 22 }}>🤿</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>
-            Perlentaucher · Level {level}
-          </div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>Perlentaucher · Level {level}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: ACCENT }}>{score.toLocaleString()} Pkt.</span>
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Ziel: {targetScore.toLocaleString()}</span>
@@ -304,11 +307,9 @@ export default function PerlentaucherGameScreen() {
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Züge</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: movesLeft <= 5 ? "var(--danger)" : "var(--text)", fontVariantNumeric: "tabular-nums" }}>
-            {movesLeft}
-          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: movesLeft <= 5 ? "var(--danger)" : "var(--text)", fontVariantNumeric: "tabular-nums" }}>{movesLeft}</div>
         </div>
-      </div>
+      </GameHudBar>
 
       {/* Progress bar */}
       <div style={{ height: 4, background: "var(--surface2)", position: "relative" }}>
@@ -452,6 +453,10 @@ export default function PerlentaucherGameScreen() {
             </button>
           </div>
         </div>
+      )}
+
+      {showRules && GAME_RULES["perlentaucher"] && (
+        <GameRulesModal rule={GAME_RULES["perlentaucher"]} onClose={() => setShowRules(false)} />
       )}
 
       {showQuit && (
@@ -633,11 +638,6 @@ function darken(hex: string, amount: number): string {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const backBtn: React.CSSProperties = {
-  width: 36, height: 36, flexShrink: 0, background: "var(--surface2)",
-  border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
-  fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)",
-};
 const ctrlBtn = (color: string): React.CSSProperties => ({
   padding: "9px 20px", background: color + "22", border: `1px solid ${color}55`,
   borderRadius: 8, cursor: "pointer", fontSize: 15, fontWeight: 700, color,

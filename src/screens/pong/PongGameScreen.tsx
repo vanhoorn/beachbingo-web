@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../firebase";
-import { QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
 
@@ -628,6 +630,7 @@ export default function PongGameScreen() {
   const manualPausedRef = useRef(false);
   const [manualPaused, setManualPaused] = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   function handleManualPause() {
     const next = !manualPausedRef.current;
@@ -670,13 +673,13 @@ export default function PongGameScreen() {
     <div style={{ background: "#0a1628", height: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none" }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", padding: "12px 16px 8px", borderBottom: "1px solid #1e3050", flexShrink: 0, gap: 8 }}>
-        <button onClick={() => navigate("/pong/lobby", { replace: true })} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}>
-          ‹ Lobby
-        </button>
-
-        {/* Scores */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflowX: "auto" }}>
+      <GameHudBar
+        paused={manualPaused}
+        onPauseToggle={handleManualPause}
+        onQuit={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
+        onShowRules={() => setShowRules(true)}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflowX: "auto", width: "100%" }}>
           {activeSides.map((side, i) => (
             <div key={side} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {i > 0 && <span style={{ color: "#1e3050", fontWeight: 900 }}>·</span>}
@@ -691,24 +694,7 @@ export default function PongGameScreen() {
             </div>
           ))}
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button
-            onClick={handleManualPause}
-            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", padding: "4px 6px", lineHeight: 1 }}
-            title={manualPaused ? "Weiterspielen" : "Pause"}
-          >
-            {manualPaused ? "▶" : "⏸"}
-          </button>
-          <button
-            onClick={() => { setManualPaused(true); manualPausedRef.current = true; setShowQuitDialog(true); }}
-            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer", padding: "4px 6px", lineHeight: 1 }}
-            title="Beenden"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
+      </GameHudBar>
 
       {/* Canvas */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "4px 4px 0" }}>
@@ -812,6 +798,10 @@ export default function PongGameScreen() {
             }}>Lobby</button>
           </div>
         </div>
+      )}
+
+      {showRules && GAME_RULES["pong"] && (
+        <GameRulesModal rule={GAME_RULES["pong"]} onClose={() => setShowRules(false)} />
       )}
 
       {hostGone && !loser && (

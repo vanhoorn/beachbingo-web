@@ -6,6 +6,8 @@ import { auth, db } from "../firebase";
 import type { BingoGame, BingoPlayer } from "../types";
 import { flatToGrid } from "./LobbyScreen";
 import { GameHudBar, QuitConfirmDialog } from "../components/GameHudBar";
+import GameRulesModal from "../components/GameRulesModal";
+import { GAME_RULES } from "../gameRules";
 import { audioManager } from "../audio/AudioManager";
 
 function checkBingo(marked: number[], flatGrid: number[]): boolean {
@@ -188,6 +190,7 @@ export default function GameScreen() {
   const drumRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elimRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [showRules, setShowRules]            = useState(false);
 
   useEffect(() => {
     if (!gameId) return;
@@ -618,15 +621,20 @@ export default function GameScreen() {
       {/* HUD bar */}
       {game.status === "RUNNING" && (
         <GameHudBar
+          showPause={false}
           paused={false}
           onPauseToggle={() => {}}
           onQuit={() => setShowQuitDialog(true)}
-          pauseDisabled={true}
+          onShowRules={() => setShowRules(true)}
         >
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
             {game.players.length} Spieler · {game.drawnNumbers.length} Zahlen
           </div>
         </GameHudBar>
+      )}
+
+      {showRules && GAME_RULES["bingo"] && (
+        <GameRulesModal rule={GAME_RULES["bingo"]} onClose={() => setShowRules(false)} />
       )}
 
       {showQuitDialog && (

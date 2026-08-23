@@ -10,7 +10,9 @@ import {
 } from "./meermauLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
-import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { PlayingCard, SuitIcon, SUIT_COLORS, SUIT_NAMES } from "../../components/PlayingCard";
 import { CardFanRow } from "../../components/CardFanRow";
 
@@ -375,6 +377,7 @@ export default function MeermauGameScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
   const writeOnlineState = async (newSt: LocalState) => {
@@ -725,13 +728,14 @@ export default function MeermauGameScreen() {
   return (
     <div className="screen" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
       {/* Header */}
-      <div style={{
-        padding: "10px 14px", display: "flex", alignItems: "center", gap: 12,
-        background: "var(--surface)", borderBottom: "1px solid var(--border)", flexShrink: 0,
-      }}>
-        <button className="btn btn-outline btn-sm" style={{ width: 36, padding: 0, fontSize: 16 }}
-          onClick={() => setShowQuit(true)}>‹</button>
-        <div style={{ flex: 1 }}>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <div>
           <div style={{ fontWeight: 800, fontSize: 17, color: VIOLET }}>MeerMau</div>
           <div style={{ fontSize: 11, color: "var(--text-sub)" }}>Runde {st?.round ?? 1}</div>
         </div>
@@ -742,7 +746,7 @@ export default function MeermauGameScreen() {
         )}
         <button
           className="btn btn-outline btn-sm"
-          style={{ width: 36, padding: 0, fontSize: 16, position: "relative" }}
+          style={{ width: 36, padding: 0, fontSize: 16, position: "relative", marginLeft: "auto" }}
           onClick={() => setShowHistory(true)}
           title="Spielverlauf"
         >
@@ -756,7 +760,7 @@ export default function MeermauGameScreen() {
             }}>{st.moveLog.length > 99 ? "99+" : st.moveLog.length}</span>
           )}
         </button>
-      </div>
+      </GameHudBar>
 
       {st ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "10px 12px", gap: 10, overflow: "hidden" }}>
@@ -1143,6 +1147,10 @@ export default function MeermauGameScreen() {
             )}
           </div>
         </div>
+      )}
+
+      {showRules && GAME_RULES["meermau"] && (
+        <GameRulesModal rule={GAME_RULES["meermau"]} onClose={() => setShowRules(false)} />
       )}
 
       {/* ── Quit dialog (AI: save dialog; Online: custom leave dialog) ── */}

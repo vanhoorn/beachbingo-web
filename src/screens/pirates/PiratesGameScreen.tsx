@@ -4,6 +4,8 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { PiratesDifficulty } from "../../types";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
@@ -227,6 +229,7 @@ export default function PiratesGameScreen() {
   const [uiFiring, setUiFiring] = useState(BASE_FIRING[difficulty]);
   const [paused,  setPaused]            = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [showRules, setShowRules]            = useState(false);
 
   // Keep pausedRef in sync (game loop reads ref, not state)
   function setPausedSync(val: boolean) {
@@ -611,6 +614,7 @@ export default function PiratesGameScreen() {
         onPauseToggle={handlePause}
         onQuit={handleQuitRequest}
         pauseDisabled={uiPhase === "game_over"}
+        onShowRules={() => setShowRules(true)}
       >
         <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flex: 1 }}>
           <div>
@@ -686,6 +690,10 @@ export default function PiratesGameScreen() {
         <button className="btn btn-outline btn-sm" onClick={() => navigate("/pirates/lobby", { replace: true })}>
           ‹ Zurück zur Lobby
         </button>
+      )}
+
+      {showRules && GAME_RULES["pirates"] && (
+        <GameRulesModal rule={GAME_RULES["pirates"]} onClose={() => setShowRules(false)} />
       )}
 
       {showQuitDialog && (

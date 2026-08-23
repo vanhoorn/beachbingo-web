@@ -5,6 +5,8 @@ import { auth, db } from "../../firebase";
 import type { VierDifficulty, VierGame } from "../../types";
 import { DrinkPiece, getDrink } from "./drinkIcons";
 import { GameHudBar, QuitConfirmDialog, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
 
@@ -396,6 +398,7 @@ export default function VierGameScreen() {
   const gameOver = winner !== null || draw;
 
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   function handleDrop(col: number) {
     if (gameOver) return;
@@ -418,15 +421,17 @@ export default function VierGameScreen() {
   return (
     <div className="screen" style={{ gap: 16, alignItems: "center" }}>
 
-      {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/vier/lobby", { replace: true })}>
-          ‹ Lobby
-        </button>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-muted)" }}>
-          {isAiMode ? "vs KI" : `Code: ${gameId}`}
+      <GameHudBar
+        showPause={false}
+        paused={false}
+        onPauseToggle={() => {}}
+        onQuit={() => setShowQuitDialog(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+          {gameOver ? "Spiel beendet" : myTurn ? "Du bist dran" : "Gegner denkt..."}
         </div>
-      </div>
+      </GameHudBar>
 
       {/* Player indicators */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
@@ -599,17 +604,6 @@ export default function VierGameScreen() {
         </div>
       )}
 
-      <GameHudBar
-        paused={false}
-        onPauseToggle={() => {}}
-        onQuit={() => setShowQuitDialog(true)}
-        pauseDisabled={true}
-      >
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-          {gameOver ? "Spiel beendet" : myTurn ? "Du bist dran" : "Gegner denkt..."}
-        </div>
-      </GameHudBar>
-
       {showQuitDialog && isAiMode && !gameOver && (
         <GameSaveQuitDialog
           emoji="🍺"
@@ -626,6 +620,10 @@ export default function VierGameScreen() {
           onConfirm={() => navigate("/vier/lobby", { replace: true })}
           onDismiss={() => setShowQuitDialog(false)}
         />
+      )}
+
+      {showRules && GAME_RULES["vier"] && (
+        <GameRulesModal rule={GAME_RULES["vier"]} onClose={() => setShowRules(false)} />
       )}
 
       <style>{`

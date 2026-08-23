@@ -11,7 +11,9 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@types/howler": "^2.2.13",
     "firebase": "^12.15.0",
+    "howler": "^2.2.4",
     "jsqr": "^1.4.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.7",

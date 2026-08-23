@@ -4,7 +4,9 @@ interface GameHudBarProps {
   paused: boolean;
   onPauseToggle: () => void;
   onQuit: () => void;
+  showPause?: boolean;
   pauseDisabled?: boolean;
+  onShowRules?: () => void;
   children?: ReactNode;
 }
 
@@ -12,7 +14,9 @@ export function GameHudBar({
   paused,
   onPauseToggle,
   onQuit,
+  showPause = true,
   pauseDisabled = false,
+  onShowRules,
   children,
 }: GameHudBarProps) {
   const btnBase: CSSProperties = {
@@ -26,29 +30,47 @@ export function GameHudBar({
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
       padding: "6px 8px",
-      background: "var(--surface)", borderTop: "1px solid var(--border)",
+      background: "var(--surface)", borderBottom: "1px solid var(--border)",
     }}>
       {/* Game-specific info */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
         {children}
       </div>
 
+      {/* Rules */}
+      {onShowRules && (
+        <button
+          onClick={onShowRules}
+          title="Regeln"
+          style={{
+            ...btnBase,
+            background: "rgba(255,255,255,0.05)",
+            borderColor: "var(--border)",
+            color: "var(--text-muted)",
+          }}
+        >
+          ℹ
+        </button>
+      )}
+
       {/* Pause / Play */}
-      <button
-        onClick={onPauseToggle}
-        disabled={pauseDisabled}
-        title="Pause"
-        style={{
-          ...btnBase,
-          background: paused ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)",
-          borderColor: paused ? "var(--primary)" : "var(--border)",
-          color: paused ? "var(--primary)" : "var(--text-muted)",
-          opacity: pauseDisabled ? 0.4 : 1,
-          cursor: pauseDisabled ? "default" : "pointer",
-        }}
-      >
-        {paused ? "▶" : "⏸"}
-      </button>
+      {showPause && (
+        <button
+          onClick={onPauseToggle}
+          disabled={pauseDisabled}
+          title="Pause"
+          style={{
+            ...btnBase,
+            background: paused ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)",
+            borderColor: paused ? "var(--primary)" : "var(--border)",
+            color: paused ? "var(--primary)" : "var(--text-muted)",
+            opacity: pauseDisabled ? 0.4 : 1,
+            cursor: pauseDisabled ? "default" : "pointer",
+          }}
+        >
+          {paused ? "▶" : "⏸"}
+        </button>
+      )}
 
       {/* Quit */}
       <button

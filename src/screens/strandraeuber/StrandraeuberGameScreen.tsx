@@ -10,7 +10,9 @@ import {
 import type { SpDifficulty } from "./strandraeuberLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
-import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 
 const SP_COLOR = "#e11d48";
 const SP_DIM   = "rgba(225,29,72,0.12)";
@@ -302,6 +304,7 @@ export default function StrandraeuberGameScreen() {
   // UI state
   const [selectedFanIndex, setSelectedFanIndex] = useState<number | null>(null);
   const [showQuit, setShowQuit]   = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const aiTimeoutRef              = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pairRevealTimeoutRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -657,31 +660,24 @@ export default function StrandraeuberGameScreen() {
       gap: 0,
     }}>
       {/* ── Header ── */}
-      <div style={{
-        background: `linear-gradient(135deg, #7a0f27 0%, ${SP_COLOR} 100%)`,
-        padding: "10px 14px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🦹</span>
-          <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 1, textTransform: "uppercase" }}>Strandräuber</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>
-              Runde {gs.roundNumber}/{gs.totalRounds}
-            </div>
-          </div>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <span style={{ fontSize: 18 }}>🦹</span>
+        <div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>Strandräuber</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Runde {gs.roundNumber}/{gs.totalRounds}</div>
         </div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", flex: 1, textAlign: "center", padding: "0 8px" }}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", flex: 1, textAlign: "center", padding: "0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {(gs.phase === "PLAYING" && drawer?.isAI)
             ? `${drawer?.displayName ?? "KI"} überlegt…`
             : gs.lastActionText}
         </div>
-        <button onClick={() => setShowQuit(true)} style={{
-          background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 6,
-          width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "white", flexShrink: 0,
-        }}>✕</button>
-      </div>
+      </GameHudBar>
 
       {/* ── Opponents area (green table feel) ── */}
       <div style={{
@@ -815,6 +811,10 @@ export default function StrandraeuberGameScreen() {
           onHome={() => navigate("/home", { replace: true })}
           onLobby={() => navigate("/strandraeuber/lobby", { replace: true })}
         />
+      )}
+
+      {showRules && GAME_RULES["strandraeuber"] && (
+        <GameRulesModal rule={GAME_RULES["strandraeuber"]} onClose={() => setShowRules(false)} />
       )}
 
       {/* ── Quit dialog ── */}

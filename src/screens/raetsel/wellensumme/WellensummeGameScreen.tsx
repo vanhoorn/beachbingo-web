@@ -6,7 +6,9 @@ import {
   type KakuroDifficulty, type KakuroState,
 } from "./wellensummeLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 interface LocationState {
   difficulty: KakuroDifficulty;
@@ -81,8 +83,12 @@ export default function WellensummeGameScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none" }}>
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={backBtn}>‹</button>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => { setRunning(false); setShowQuit(true); }}
+      >
         <span style={{ fontSize: 22 }}>➕</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>WellenSumme</div>
@@ -92,7 +98,7 @@ export default function WellensummeGameScreen() {
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Zeit</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: ACCENT, fontVariantNumeric: "tabular-nums" }}>{formatElapsed(elapsed)}</div>
         </div>
-      </div>
+      </GameHudBar>
 
       <div style={{ padding: "6px 16px", fontSize: 11, color: "var(--text-muted)", background: "var(--surface)" }}>
         Fülle die weißen Felder mit 1–9. Keine Wiederholung in einem Lauf. Zahl oben-rechts = senkrechte Summe, unten-links = waagerechte Summe.
@@ -192,22 +198,8 @@ export default function WellensummeGameScreen() {
         </div>
       )}
 
-      {showHelp && (
-        <div style={overlayStyle}>
-          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>🌊 Kakuro</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Wellensumme — Regeln</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
-              <div>🔢 Fülle alle weißen Zellen mit Zahlen von 1–9.</div>
-              <div>➕ Jeder Zahlenblock muss genau die angegebene Summe ergeben — die schwarzen Felder zeigen sie an (oben = vertikal, unten = horizontal).</div>
-              <div>🚫 Innerhalb eines Blocks darf jede Zahl nur einmal vorkommen.</div>
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippe eine Zelle → dann eine Zahl (1–9). Leertaste/0 löscht die Zelle.</div>
-            </div>
-            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...ctrlBtn(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
-              Verstanden!
-            </button>
-          </div>
-        </div>
+      {showHelp && GAME_RULES["wellensumme"] && (
+        <GameRulesModal rule={GAME_RULES["wellensumme"]} onClose={() => { setShowHelp(false); setRunning(true); }} />
       )}
 
       {showQuit && (
@@ -222,7 +214,7 @@ export default function WellensummeGameScreen() {
   );
 }
 
-const backBtn: React.CSSProperties = { width: 36, height: 36, flexShrink: 0, background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text)" };
+
 const ctrlBtn = (color: string): React.CSSProperties => ({ padding: "9px 14px", background: color + "22", border: `1px solid ${color}55`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color });
 const overlayStyle: React.CSSProperties = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 };
 const dialogStyle: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, padding: "28px 24px", maxWidth: 320, width: "90%", textAlign: "center" };

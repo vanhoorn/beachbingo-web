@@ -4,6 +4,8 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import type { WormDifficulty } from "../../types";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, getGameSave, generateGameSaveId } from "../../gameSave";
 
@@ -94,6 +96,7 @@ export default function WormGameScreen() {
   const [paused, setPaused]             = useState(false);
   const [dead, setDead]                 = useState(false);
   const [quitDialog, setQuitDialog]     = useState(false);
+  const [showRules, setShowRules]        = useState(false);
   const [finalHighScore, setFinalHS]    = useState(0);
   const [isNewHighScore, setIsNewHS]    = useState(false);
 
@@ -429,6 +432,7 @@ export default function WormGameScreen() {
           setPaused(true);
           setQuitDialog(true);
         }}
+        onShowRules={() => setShowRules(true)}
       >
         <span style={{ fontSize: 14, fontWeight: 700, color: WORM_GREEN }}>{score}</span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Pts</span>
@@ -455,6 +459,10 @@ export default function WormGameScreen() {
           <button style={btnStyle} onClick={() => changeDir(0, 1)}>▼</button>
           <div />
         </div>
+      )}
+
+      {showRules && GAME_RULES["worm"] && (
+        <GameRulesModal rule={GAME_RULES["worm"]} onClose={() => setShowRules(false)} />
       )}
 
       {quitDialog && (

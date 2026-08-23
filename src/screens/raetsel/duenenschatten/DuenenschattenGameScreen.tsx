@@ -6,7 +6,9 @@ import {
   type HitoriDifficulty, type HitoriState, type CellMark,
 } from "./duenenschattenLogic";
 import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTime, formatElapsed } from "../../../puzzleSave";
-import { GameSaveQuitDialog } from "../../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
+import GameRulesModal from "../../../components/GameRulesModal";
+import { GAME_RULES } from "../../../gameRules";
 
 interface LocationState {
   difficulty: HitoriDifficulty;
@@ -106,28 +108,22 @@ export default function DuenenschattenGameScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, userSelect: "none" }}>
       {/* Header */}
-      <div style={{
-        background: `linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)`,
-        padding: "14px 16px",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <button onClick={() => { setRunning(false); setShowQuit(true); }} style={backBtnStyle}>‹</button>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => { setRunning(false); setShowQuit(true); }}
+      >
         <span style={{ fontSize: 24 }}>◼</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>
-            DünenSchatten
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
-            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} · {size}×{size}
-          </div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>DünenSchatten</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} · {size}×{size}</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Zeit</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: ACCENT, fontVariantNumeric: "tabular-nums" }}>
-            {formatElapsed(elapsed)}
-          </div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: ACCENT, fontVariantNumeric: "tabular-nums" }}>{formatElapsed(elapsed)}</div>
         </div>
-      </div>
+      </GameHudBar>
 
       {/* Rules reminder */}
       <div style={{ padding: "8px 16px", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, background: "var(--surface)" }}>
@@ -229,22 +225,8 @@ export default function DuenenschattenGameScreen() {
         </div>
       )}
 
-      {showHelp && (
-        <div style={overlayStyle}>
-          <div style={{ ...dialogStyle, textAlign: "left", maxWidth: 360 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, textAlign: "center" }}>🏖️ Hitori</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 12, textAlign: "center" }}>Dünenschatten — Regeln</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
-              <div>⬛ Schwärze Zellen so, dass jede Zahl in jeder Zeile und Spalte maximal einmal vorkommt.</div>
-              <div>🚫 Zwei schwarze Zellen dürfen nicht waagerecht oder senkrecht nebeneinander stehen.</div>
-              <div>🔗 Alle weißen Zellen müssen ein zusammenhängendes Gebiet bilden.</div>
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, fontSize: 12 }}>Tippen = schwärzen / weiß lassen. Gehalten halten = als weiß markieren (Kreis).</div>
-            </div>
-            <button onClick={() => { setShowHelp(false); setRunning(true); }} style={{ ...controlBtnStyle(ACCENT), width: "100%", padding: "12px 0", marginTop: 20, textAlign: "center" }}>
-              Verstanden!
-            </button>
-          </div>
-        </div>
+      {showHelp && GAME_RULES["duenenschatten"] && (
+        <GameRulesModal rule={GAME_RULES["duenenschatten"]} onClose={() => { setShowHelp(false); setRunning(true); }} />
       )}
 
       {/* Quit dialog */}
@@ -323,13 +305,6 @@ function HitoriCell({
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const backBtnStyle: React.CSSProperties = {
-  width: 36, height: 36, flexShrink: 0,
-  background: "var(--surface2)", border: "1px solid var(--border)",
-  borderRadius: 10, cursor: "pointer", fontSize: 20,
-  display: "flex", alignItems: "center", justifyContent: "center",
-  color: "var(--text)",
-};
 
 const controlBtnStyle = (color: string): React.CSSProperties => ({
   padding: "10px 16px",

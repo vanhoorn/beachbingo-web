@@ -1,7 +1,10 @@
 // Central audio system — one instance shared across all games.
-// Games call audioManager.playSound(id) and audioManager.startMusic(track).
-// Global toggles (soundEnabled / musicEnabled) live in Firestore users/{uid}
-// and are loaded once at login by App.tsx via setSound() / setMusic().
+// Music: Howler.js loads /audio/music/{trackId}.mp3 (or .ogg).
+//   If the file is missing, falls back automatically to Web Audio API synthesis.
+// SFX:  Web Audio API synthesis (instant, no files needed).
+// Drop real audio files into /public/audio/music/ to activate Howler playback.
+
+import { Howl } from "howler";
 
 export type SoundId =
   | "jump"
@@ -161,7 +164,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_deal: (ctx) => {
-    // Soft paper rustle
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.5) * 0.5;
@@ -175,7 +177,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_draw: (ctx) => {
-    // Slide sound
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (i / d.length) * (1 - i / d.length) * 2;
@@ -189,7 +190,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_place: (ctx) => {
-    // Soft thud on table
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "sine"; osc.frequency.setValueAtTime(200, ctx.currentTime);
@@ -197,7 +197,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
     g.gain.setValueAtTime(0.3, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
-    // Paper layer
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) * 0.3;
@@ -207,7 +206,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_knock: (ctx) => {
-    // Table knock — two short thumps
     [0, 0.18].forEach(offset => {
       const osc = ctx.createOscillator(); const g = ctx.createGain();
       osc.connect(g); g.connect(ctx.destination);
@@ -220,7 +218,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_select: (ctx) => {
-    // Soft tick
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "sine"; osc.frequency.value = 880;
@@ -230,7 +227,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_feuer: (ctx) => {
-    // Dramatic fanfare — Feuer/Blitz!
     [523, 659, 784, 1047, 1319].forEach((freq, i) => {
       const osc = ctx.createOscillator(); const g = ctx.createGain();
       osc.connect(g); g.connect(ctx.destination);
@@ -243,7 +239,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   card_shuffle: (ctx) => {
-    // White-noise burst filtered to bandpass — sounds like cards being shuffled
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.3), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) * 0.4;
@@ -257,7 +252,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   pair_discard: (ctx) => {
-    // Ascending 2-tone chord — success sound
     [523, 659].forEach((freq, i) => {
       const osc = ctx.createOscillator(); const g = ctx.createGain();
       osc.connect(g); g.connect(ctx.destination);
@@ -271,7 +265,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   turn_ping: (ctx) => {
-    // Short high ping — your turn!
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "sine"; osc.frequency.value = 880;
@@ -281,7 +274,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   sp_gameover: (ctx) => {
-    // Dramatic descending — you lost with the Strandräuber
     [440, 392, 349, 294, 261, 196, 146].forEach((freq, i) => {
       const osc = ctx.createOscillator(); const g = ctx.createGain();
       osc.connect(g); g.connect(ctx.destination);
@@ -295,7 +287,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
 
   // ── Sonnenrad ──────────────────────────────────────────────────────────────
   sr_reveal: (ctx) => {
-    // Card flip reveal — 660 Hz square burst
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "square"; osc.frequency.value = 660;
@@ -305,7 +296,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   sr_step_up: (ctx) => {
-    // Ladder step secured — 784 Hz square burst
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "square"; osc.frequency.value = 784;
@@ -315,7 +305,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   sr_secure: (ctx) => {
-    // Round finished with points — 988 Hz square burst (celebratory)
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "square"; osc.frequency.value = 988;
@@ -325,7 +314,6 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 
   sr_tick: (ctx) => {
-    // Climbing marker toggle — 440 Hz square very short
     const osc = ctx.createOscillator(); const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
     osc.type = "square"; osc.frequency.value = 440;
@@ -335,7 +323,7 @@ const SOUNDS: Record<SoundId, SoundDef> = {
   },
 };
 
-// Note sequences: [frequency_hz, duration_seconds], 0 = rest
+// ── Synthesis fallback tracks ─────────────────────────────────────────────────
 type Note = [number, number];
 
 type TrackConfig = {
@@ -403,7 +391,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     gain: 0.07,
   },
 
-  // Caribbean Calypso, F major, ~96 BPM — steel drum feel (sine melody + triangle bass)
   bingo: {
     notes: [
       [0, 0.31], [440, 0.31], [0, 0.31], [523.25, 0.63], [466.16, 0.31], [440, 0.63],
@@ -433,7 +420,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     },
   },
 
-  // Electronic Synthwave, D minor, ~128 BPM — driving arpeggios (square melody + square bass)
   pong: {
     notes: [
       [293.66, 0.23], [440, 0.23], [523.25, 0.23], [587.33, 0.23], [523.25, 0.47], [0, 0.23], [587.33, 0.23],
@@ -463,7 +449,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     },
   },
 
-  // Maritime sea shanty, A minor, ~96 BPM — oceanic flowing feel (sine melody + triangle bass)
   brandung: {
     notes: [
       [659, 0.31], [587, 0.31], [523, 0.63], [440, 0.63], [0, 0.31],
@@ -491,7 +476,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     },
   },
 
-  // Detektiv / Mystery style, A minor, ~88 BPM — staccato triangle wave, sneaky chromatic line
   strandraeuber: {
     notes: [
       [440, 0.14], [0, 0.09], [466, 0.14], [0, 0.09], [440, 0.14], [0, 0.09], [415, 0.14], [0, 0.09],
@@ -522,7 +506,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     },
   },
 
-  // Pentatonic zen, C pentatonic, ~80 BPM — contemplative sine melody + triangle bass
   mahjong: {
     notes: [
       [392, 0.38], [440, 0.38], [523, 0.75], [440, 0.38], [0, 0.38],
@@ -552,7 +535,6 @@ const TRACKS: Record<TrackId, TrackConfig> = {
     },
   },
 
-  // German folk / Wirtshaus, G major, ~104 BPM — singable melody (triangle + sine bass)
   vier: {
     notes: [
       [392, 0.58], [440, 0.29], [493.88, 0.29], [523.25, 0.58], [0, 0.58],
@@ -585,10 +567,16 @@ const TRACKS: Record<TrackId, TrackConfig> = {
   },
 };
 
+// ── AudioManager ─────────────────────────────────────────────────────────────
+
 class AudioManager {
   private ctx: AudioContext | null = null;
+  // Howler music playback
+  private currentHowl: Howl | null = null;
+  // Synthesis fallback
   private activeOscs: OscillatorNode[] = [];
   private loopTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
   private currentTrack: TrackId | null = null;
 
   soundEnabled = true;
@@ -621,14 +609,45 @@ class AudioManager {
     } catch { /* autoplay policy or suspended */ }
   }
 
+  // Fade music volume (0–1). Works on Howl when a file is playing.
+  fadeMusic(toVolume: number, durationMs = 500) {
+    if (this.currentHowl) {
+      this.currentHowl.fade(this.currentHowl.volume(), toVolume, durationMs);
+    }
+  }
+
   startMusic(track: TrackId) {
     this.currentTrack = track;
     if (!this.musicEnabled) return;
     this.stopMusic();
-    this._loop(track);
+
+    // Try file-based playback via Howler.
+    // Drop /public/audio/music/{track}.mp3 (or .ogg) to activate.
+    const howl = new Howl({
+      src: [`/audio/music/${track}.mp3`, `/audio/music/${track}.ogg`],
+      loop: true,
+      volume: 0.45,
+      onloaderror: () => {
+        // File missing — fall back to Web Audio synthesis.
+        if (this.currentHowl === howl) {
+          this.currentHowl = null;
+          if (this.musicEnabled) this._loop(track);
+        }
+      },
+      onplayerror: () => {
+        // Autoplay blocked (e.g. iOS before first touch) — retry after unlock.
+        howl.once("unlock", () => { if (this.currentHowl === howl) howl.play(); });
+      },
+    });
+    this.currentHowl = howl;
+    howl.play();
   }
 
   stopMusic() {
+    if (this.currentHowl) {
+      this.currentHowl.unload();
+      this.currentHowl = null;
+    }
     if (this.loopTimeoutId !== null) {
       clearTimeout(this.loopTimeoutId);
       this.loopTimeoutId = null;
@@ -637,6 +656,8 @@ class AudioManager {
     this.activeOscs.forEach((o) => { try { o.stop(t); } catch { /* already stopped */ } });
     this.activeOscs = [];
   }
+
+  // ── Synthesis fallback ──────────────────────────────────────────────────────
 
   private _loop(track: TrackId) {
     if (!this.musicEnabled) return;

@@ -9,7 +9,9 @@ import {
 } from "./brandungLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
-import { GameSaveQuitDialog } from "../../components/GameHudBar";
+import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
+import GameRulesModal from "../../components/GameRulesModal";
+import { GAME_RULES } from "../../gameRules";
 import { PlayingCard } from "../../components/PlayingCard";
 import { CardFanRow } from "../../components/CardFanRow";
 
@@ -161,6 +163,7 @@ export default function BrandungGameScreen() {
   const [selectedHandIdx, setSelectedHandIdx] = useState<number | null>(null);
   const [selectedTableIdx, setSelectedTableIdx] = useState<number | null>(null);
   const [showQuit, setShowQuit] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [abandonedByOpponent, setAbandonedByOpponent] = useState(false);
   const [abandonedByName, setAbandonedByName] = useState("");
 
@@ -653,25 +656,22 @@ export default function BrandungGameScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0, paddingBottom: 0, height: "100dvh", overflow: "hidden" }}>
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, #064e47 0%, #0d9488 100%)",
-        padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🌊</span>
-          <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: 1, textTransform: "uppercase" }}>Brandung</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Runde {gs.round}</div>
-          </div>
+      <GameHudBar
+        paused={false}
+        onPauseToggle={() => {}}
+        showPause={false}
+        onQuit={() => setShowQuit(true)}
+        onShowRules={() => setShowRules(true)}
+      >
+        <span style={{ fontSize: 18 }}>🌊</span>
+        <div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>Brandung</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Runde {gs.round}</div>
         </div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", flex: 1, textAlign: "center", padding: "0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {gs.knockedByUserId ? `✊ ${gs.players.find(p => p.userId === gs.knockedByUserId)?.displayName} klopfte!` : gs.lastActionText}
         </div>
-        <button onClick={() => setShowQuit(true)} style={{
-          background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 6,
-          width: 32, height: 32, fontSize: 16, cursor: "pointer", color: "white",
-        }}>✕</button>
-      </div>
+      </GameHudBar>
 
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 0, padding: "10px 12px", boxSizing: "border-box" }}>
         {/* Opponents */}
@@ -909,6 +909,10 @@ export default function BrandungGameScreen() {
             )}
           </div>
         </div>
+      )}
+
+      {showRules && GAME_RULES["brandung"] && (
+        <GameRulesModal rule={GAME_RULES["brandung"]} onClose={() => setShowRules(false)} />
       )}
 
       {/* ── Quit Dialog ── */}
