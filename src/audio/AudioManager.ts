@@ -823,8 +823,9 @@ class AudioManager {
         }
       },
       onplayerror: () => {
-        // Autoplay blocked (e.g. iOS before first touch) — retry after unlock.
-        howl.once("unlock", () => { if (this.currentHowl === howl) howl.play(); });
+        // Autoplay blocked — start synthesis immediately, switch to OGG on unlock.
+        if (this.currentHowl === howl && this.musicEnabled) this._loop(track);
+        howl.once("unlock", () => { if (this.currentHowl === howl) this.startMusic(track); });
       },
     });
     this.currentHowl = howl;
