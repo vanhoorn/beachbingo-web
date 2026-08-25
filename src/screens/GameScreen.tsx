@@ -466,6 +466,11 @@ export default function GameScreen() {
           onEliminate={eliminateNumber}
         />
       )}
+      {game.drawAnimationActive && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <DrumAnimation />
+        </div>
+      )}
 
       {/* Header mit Zurück */}
       <div className="flex items-center justify-between">
@@ -483,16 +488,10 @@ export default function GameScreen() {
 
       {/* Aktuelle Zahl */}
       <div className="card text-center">
-        {game.drawAnimationActive ? (
-          <DrumAnimation />
-        ) : (
-          <>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>Aktuelle Zahl</div>
-            <div style={{ fontSize: 88, fontWeight: 800, color: "var(--primary)", lineHeight: 1 }}>
-              {game.currentNumber ?? "–"}
-            </div>
-          </>
-        )}
+        <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>Aktuelle Zahl</div>
+        <div style={{ fontSize: 88, fontWeight: 800, color: "var(--primary)", lineHeight: 1 }}>
+          {game.currentNumber ?? "–"}
+        </div>
 
         {isBossLevel && nextElimIn !== null && !game.eliminationAnimationActive && (
           <div style={{

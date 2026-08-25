@@ -10,6 +10,7 @@ import {
 } from "./meermauLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
@@ -171,8 +172,7 @@ function doPlayCard(
   } else if (card.rank === "J" || (st.settings.wildOn10 && card.rank === "10")) {
     if (wishSuit) {
       ws = wishSuit;
-      const sn: Record<MSuit, string> = { "♣": "Kreuz", "♠": "Pik", "♥": "Herz", "♦": "Karo" };
-      txt = `${player.displayName} wünscht ${sn[wishSuit]}!`;
+      txt = `${player.displayName} wünscht ${SUIT_NAMES[wishSuit]}!`;
     } else {
       // Need wish — return WISH phase (human player path)
       const updated = st.players.map((p, i) => i === playerIdx ? { ...p, hand: newHand } : p);
@@ -379,6 +379,28 @@ export default function MeermauGameScreen() {
   const [showQuit, setShowQuit] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
+  const localStateRef = useRef(localState);
+  useEffect(() => { localStateRef.current = localState; }, [localState]);
+
+  useEffect(() => {
+    audioManager.startMusic("meermau");
+    return () => audioManager.stopMusic();
+  }, []);
+
+  useEffect(() => {
+    const cb = () => {
+      const gs = localStateRef.current;
+      if (mode !== "ai" || !gs || gs.phase !== "PLAYING") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "meermau", difficulty: gs.difficulty,
+        gameState: JSON.stringify({ ...gs, aiThinking: false }),
+        displayLabel: `Runde ${gs.round} · ${gs.players.length} Spieler · ${gs.players[0]?.totalScore ?? 0}P`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
 
   const writeOnlineState = async (newSt: LocalState) => {
     if (!gameId) return;
@@ -678,7 +700,6 @@ export default function MeermauGameScreen() {
   function handleWishSelect(suit: MSuit) {
     if (!st || st.phase !== "WISH") return;
     const h = st.players[0];
-    const sn: Record<MSuit, string> = { "♣": "Kreuz", "♠": "Pik", "♥": "Herz", "♦": "Karo" };
     const np = nextIdx(0, st.direction, st.players);
     let newSt: LocalState;
     if (h.hand.length === 0) {
@@ -688,9 +709,9 @@ export default function MeermauGameScreen() {
         newSt = { ...st, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, pendingMauMau: h.userId, mauMauReady: false, lastActionText: `${h.displayName} spielt letzte Karte!` };
       }
     } else if (h.hand.length === 1) {
-      newSt = { ...st, wishSuit: suit, phase: "PLAYING", mauPlayerId: null, pendingMau: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+      newSt = { ...st, wishSuit: suit, phase: "PLAYING", mauPlayerId: null, pendingMau: h.userId, currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${SUIT_NAMES[suit]}!` };
     } else {
-      newSt = { ...st, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${sn[suit]}!` };
+      newSt = { ...st, wishSuit: suit, phase: "PLAYING", currentPlayerIndex: np, lastActionText: `${h.displayName} wünscht ${SUIT_NAMES[suit]}!` };
     }
     setLocalState(newSt);
     if (mode === "online") void writeOnlineState(newSt);
@@ -789,7 +810,7 @@ export default function MeermauGameScreen() {
                         {isMau && <span style={{ color: VIOLET, marginLeft: 4, fontSize: 10 }}>MAU!</span>}
                       </div>
                       <div style={{ fontSize: 10, color: "var(--text-sub)" }}>
-                        {opp.eliminated ? "OUT" : `${opp.hand.length} Karten · ${opp.totalScore}P`}
+                        {opp.eliminated ? "OUT" : `${opp.hand.length} Karten · ${opp.totalScore}/${ELIMINATION_SCORE}P`}
                       </div>
                     </div>
                   </div>
@@ -920,7 +941,7 @@ export default function MeermauGameScreen() {
               )}
             </div>
             <div style={{ fontSize: Math.round(10 * cardScale), color: "var(--text-sub)", textAlign: "center", marginTop: 4 }}>
-              Du · {humanPlayer?.hand.length ?? 0} Karten · {humanPlayer?.totalScore ?? 0} Punkte
+              Du · {humanPlayer?.hand.length ?? 0} Karten · {humanPlayer?.totalScore ?? 0} / {ELIMINATION_SCORE} Punkte
             </div>
           </div>
 

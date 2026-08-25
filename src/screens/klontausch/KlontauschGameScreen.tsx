@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
@@ -14,6 +14,7 @@ import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 import { audioManager } from "../../audio/AudioManager";
 
 const KT_COLOR  = "#8B5CF6";
@@ -39,16 +40,13 @@ function checkWin(state: KlonGameState, allTargets: Record<string, string[]>): s
 // ── KlonPartSlot ──────────────────────────────────────────────────────────────
 
 function KlonPartSlot({
-  characterId, part, owned, fillCard,
+  characterId, part, owned,
 }: {
   characterId: string;
   part: KlonPart;
   owned: boolean;
-  fillCard: KlonCard | null;
 }) {
-  const borderColor = owned
-    ? `${KT_COLOR}99`
-    : fillCard ? "#3A507066" : "#1E2D4544";
+  const borderColor = owned ? `${KT_COLOR}99` : "#1E2D4544";
   return (
     <div style={{
       flex: 1, minHeight: 0,
@@ -57,12 +55,6 @@ function KlonPartSlot({
     }}>
       {owned ? (
         <KlontauschCharacterPart characterId={characterId} part={part} />
-      ) : fillCard ? (
-        <KlontauschCharacterPart
-          characterId={fillCard.characterId}
-          part={part}
-          style={{ opacity: 0.35 }}
-        />
       ) : (
         <KlontauschSilhouette />
       )}
@@ -92,27 +84,6 @@ function TargetPager({
     const clamped = Math.max(0, Math.min(idx, myTargets.length - 1));
     pagerRef.current.scrollTo({ left: pagerRef.current.clientWidth * clamped, behavior: "smooth" });
   }
-
-  const targetFillCards = useMemo(() => {
-    const stockCards = humanHand.filter(c => !myTargets.includes(c.characterId));
-    const result: Record<string, Partial<Record<KlonPart, KlonCard | null>>> = {};
-    for (const charId of myTargets) {
-      result[charId] = {};
-      for (const part of ["KOPF", "KOERPER", "BEINE"] as KlonPart[]) {
-        const owned = humanHand.some(c => c.characterId === charId && c.part === part);
-        if (owned) {
-          result[charId][part] = null;
-        } else {
-          const same = stockCards.filter(c => c.part === part);
-          result[charId][part] = same.length > 0
-            ? same[Math.floor(Math.random() * same.length)]
-            : (stockCards.length > 0 ? stockCards[Math.floor(Math.random() * stockCards.length)] : null);
-        }
-      }
-    }
-    return result;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [humanHand.map(c => c.cardId).join(","), myTargets.join(",")]);
 
   if (myTargets.length === 0) {
     return (
@@ -156,7 +127,6 @@ function TargetPager({
           const hasKoerper = humanHand.some(c => c.characterId === charId && c.part === "KOERPER");
           const hasBeine   = humanHand.some(c => c.characterId === charId && c.part === "BEINE");
           const allDone    = hasKopf && hasKoerper && hasBeine;
-          const fills      = targetFillCards[charId] ?? {};
 
           return (
             <div key={charId} style={{
@@ -185,9 +155,9 @@ function TargetPager({
                 {/* 3 part slots, centred at 70% width */}
                 <div style={{ flex: 1, minHeight: 0, display: "flex", justifyContent: "center" }}>
                   <div style={{ width: "70%", display: "flex", flexDirection: "column" }}>
-                    <KlonPartSlot characterId={charId} part="KOPF"    owned={hasKopf}    fillCard={fills["KOPF"]    ?? null} />
-                    <KlonPartSlot characterId={charId} part="KOERPER" owned={hasKoerper} fillCard={fills["KOERPER"] ?? null} />
-                    <KlonPartSlot characterId={charId} part="BEINE"   owned={hasBeine}   fillCard={fills["BEINE"]   ?? null} />
+                    <KlonPartSlot characterId={charId} part="KOPF"    owned={hasKopf}    />
+                    <KlonPartSlot characterId={charId} part="KOERPER" owned={hasKoerper} />
+                    <KlonPartSlot characterId={charId} part="BEINE"   owned={hasBeine}   />
                   </div>
                 </div>
               </div>
@@ -321,6 +291,51 @@ function StockFigure({
   );
 }
 
+// ── Confetti ──────────────────────────────────────────────────────────────────
+
+function KlontauschConfetti() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const COLORS = ["#8B5CF6", "#FB7185", "#38BDF8", "#FBBF24", "#4ADE80", "#C084FC"];
+    const particles = Array.from({ length: 56 }, (_, i) => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      vy: 180 + Math.random() * 180,
+      vx: (Math.random() - 0.5) * 60,
+      r: 5 + Math.random() * 4,
+      color: COLORS[i % COLORS.length],
+    }));
+    let startTime = performance.now();
+    let rafId: number;
+    function draw(now: number) {
+      const dt = Math.min((now - startTime) / 1000, 3.5);
+      ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+      const alpha = Math.max(0, 1 - dt / 3.5);
+      particles.forEach(p => {
+        const x = p.x + p.vx * dt;
+        const y = p.y + p.vy * dt;
+        ctx!.globalAlpha = alpha * 0.85;
+        ctx!.fillStyle = p.color;
+        ctx!.beginPath();
+        ctx!.arc(x, y, p.r, 0, Math.PI * 2);
+        ctx!.fill();
+      });
+      if (dt < 3.5) rafId = requestAnimationFrame(draw);
+    }
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+  return (
+    <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 49, pointerEvents: "none" }} />
+  );
+}
+
 // ── GameOverOverlay ────────────────────────────────────────────────────────────
 
 function GameOverOverlay({
@@ -404,6 +419,26 @@ export default function KlontauschGameScreen() {
   // ── Game state ──────────────────────────────────────────────────────────────
   const [local, setLocal]           = useState<KlonGameState | null>(null);
   const [allTargets, setAllTargets] = useState<Record<string, string[]>>({});
+  const localRef = useRef(local);
+  useEffect(() => { localRef.current = local; }, [local]);
+  const allTargetsRef = useRef(allTargets);
+  useEffect(() => { allTargetsRef.current = allTargets; }, [allTargets]);
+
+  useEffect(() => {
+    const cb = () => {
+      const gs = localRef.current;
+      if (mode !== "ai" || !gs || gs.status !== "PLAYING") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "klontausch", difficulty: gameData.difficulty ?? "",
+        gameState: JSON.stringify({ gameState: gs, allTargets: allTargetsRef.current, aiCount: gameData.aiCount ?? 2 }),
+        displayLabel: `${gs.playerIds.length} Spieler · Zug ${gs.turnIndex + 1}`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
+
   const [myTargets, setMyTargets]   = useState<string[]>([]);
   const [online, setOnline]         = useState<KlonGameState | null>(null);
   const [paused, setPaused]         = useState(false);
@@ -417,7 +452,7 @@ export default function KlontauschGameScreen() {
 
   // ── Audio ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    audioManager.startMusic("strandraeuber");
+    audioManager.startMusic("klontausch");
     return () => audioManager.stopMusic();
   }, []);
 
@@ -816,6 +851,7 @@ export default function KlontauschGameScreen() {
       )}
 
       {/* ── Game Over Overlay ── */}
+      {isGameOver && state.winnerId === humanUid && <KlontauschConfetti />}
       {isGameOver && (
         <GameOverOverlay
           state={state}

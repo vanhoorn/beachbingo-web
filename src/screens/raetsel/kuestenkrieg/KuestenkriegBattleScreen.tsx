@@ -10,6 +10,7 @@ import { savePuzzle, generateSaveId, deletePuzzleSave } from "../../../puzzleSav
 import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
+import { audioManager } from "../../../audio/AudioManager";
 
 const ACCENT = "#fb7185";
 const CELL = Math.max(30, Math.min(40, Math.floor((Math.min(window.innerWidth, 520) - 70) / GRID)));
@@ -35,9 +36,9 @@ function cellColor(v: CellView): string {
 
 function cellLabel(v: CellView): string {
   switch (v) {
-    case "miss": return "•";
-    case "hit":  return "●";
-    case "sunk": return "✕";
+    case "miss": return "🌊";
+    case "hit":  return "💣";
+    case "sunk": return "☠️";
     default: return "";
   }
 }
@@ -58,6 +59,11 @@ export default function KuestenkriegBattleScreen() {
   const [showQuit, setShowQuit] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [aiFireCount, setAiFireCount] = useState(0);
+
+  useEffect(() => {
+    audioManager.startMusic("kuestenkrieg");
+    return () => audioManager.stopMusic();
+  }, []);
 
   useEffect(() => {
     if (gs.turn === "ai" && !gs.gameOver) {
@@ -162,14 +168,16 @@ export default function KuestenkriegBattleScreen() {
         </div>
       </GameHudBar>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 8px", display: "flex", flexDirection: "column", gap: 14 }}>
-
-        {/* AI notification */}
+      {/* Scrollable content with AI banner overlay */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         {lastHit && (
-          <div style={{ background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 10, padding: "10px 14px", textAlign: "center", fontSize: 14, fontWeight: 700, color: ACCENT }}>
-            KI: {lastHit}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, padding: "6px 8px", pointerEvents: "none" }}>
+            <div style={{ background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 10, padding: "10px 14px", textAlign: "center", fontSize: 14, fontWeight: 700, color: ACCENT }}>
+              KI: {lastHit}
+            </div>
           </div>
         )}
+        <div style={{ height: "100%", overflowY: "auto", padding: "12px 8px", display: "flex", flexDirection: "column", gap: 14 }}>
 
         {/* Enemy grid (player shoots here) */}
         <div>
@@ -233,7 +241,8 @@ export default function KuestenkriegBattleScreen() {
             </div>
           </div>
         )}
-      </div>
+        </div>{/* inner scroll div */}
+      </div>{/* outer relative wrapper */}
       {showRules && GAME_RULES["kuestenkrieg"] && (
         <GameRulesModal rule={GAME_RULES["kuestenkrieg"]} onClose={() => setShowRules(false)} />
       )}
