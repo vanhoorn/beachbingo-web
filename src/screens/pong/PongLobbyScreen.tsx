@@ -1,14 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   collection, doc, getDoc, onSnapshot, addDoc, updateDoc,
-  arrayUnion, arrayRemove, query, where, deleteDoc,
+  arrayUnion, arrayRemove, query, where, deleteDoc, runTransaction,
 } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
 import type { PongDifficulty, PongGame, PongPlayer, PongSide, User } from "../../types";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
+import { getGameSave, deleteGameSave } from "../../gameSave";
+import SavedGameRow from "../../components/SavedGameRow";
 
 
 const DIFFICULTY_OPTIONS: { key: PongDifficulty; label: string; desc: string }[] = [
@@ -33,6 +35,7 @@ export default function PongLobbyScreen() {
   const [scoreLimit,   setScoreLimit]   = useState(7);
   const [isFavorite,   setIsFavorite]   = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [saveTick, setSaveTick] = useState(0);
 
   // Multi-player lobby
   const [activeGame, setActiveGame] = useState<PongGame | null>(null);
@@ -59,6 +62,46 @@ export default function PongLobbyScreen() {
       favoriteGames: next ? arrayUnion("pong") : arrayRemove("pong"),
     });
   }
+
+  // Handle ?join= deep-link (QR scan / invitation link)
+  const joinIdRef = useRef(new URLSearchParams(window.location.search).get("join"));
+  useEffect(() => {
+    const gameId = joinIdRef.current;
+    if (!gameId || !uid) return;
+    async function handleJoin() {
+      const snap = await getDoc(doc(db, "pongGames", gameId!));
+      if (!snap.exists()) return;
+      const game = { gameId: snap.id, ...snap.data() } as PongGame;
+      if (game.playerIds.includes(uid)) {
+        navigate("/pong/game", { state: buildGameState(game, game.adminId === uid) });
+        return;
+      }
+      await runTransaction(db, async (tx) => {
+        const ref  = doc(db, "pongGames", gameId!);
+        const fresh = await tx.get(ref);
+        if (!fresh.exists()) throw new Error("not_found");
+        const d  = fresh.data()!;
+        if (d.status !== "LOBBY") throw new Error("not_lobby");
+        const pIds = (d.playerIds as string[]) ?? [];
+        const ps   = (d.players as PongPlayer[]) ?? [];
+        const hc   = (d.humanCount as number) ?? 2;
+        const tp   = (d.totalPaddles as number) ?? 2;
+        if (pIds.length >= hc) throw new Error("full");
+        const taken = ps.map((p) => p.side);
+        const side  = sidesForPaddles(tp).find((s) => !taken.includes(s)) ?? "right";
+        const currentUser = (await getDoc(doc(db, "users", uid))).data() as User;
+        const player: PongPlayer = { userId: uid, displayName: currentUser.displayName, avatarUrl: currentUser.avatarUrl, side };
+        tx.update(ref, { players: arrayUnion(player), playerIds: arrayUnion(uid) });
+      });
+      const freshSnap = await getDoc(doc(db, "pongGames", gameId!));
+      if (freshSnap.exists()) {
+        const joined = { gameId: freshSnap.id, ...freshSnap.data() } as PongGame;
+        navigate("/pong/game", { state: buildGameState(joined, false) });
+      }
+    }
+    handleJoin();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
 
   // Listen for my open pong lobby games (multi-player)
   useEffect(() => {
@@ -259,6 +302,34 @@ export default function PongLobbyScreen() {
             </div>
           )}
         </Section>
+
+        {/* ── Saved game (solo mode) ── */}
+        {!needsLobby && (() => {
+          // saveTick is read to trigger re-renders after delete
+          void saveTick;
+          const pongSave = getGameSave("pong");
+          if (!pongSave) return null;
+          let saveState: { scores?: { left: number; right: number }; scoreLimit?: number; totalPaddles?: number; humanCount?: number; wallSide?: string | null } = {};
+          try { saveState = JSON.parse(pongSave.gameState); } catch { /* ignore */ }
+          return (
+            <SavedGameRow
+              title="🏓 Pong"
+              subtitle={pongSave.displayLabel}
+              color="#0ea5e9"
+              onResume={() => navigate("/pong/game", {
+                state: {
+                  totalPaddles: saveState.totalPaddles ?? 2,
+                  humanCount: saveState.humanCount ?? 1,
+                  difficulty: pongSave.difficulty,
+                  scoreLimit: saveState.scoreLimit ?? 7,
+                  isHost: true, mySide: "left",
+                  saveId: pongSave.id,
+                },
+              })}
+              onDelete={() => { deleteGameSave("pong"); setSaveTick((t) => t + 1); }}
+            />
+          );
+        })()}
 
         {/* ── Solo start (humanCount = 1) ── */}
         {!needsLobby && (
