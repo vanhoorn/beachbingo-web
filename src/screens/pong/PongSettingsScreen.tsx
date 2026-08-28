@@ -73,7 +73,7 @@ export default function PongSettingsScreen() {
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 8 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/pong/lobby", { replace: true })}>‹ Zurück</button>
         <h2 style={{ flex: 1, fontSize: 20 }}>BeachVolley Einstellungen</h2>
         <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving} style={{ background: "var(--coral)", borderColor: "var(--coral)" }}>
           {saving ? "…" : "Speichern"}

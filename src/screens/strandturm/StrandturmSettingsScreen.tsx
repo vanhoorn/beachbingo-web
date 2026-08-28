@@ -73,7 +73,7 @@ export default function StrandturmSettingsScreen() {
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 8 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/strandturm/lobby", { replace: true })}>‹ Zurück</button>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>STRANDTURM</div>
           <h2 style={{ fontSize: 20 }}>⚙️ Einstellungen</h2>

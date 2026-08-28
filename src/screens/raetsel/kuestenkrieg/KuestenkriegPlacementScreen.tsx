@@ -150,7 +150,7 @@ export default function KuestenkriegPlacementScreen() {
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
       <div style={{ background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-        <button onClick={() => navigate(-1)} style={backBtn}>‹</button>
+        <button onClick={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })} style={backBtn}>‹</button>
         <span style={{ fontSize: 28 }}>⚓</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>KÜSTENKRIEG</div>

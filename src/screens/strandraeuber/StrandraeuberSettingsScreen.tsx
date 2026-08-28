@@ -45,7 +45,7 @@ export default function StrandraeuberSettingsScreen() {
         padding: "12px 16px",
         display: "flex", alignItems: "center", gap: 12, marginBottom: 8,
       }}>
-        <button onClick={() => navigate(-1)} style={{
+        <button onClick={() => navigate("/strandraeuber/lobby", { replace: true })} style={{
           background: "none", border: "none", color: "white", fontSize: 20, cursor: "pointer", padding: 4,
         }}>←</button>
         <div>

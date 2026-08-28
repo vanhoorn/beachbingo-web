@@ -44,7 +44,7 @@ export default function MeermauResultsScreen() {
         background: "linear-gradient(135deg, #3b0764 0%, #7c3aed 100%)",
         padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
       }}>
-        <button onClick={() => navigate(-1)} style={{
+        <button onClick={() => navigate("/meermau/lobby", { replace: true })} style={{
           background: "none", border: "none", color: "white", fontSize: 20, cursor: "pointer", padding: 4,
         }}>←</button>
         <div>

@@ -36,14 +36,14 @@ export default function MahjongSettingsScreen() {
   }, [uid]);
 
   async function handleSave() {
-    if (!uid) { navigate(-1); return; }
+    if (!uid) { navigate("/mahjong/lobby", { replace: true }); return; }
     setSaving(true);
     await updateDoc(doc(db, "users", uid), {
       preferredMahjongDifficulty: difficulty,
       preferredMahjongLayout: layout,
     }).catch(() => {});
     setSaving(false);
-    navigate(-1);
+    navigate("/mahjong/lobby", { replace: true });
   }
 
   return (
@@ -61,7 +61,7 @@ export default function MahjongSettingsScreen() {
         </div>
         <button className="btn btn-outline btn-sm"
           style={{ color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
-          onClick={() => navigate(-1)}>
+          onClick={() => navigate("/mahjong/lobby", { replace: true })}>
           ‹ Zurück
         </button>
       </div>
@@ -129,7 +129,7 @@ export default function MahjongSettingsScreen() {
       }}>
         {saving ? "Speichern …" : "Speichern"}
       </button>
-      <button onClick={() => navigate(-1)} style={{
+      <button onClick={() => navigate("/mahjong/lobby", { replace: true })} style={{
         padding: "14px", background: "transparent",
         border: "1.5px solid var(--border)",
         borderRadius: 14, cursor: "pointer", fontSize: 15, fontWeight: 600, color: "var(--text-muted)",

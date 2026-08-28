@@ -233,7 +233,7 @@ export default function KuestenkriegBattleScreen() {
                 Lobby
               </button>
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })}
                 style={{ flex: 1, padding: "12px", background: ACCENT, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#0a1628" }}
               >
                 Nochmal!

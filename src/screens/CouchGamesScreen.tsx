@@ -21,7 +21,7 @@ export default function CouchGamesScreen() {
         display: "flex", alignItems: "center", gap: 14,
       }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/home", { replace: true })}
           style={{
             width: 40, height: 40, flexShrink: 0,
             background: "var(--surface2)", border: "1px solid var(--border)",

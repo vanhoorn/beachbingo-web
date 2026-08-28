@@ -114,7 +114,7 @@ export default function VierResultsScreen() {
   return (
     <div className="screen" style={{ gap: 16, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 12 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/vier/lobby", { replace: true })}>‹ Zurück</button>
         <h2 style={{ fontSize: 20 }}>Vier4Bier Ergebnisse 🏆</h2>
       </div>
 

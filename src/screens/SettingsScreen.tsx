@@ -76,7 +76,7 @@ export default function SettingsScreen() {
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
       <div className="flex items-center" style={{ gap: 8 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/lobby", { replace: true })}>
           ‹ Zurück
         </button>
         <h2 style={{ flex: 1, fontSize: 20 }}>Einstellungen</h2>

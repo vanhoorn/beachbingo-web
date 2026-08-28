@@ -73,7 +73,7 @@ export default function WormSettingsScreen() {
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
       {/* Header */}
       <div className="flex items-center" style={{ gap: 8 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate(-1)}>‹ Zurück</button>
+        <button className="btn btn-outline btn-sm" onClick={() => navigate("/worm/lobby", { replace: true })}>‹ Zurück</button>
         <h2 style={{ flex: 1, fontSize: 20 }}>Wattwurm Einstellungen</h2>
         <button
           className="btn btn-primary btn-sm"

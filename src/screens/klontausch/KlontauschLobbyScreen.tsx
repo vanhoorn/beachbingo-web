@@ -246,7 +246,7 @@ export default function KlontauschLobbyScreen() {
   return (
     <div className="screen">
       <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }}
-        onClick={() => navigate("/card-games")}>
+        onClick={() => navigate("/card-games", { replace: true })}>
         ‹ Kartenspiele
       </button>
 

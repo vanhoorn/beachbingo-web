@@ -44,7 +44,7 @@ export default function BrandungResultsScreen() {
         background: "linear-gradient(135deg, #064e47 0%, #0d9488 100%)",
         padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
       }}>
-        <button onClick={() => navigate(-1)} style={{
+        <button onClick={() => navigate("/brandung/lobby", { replace: true })} style={{
           background: "none", border: "none", color: "white", fontSize: 20, cursor: "pointer", padding: 4,
         }}>←</button>
         <div>
