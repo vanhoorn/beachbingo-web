@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { generateLevel } from "./perlentaucherLogic";
 import {
   getPuzzleSaves, deletePuzzleSave,
-  getHighestPerlentaucherLevel, getBestPerlentaucherScore,
+  getHighestPerlentaucherLevel, getBestPerlentaucherScore, getAllPerlentaucherScores,
 } from "../../../puzzleSave";
 import { GAME_RULES } from "../../../gameRules";
 import GameRulesModal from "../../../components/GameRulesModal";
@@ -29,6 +29,21 @@ export default function PerlentaucherLobbyScreen() {
 
   const config = useMemo(() => generateLevel(selectedLevel), [selectedLevel]);
   const bestScore = useMemo(() => getBestPerlentaucherScore(selectedLevel), [selectedLevel, showStats]);
+
+  const allStats = useMemo(() => {
+    if (!showStats) return null;
+    const scores = getAllPerlentaucherScores();
+    const entries = Object.entries(scores)
+      .map(([lvl, sc]) => {
+        const lvlNum = Number(lvl);
+        const target = generateLevel(lvlNum).targetScore;
+        const stars = sc >= target * 1.5 ? 3 : sc >= target * 1.2 ? 2 : sc >= target ? 1 : 0;
+        return { level: lvlNum, bestScore: sc, target, stars };
+      })
+      .sort((a, b) => a.level - b.level);
+    const starCounts = [3, 2, 1].map(s => entries.filter(e => e.stars === s).length);
+    return { entries, starCounts, total: entries.length };
+  }, [showStats]);
 
   function toggleFavorite() {
     const next = !isFavorite; setIsFavorite(next);
@@ -60,7 +75,7 @@ export default function PerlentaucherLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/raetsel", { replace: true })}>‹ Rätsel</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/raetsel", { replace: true })}>‹ Zurück</button>
 
       {/* Header */}
       <div style={{
@@ -183,24 +198,83 @@ export default function PerlentaucherLobbyScreen() {
       </div>
 
       {/* Stats-Dialog */}
-      {showStats && (
+      {showStats && allStats && (
         <div style={overlayStyle} onClick={() => setShowStats(false)}>
-          <div style={dialogStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>🏆 Rekord — Level {selectedLevel}</span>
+          <div style={{ ...dialogStyle, maxHeight: "85vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+            {/* Titel */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text)" }}>🏆 Statistik</span>
               <button onClick={() => setShowStats(false)} style={closeBtnStyle}>✕</button>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 42, fontWeight: 900, color: bestScore ? ACCENT : "var(--text-muted)", marginBottom: 8 }}>
-                {bestScore ? bestScore.toLocaleString() : "—"}
+
+            {/* Gesamt-Übersicht */}
+            <div style={{ background: "var(--surface2)", borderRadius: 12, padding: "12px 16px", marginBottom: 14, flexShrink: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Freigeschaltet</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: ACCENT }}>{highestUnlocked} / 150 Level</span>
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                {bestScore ? "Punkte · Persönlicher Rekord" : "Noch kein Spiel abgeschlossen"}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Absolviert</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{allStats.total} Level</span>
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
-                Ziel: {config.targetScore.toLocaleString()} Punkte · {config.movesLeft} Züge
+              <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                {[3, 2, 1].map((s, i) => (
+                  <div key={s} style={{ textAlign: "center", flex: 1, background: "var(--surface)", borderRadius: 8, padding: "6px 4px" }}>
+                    <div style={{ fontSize: 12, color: "#f59e0b" }}>{"★".repeat(s) + "☆".repeat(3 - s)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginTop: 2 }}>{allStats.starCounts[i]}</div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Ausgewähltes Level */}
+            <div style={{ background: ACCENT + "15", border: `1px solid ${ACCENT}40`, borderRadius: 12, padding: "12px 16px", marginBottom: 14, flexShrink: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: ACCENT, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Level {selectedLevel}</div>
+              {bestScore ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: ACCENT }}>{bestScore.toLocaleString()}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Ziel: {config.targetScore.toLocaleString()} · {config.movesLeft} Züge</div>
+                  </div>
+                  <div style={{ fontSize: 20, color: "#f59e0b" }}>
+                    {(() => { const s = bestScore >= config.targetScore * 1.5 ? 3 : bestScore >= config.targetScore * 1.2 ? 2 : bestScore >= config.targetScore ? 1 : 0; return "★".repeat(s) + "☆".repeat(3 - s); })()}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Noch kein Spiel abgeschlossen · Ziel: {config.targetScore.toLocaleString()} Pkt.</div>
+              )}
+            </div>
+
+            {/* Level-Liste */}
+            {allStats.entries.length > 0 && (
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Alle Level</div>
+              </div>
+            )}
+            {allStats.entries.length > 0 && (
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      <th style={{ textAlign: "left", padding: "4px 0", color: "var(--text-muted)", fontWeight: 600, fontSize: 11 }}>Lvl</th>
+                      <th style={{ textAlign: "right", padding: "4px 0", color: "var(--text-muted)", fontWeight: 600, fontSize: 11 }}>Rekord</th>
+                      <th style={{ textAlign: "right", padding: "4px 0", color: "var(--text-muted)", fontWeight: 600, fontSize: 11 }}>Ziel</th>
+                      <th style={{ textAlign: "right", padding: "4px 0", color: "var(--text-muted)", fontWeight: 600, fontSize: 11 }}>★</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allStats.entries.map(e => (
+                      <tr key={e.level} style={{ borderBottom: "1px solid var(--border)44", background: e.level === selectedLevel ? ACCENT + "10" : "transparent" }}>
+                        <td style={{ padding: "5px 0", color: e.level === selectedLevel ? ACCENT : "var(--text)", fontWeight: e.level === selectedLevel ? 800 : 400 }}>{e.level}</td>
+                        <td style={{ textAlign: "right", padding: "5px 0", color: "var(--text)", fontWeight: 600 }}>{e.bestScore.toLocaleString()}</td>
+                        <td style={{ textAlign: "right", padding: "5px 0", color: "var(--text-muted)" }}>{e.target.toLocaleString()}</td>
+                        <td style={{ textAlign: "right", padding: "5px 0", color: "#f59e0b", fontSize: 11 }}>{"★".repeat(e.stars)}{"☆".repeat(3 - e.stars)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

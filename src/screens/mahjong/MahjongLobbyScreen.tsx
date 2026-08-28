@@ -77,7 +77,7 @@ export default function MahjongLobbyScreen() {
   return (
     <div className="screen">
       <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/couch-games", { replace: true })}>
-        ‹ Couch
+        ‹ Zurück
       </button>
 
       {/* Header */}

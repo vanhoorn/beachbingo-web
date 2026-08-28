@@ -36,7 +36,7 @@ export default function InselbrueckeLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/raetsel", { replace: true })}>‹ Rätsel</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/raetsel", { replace: true })}>‹ Zurück</button>
 
       {/* Header */}
       <div style={{

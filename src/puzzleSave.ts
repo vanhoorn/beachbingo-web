@@ -159,3 +159,10 @@ export function saveBestPerlentaucherScore(level: number, score: number): void {
     }
   } catch { }
 }
+
+export function getAllPerlentaucherScores(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(PERLENTAUCHER_BEST_SCORES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
