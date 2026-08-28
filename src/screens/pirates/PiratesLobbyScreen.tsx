@@ -87,8 +87,8 @@ export default function PiratesLobbyScreen() {
 
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>‹ Zurück</button>
       <div className="flex items-center" style={{ gap: 12 }}>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate("/home")}>‹ Zurück</button>
         <h2 style={{ fontSize: 20 }}>BeachPirates</h2>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <button className="btn btn-outline btn-sm" onClick={() => navigate("/pirates/highscores")}>🏆</button>

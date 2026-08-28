@@ -580,7 +580,7 @@ export default function SonnenradGameScreen() {
         <QuitConfirmDialog
           emoji="☀️"
           message="Das Sonnenrad-Spiel wird beendet."
-          onConfirm={() => navigate("/sonnenrad", { replace: true })}
+          onConfirm={() => navigate("/sonnenrad/lobby", { replace: true })}
           onDismiss={() => setShowQuit(false)}
         />
       )}

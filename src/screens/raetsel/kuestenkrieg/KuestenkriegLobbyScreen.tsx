@@ -305,7 +305,7 @@ export default function KuestenkriegLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate(-1)}>‹ Rätsel</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/raetsel", { replace: true })}>‹ Rätsel</button>
 
       {/* Header */}
       <div style={{
@@ -433,6 +433,46 @@ export default function KuestenkriegLobbyScreen() {
               </div>
             </div>
 
+            {/* Running KI games */}
+            {gameMode !== "online" && kiSaves.length > 0 && (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Laufende KI-Gefechte</div>
+                {kiSaves.map(save => {
+                  const modeLabel = save.variant === "admiral" ? "Admiral" : save.variant === "kapitaen" ? "Kapitän" : "Matrose";
+                  const modeEmoji = save.variant === "admiral" ? "🏴‍☠️" : save.variant === "kapitaen" ? "⚓" : "🌊";
+                  return (
+                    <div key={save.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{modeEmoji} {modeLabel}</div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Gespeichertes Gefecht</div>
+                      </div>
+                      <button onClick={() => resumeKiSave(save)} style={{ padding: "8px 14px", background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: ACCENT }}>Fortsetzen</button>
+                      <button onClick={() => { deletePuzzleSave(save.id); window.location.reload(); }} style={{ padding: "8px 10px", background: "var(--danger)22", border: "1px solid var(--danger)55", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--danger)" }}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Saved puzzle games */}
+            {gameMode !== "online" && saves.length > 0 && (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Gespeicherte Rätsel</div>
+                {saves.map(save => (
+                  <div key={save.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                        {PUZZLE_DIFFICULTY_LABELS[save.difficulty as KriegDifficulty]} · {GRID_SIZES[save.difficulty as KriegDifficulty]}×{GRID_SIZES[save.difficulty as KriegDifficulty]}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{formatElapsed(save.elapsedSeconds)} gespielt</div>
+                    </div>
+                    <button onClick={() => resumeSave(save)} style={{ padding: "8px 14px", background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: ACCENT }}>Fortsetzen</button>
+                    <button onClick={() => { deletePuzzleSave(save.id); window.location.reload(); }} style={{ padding: "8px 10px", background: "var(--danger)22", border: "1px solid var(--danger)55", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--danger)" }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Puzzle options */}
             {gameMode === "puzzle" && (
               <>
@@ -548,45 +588,6 @@ export default function KuestenkriegLobbyScreen() {
               </div>
             )}
 
-            {/* Running KI games */}
-            {gameMode !== "online" && kiSaves.length > 0 && (
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Laufende KI-Gefechte</div>
-                {kiSaves.map(save => {
-                  const modeLabel = save.variant === "admiral" ? "Admiral" : save.variant === "kapitaen" ? "Kapitän" : "Matrose";
-                  const modeEmoji = save.variant === "admiral" ? "🏴‍☠️" : save.variant === "kapitaen" ? "⚓" : "🌊";
-                  return (
-                    <div key={save.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{modeEmoji} {modeLabel}</div>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Gespeichertes Gefecht</div>
-                      </div>
-                      <button onClick={() => resumeKiSave(save)} style={{ padding: "8px 14px", background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: ACCENT }}>Fortsetzen</button>
-                      <button onClick={() => { deletePuzzleSave(save.id); window.location.reload(); }} style={{ padding: "8px 10px", background: "var(--danger)22", border: "1px solid var(--danger)55", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--danger)" }}>✕</button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Saved puzzle games */}
-            {gameMode !== "online" && saves.length > 0 && (
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Gespeicherte Rätsel</div>
-                {saves.map(save => (
-                  <div key={save.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
-                        {PUZZLE_DIFFICULTY_LABELS[save.difficulty as KriegDifficulty]} · {GRID_SIZES[save.difficulty as KriegDifficulty]}×{GRID_SIZES[save.difficulty as KriegDifficulty]}
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{formatElapsed(save.elapsedSeconds)} gespielt</div>
-                    </div>
-                    <button onClick={() => resumeSave(save)} style={{ padding: "8px 14px", background: ACCENT + "22", border: `1px solid ${ACCENT}55`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: ACCENT }}>Fortsetzen</button>
-                    <button onClick={() => { deletePuzzleSave(save.id); window.location.reload(); }} style={{ padding: "8px 10px", background: "var(--danger)22", border: "1px solid var(--danger)55", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--danger)" }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
       </div>

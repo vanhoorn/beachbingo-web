@@ -56,15 +56,14 @@ export default function SonnenradLobbyScreen() {
 
   return (
     <div className="screen">
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }}
+        onClick={() => navigate("/couch-games", { replace: true })}>‹ Zurück</button>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{
         background: "linear-gradient(135deg, #1a1200 0%, #3a2800 100%)",
         borderRadius: "var(--radius)", padding: "20px",
         display: "flex", alignItems: "center", gap: 14,
       }}>
-        <button className="btn btn-outline btn-sm"
-          style={{ width: 40, height: 40, padding: 0, fontSize: 20, flexShrink: 0 }}
-          onClick={() => navigate(-1)}>‹</button>
         <div style={{ fontSize: 40, lineHeight: 1 }}>☀️</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>TAGESBONUS</div>

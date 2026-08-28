@@ -171,13 +171,13 @@ export default function PongLobbyScreen() {
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start", marginTop: 16 }} onClick={() => navigate("/home")}>‹ Spielauswahl</button>
 
       {/* Hero */}
       <div style={{
         background: "linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)",
         padding: "28px 20px",
       }}>
-        <button onClick={() => navigate("/home")} style={backBtn}>‹ Spielauswahl</button>
       </div>
 
       <div style={{ padding: "24px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -454,11 +454,6 @@ function PillButton({ active, color, onClick, children }: {
     </button>
   );
 }
-
-const backBtn: React.CSSProperties = {
-  background: "none", border: "none", color: "var(--primary)",
-  fontSize: 16, fontWeight: 700, cursor: "pointer", padding: 0,
-};
 
 const primaryBtn: React.CSSProperties = {
   background: "linear-gradient(135deg, var(--coral), #e8501a)",
