@@ -12,6 +12,7 @@ import {
 import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
+import { audioManager } from "../../../audio/AudioManager";
 
 interface LocationState {
   level: number;
@@ -68,6 +69,11 @@ export default function PerlentaucherGameScreen() {
   const [newBest, setNewBest] = useState(false);
   const [fallingCells, setFallingCells] = useState<Map<string, number>>(new Map()); // key → fallPx
   const [filledCells, setFilledCells] = useState<Map<string, number>>(new Map());   // key → delay ms
+
+  useEffect(() => {
+    audioManager.startMusic("perlentaucher");
+    return () => audioManager.stopMusic();
+  }, []);
 
   // ── Win-Save: sobald Score ≥ Ziel, unabhängig von Board-Phase ────────────
   useEffect(() => {

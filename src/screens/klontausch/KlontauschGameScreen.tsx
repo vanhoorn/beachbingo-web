@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import {
@@ -18,6 +18,15 @@ import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry
 import { audioManager } from "../../audio/AudioManager";
 
 const KT_COLOR  = "#8B5CF6";
+
+const KLON_TEAM_NAMES = [
+  "Die Kopftauscher", "Die Klonfabrik", "Die Doppelgänger-Liga",
+  "Die Verwechslungskünstler", "Die Ersatzteil-Bande", "Die Figurenschmuggler",
+  "Die Motiv-Mixer", "Die Karikaturen-Crew", "Die Gliedmaßen-Gilde",
+  "Die Zusammenwürfler", "Die Chaos-Schneiderei", "Die Wackelfiguren-Werkstatt",
+  "Die Umbau-Kommission", "Die Flickwerk-Fraktion", "Die Neuzusammensetzer",
+  "Die Silhouetten-Society",
+];
 const KT_DIM    = "rgba(139,92,246,0.12)";
 const OCEAN_BLUE = "#0ea5e9";
 const OCEAN_DIM  = "rgba(14,165,233,0.10)";
@@ -657,6 +666,23 @@ export default function KlontauschGameScreen() {
       })),
       targets: allTargets,
     }));
+    if (mode === "ai" && uid) {
+      addDoc(collection(db, "klontauschResults"), {
+        winnerId,
+        winnerName:  winner?.displayName ?? "?",
+        winnerAvatar: winner?.avatarUrl ?? "🏆",
+        playerIds: state.playerIds,
+        players: state.playerIds.map(pid => ({
+          userId: pid,
+          displayName: state.players[pid]?.displayName ?? pid,
+          avatarUrl:   state.players[pid]?.avatarUrl   ?? "👤",
+        })),
+        teamName: KLON_TEAM_NAMES[Math.floor(Math.random() * KLON_TEAM_NAMES.length)],
+        mode: "AI",
+        difficulty: gameData.difficulty ?? "",
+        createdAt: Date.now(),
+      });
+    }
   }
 
   // ── Human: Mopsen ────────────────────────────────────────────────────────────

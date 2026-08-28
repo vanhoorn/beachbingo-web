@@ -271,7 +271,7 @@ export default function KuestenkriegGameScreen() {
               Zeit: <strong style={{ color: ACCENT }}>{formatElapsed(elapsed)}</strong>
               {bestTime && elapsed < bestTime && <span style={{ color: "var(--success)", marginLeft: 8 }}>⭐ Neue Bestzeit!</span>}
             </div>
-            <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>Zurück zur Lobby</button>
+            <button onClick={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>Zurück zur Lobby</button>
           </div>
         </div>
       )}
@@ -284,8 +284,8 @@ export default function KuestenkriegGameScreen() {
         <GameSaveQuitDialog
           emoji="⚓"
           onContinue={() => { setRunning(true); setShowQuit(false); }}
-          onSaveAndQuit={() => navigate(-1)}
-          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }}
+          onSaveAndQuit={() => navigate("/raetsel/kuestenkrieg/lobby", { replace: true })}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/kuestenkrieg/lobby", { replace: true }); }}
         />
       )}
     </div>

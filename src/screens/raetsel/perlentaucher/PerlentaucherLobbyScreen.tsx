@@ -14,7 +14,11 @@ const QUICK_LEVELS = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130,
 export default function PerlentaucherLobbyScreen() {
   const navigate = useNavigate();
   const highestUnlocked = useMemo(() => getHighestPerlentaucherLevel(), []);
-  const [selectedLevel, setSelectedLevel] = useState(1);
+  const [selectedLevel, setSelectedLevel] = useState(() => {
+    const s = getPuzzleSaves().filter(s => s.gameType === "perlentaucher")[0];
+    if (!s) return 1;
+    try { return (JSON.parse(s.puzzleState).levelNumber as number) ?? 1; } catch { return 1; }
+  });
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [saves, setSaves] = useState(() => getPuzzleSaves().filter(s => s.gameType === "perlentaucher"));

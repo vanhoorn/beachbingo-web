@@ -344,7 +344,7 @@ export default function HomeScreen() {
           <SectionHeader title="Spieleranzahl" emoji="👥" />
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(2, 1fr)",
             gap: 10,
           }}>
             {PLAYER_COUNT_ORDER.map((key) => {

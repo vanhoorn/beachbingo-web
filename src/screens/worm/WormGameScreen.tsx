@@ -8,6 +8,7 @@ import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, getGameSave, generateGameSaveId } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const WORM_GREEN = "#22c55e";
@@ -102,6 +103,22 @@ export default function WormGameScreen() {
 
   const stepInterval = STEP_MS[difficulty];
   const wallsWrap    = WALLS_WRAP[difficulty];
+
+  // Auto-save on tab close / page reload
+  useEffect(() => {
+    const cb = () => {
+      if (statusRef.current === "DEAD" || savedRef.current) return;
+      const s = snakeRef.current; const d = dirRef.current; const f = foodRef.current;
+      saveGame({
+        id: generateGameSaveId(), gameType: "worm", difficulty,
+        gameState: JSON.stringify({ snake: s, dirX: d.x, dirY: d.y, foodX: f.x, foodY: f.y, foodEmoji: f.emoji, foodPoints: f.points, score: scoreRef.current }),
+        displayLabel: `Score: ${scoreRef.current} · Länge: ${s.length}`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, [difficulty]);
 
   // ── Rendering ─────────────────────────────────────────────────────────────
   function draw() {

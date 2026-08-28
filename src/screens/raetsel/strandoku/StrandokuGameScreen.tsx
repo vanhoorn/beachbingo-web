@@ -328,7 +328,7 @@ export default function StrandokuGameScreen() {
               Zeit: <strong style={{ color: ACCENT }}>{formatElapsed(elapsed)}</strong>
               {bestTime && elapsed < bestTime && <span style={{ color: "var(--success)", marginLeft: 8 }}>⭐ Neue Bestzeit!</span>}
             </div>
-            <button onClick={() => navigate(-1)} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>
+            <button onClick={() => navigate("/raetsel/strandoku/lobby", { replace: true })} style={{ ...ctrlBtn("var(--primary)"), width: "100%", padding: "14px 0" }}>
               Zurück zur Lobby
             </button>
           </div>
@@ -343,8 +343,8 @@ export default function StrandokuGameScreen() {
         <GameSaveQuitDialog
           emoji="🏖️"
           onContinue={() => { setRunning(true); setShowQuit(false); }}
-          onSaveAndQuit={() => navigate(-1)}
-          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }}
+          onSaveAndQuit={() => navigate("/raetsel/strandoku/lobby", { replace: true })}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/strandoku/lobby", { replace: true }); }}
         />
       )}
     </div>

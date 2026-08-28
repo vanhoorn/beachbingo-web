@@ -1,4 +1,4 @@
-export type PlayerCountKey = "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
+export type PlayerCountKey = "SOLO" | "ONE_TWO" | "TWO_FOUR" | "FOUR_PLUS";
 export type GameGenreKey = "ACTION" | "PARTY" | "LOGICAL" | "COUCH" | "RIDDLE" | "CARD";
 export type PuzzleDifficulty = "leicht" | "mittel" | "schwer" | "experte";
 
@@ -20,6 +20,7 @@ export interface PlayerCountInfo {
 }
 
 export const PLAYER_COUNT_INFO: Record<PlayerCountKey, PlayerCountInfo> = {
+  SOLO:     { label: "Solo",        emoji: "🧘", sublabel: "Allein spielen" },
   ONE_TWO:  { label: "1-2 Spieler", emoji: "🤝", sublabel: "Solo oder zu zweit" },
   TWO_FOUR: { label: "2-4 Spieler", emoji: "👥", sublabel: "Kleine Gruppe" },
   FOUR_PLUS:{ label: "4+ Spieler",  emoji: "🎉", sublabel: "Große Runde" },
@@ -63,7 +64,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Verteidige den Strand! Besiege Quallen, Muscheln und Fische.",
     color: "#a855f7",
     path: "/pirates/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["ACTION"],
   },
   {
@@ -73,7 +74,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Frisst Krabben, Muscheln und Fische. Werde nie die Grenzen! 🌊",
     color: "#22c55e",
     path: "/worm/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["COUCH"],
   },
   {
@@ -83,7 +84,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Klettere den Pier hoch, weiche Kokosnüssen aus — bis zum Gipfel!",
     color: "#dc2626",
     path: "/strandturm/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["ACTION"],
   },
   {
@@ -123,7 +124,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Mahjong Solitaire am Strand — entferne alle 144 Steine durch Paare.",
     color: "#D4A820",
     path: "/mahjong/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["COUCH", "LOGICAL"],
   },
   // ── Rätsel-Spiele ──────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Das meistgespielte Logikrätsel der Welt — 6 Varianten von Classic bis Samurai.",
     color: "#38bdf8",
     path: "/raetsel/strandoku",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -144,7 +145,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Kreuzworträtsel mit Zahlen — Blöcke addieren sich zur angegebenen Summe.",
     color: "#c084fc",
     path: "/raetsel/wellensumme",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -164,7 +165,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Schwärze Felder ein — das japanische Zahlen-Ausschluss-Rätsel.",
     color: "#fbbf24",
     path: "/raetsel/duenenschatten",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -174,7 +175,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Verbinde alle Inseln mit Brücken — das japanische Hashi-Rätsel.",
     color: "#4ade80",
     path: "/raetsel/inselbruecke",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -184,7 +185,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Errate das deutsche Wort in wenigen Versuchen — Wordle auf Deutsch mit Hard Mode.",
     color: "#06b6d4",
     path: "/raetsel/wortwelle",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["RIDDLE", "LOGICAL"],
   },
   {
@@ -194,7 +195,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Match-3 am Meeresgrund — tausche Schätze aus, bilde Reihen und knacke 150 Level.",
     color: "#0EA5E9",
     path: "/raetsel/perlentaucher/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["COUCH", "LOGICAL"],
   },
   {
@@ -204,7 +205,7 @@ export const ALL_GAMES: GameMetadata[] = [
     description: "Tagesbonus: Drehe drei Muschelkarten auf und klettere die Bonusleiter hinauf!",
     color: "#D4A820",
     path: "/sonnenrad/lobby",
-    playerCounts: ["ONE_TWO"],
+    playerCounts: ["SOLO"],
     genres: ["COUCH"],
   },
   {
@@ -219,9 +220,10 @@ export const ALL_GAMES: GameMetadata[] = [
   },
 ];
 
+export const SOLO_GAMES   = ALL_GAMES.filter((g) => g.playerCounts.includes("SOLO"));
 export const CARD_GAMES   = ALL_GAMES.filter((g) => g.genres.includes("CARD"));
 export const RIDDLE_GAMES = ALL_GAMES.filter((g) => g.genres.includes("RIDDLE"));
 export const ACTION_GAMES = ALL_GAMES.filter((g) => g.genres.includes("ACTION"));
 export const COUCH_GAMES  = ALL_GAMES.filter((g) => g.genres.includes("COUCH"));
 
-export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];
+export const PLAYER_COUNT_ORDER: PlayerCountKey[] = ["SOLO", "ONE_TWO", "TWO_FOUR", "FOUR_PLUS"];

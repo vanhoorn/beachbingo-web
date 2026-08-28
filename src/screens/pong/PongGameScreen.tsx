@@ -2,11 +2,13 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, addDoc, collection, getDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../firebase";
-import { GameHudBar, QuitConfirmDialog } from "../../components/GameHudBar";
+import { GameHudBar, QuitConfirmDialog, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import type { PongDifficulty, PongGame, PongSide } from "../../types";
+import { saveGame, generateGameSaveId, deleteGameSave, getGameSave } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 
 interface PongSettings {
   totalPaddles: number;
@@ -17,6 +19,7 @@ interface PongSettings {
   isHost?: boolean;
   mySide?: PongSide;
   guestSides?: PongSide[];
+  saveId?: string;
 }
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
@@ -106,7 +109,7 @@ export default function PongGameScreen() {
   const settings: PongSettings = (location.state as PongSettings) || {
     totalPaddles: 2, humanCount: 1, difficulty: "ROOKIE", scoreLimit: 7,
   };
-  const { totalPaddles, humanCount, difficulty, scoreLimit, gameId, isHost, mySide = "left" } = settings;
+  const { totalPaddles, humanCount, difficulty, scoreLimit, gameId, isHost, mySide = "left", saveId } = settings;
   const guestSidesRef = useRef<PongSide[]>(settings.guestSides ?? []);
   const uid = auth.currentUser?.uid ?? "";
 
@@ -143,6 +146,39 @@ export default function PongGameScreen() {
   const resultWrittenRef = useRef(false);
   const [hostGone, setHostGone] = useState(false);
   const lastHbRef = useRef(Date.now());
+  const loserRef = useRef<PongSide | null>(null);
+  useEffect(() => { loserRef.current = loser; }, [loser]);
+
+  // Restore from save
+  useEffect(() => {
+    if (!saveId) return;
+    const s = getGameSave("pong");
+    if (!s) return;
+    try {
+      const parsed = JSON.parse(s.gameState) as { scores: Scores; wallSide: PongSide | null };
+      const g = gsRef.current;
+      g.scores = { ...parsed.scores };
+      if (parsed.wallSide) g.wallSide = parsed.wallSide;
+      setScores({ ...parsed.scores });
+    } catch { /* ignore */ }
+  }, [saveId]);
+
+  // Auto-save on tab close (AI/solo mode only)
+  useEffect(() => {
+    if (gameId || humanCount !== 1) return;
+    const cb = () => {
+      if (loserRef.current !== null) return;
+      const g = gsRef.current;
+      saveGame({
+        id: generateGameSaveId(), gameType: "pong", difficulty,
+        gameState: JSON.stringify({ scores: g.scores, wallSide: g.wallSide, totalPaddles, humanCount, scoreLimit }),
+        displayLabel: `${g.scores.left}:${g.scores.right} · Ziel: ${scoreLimit}`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
 
   // AI config
   const aiSpd = difficulty === "ROOKIE" ? 2.8 : difficulty === "SNIPER" ? 5   : 9;
@@ -748,7 +784,27 @@ export default function PongGameScreen() {
         )}
       </div>
 
-      {showQuitDialog && (
+      {showQuitDialog && humanCount === 1 && !gameId ? (
+        <GameSaveQuitDialog
+          emoji="🏓"
+          message={`${scores.left}:${scores.right} · Ziel: ${scoreLimit}`}
+          onContinue={() => { setShowQuitDialog(false); setManualPaused(false); manualPausedRef.current = false; }}
+          onSaveAndQuit={() => {
+            const g = gsRef.current;
+            saveGame({
+              id: generateGameSaveId(), gameType: "pong", difficulty,
+              gameState: JSON.stringify({ scores: g.scores, wallSide: g.wallSide, totalPaddles, humanCount, scoreLimit }),
+              displayLabel: `${g.scores.left}:${g.scores.right} · Ziel: ${scoreLimit}`,
+              savedAt: Date.now(),
+            });
+            navigate("/pong/lobby", { replace: true });
+          }}
+          onQuitWithoutSave={() => {
+            deleteGameSave("pong");
+            navigate("/pong/lobby", { replace: true });
+          }}
+        />
+      ) : showQuitDialog && (
         <QuitConfirmDialog
           emoji="🏓"
           message="Das laufende Spiel wird beendet."

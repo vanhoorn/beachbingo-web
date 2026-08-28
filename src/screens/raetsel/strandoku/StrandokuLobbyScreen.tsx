@@ -74,24 +74,20 @@ export default function StrandokuLobbyScreen() {
         {/* Variant selection */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Variante</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {VARIANTS.map(v => (
               <button
                 key={v}
                 onClick={() => setVariant(v)}
                 style={{
-                  padding: "12px 16px", textAlign: "left",
+                  padding: "12px", textAlign: "left",
                   background: variant === v ? ACCENT + "22" : "var(--surface)",
                   border: `1.5px solid ${variant === v ? ACCENT : "var(--border)"}`,
                   borderRadius: 12, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 12,
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: variant === v ? ACCENT : "var(--text)" }}>{VARIANT_LABELS[v]}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{VARIANT_DESCRIPTIONS[v]}</div>
-                </div>
-                {variant === v && <span style={{ color: ACCENT, fontSize: 18 }}>✓</span>}
+                <div style={{ fontSize: 14, fontWeight: 700, color: variant === v ? ACCENT : "var(--text)" }}>{VARIANT_LABELS[v]}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{VARIANT_DESCRIPTIONS[v]}</div>
               </button>
             ))}
           </div>

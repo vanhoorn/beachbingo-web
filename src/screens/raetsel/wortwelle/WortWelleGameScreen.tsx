@@ -248,12 +248,12 @@ export default function WortWelleGameScreen() {
       difficulty, seed: 0, puzzleState: serializeState(gs),
       startedAt: Date.now(), elapsedSeconds: elapsed,
     });
-    navigate(-1);
+    navigate("/raetsel/wortwelle/lobby", { replace: true });
   };
 
   const handleQuitNoSave = () => {
     deletePuzzleSave(saveIdRef.current);
-    navigate(-1);
+    navigate("/raetsel/wortwelle/lobby", { replace: true });
   };
 
   // Zellen-Berechnung für Responsive-Layout
@@ -459,7 +459,7 @@ export default function WortWelleGameScreen() {
           maxGuesses={cfg.maxGuesses}
           elapsed={elapsed}
           difficulty={difficulty}
-          onClose={() => navigate(-1)}
+          onClose={() => navigate("/raetsel/wortwelle/lobby", { replace: true })}
         />
       )}
 
@@ -472,7 +472,7 @@ export default function WortWelleGameScreen() {
           maxGuesses={cfg.maxGuesses}
           elapsed={elapsed}
           difficulty={difficulty}
-          onClose={() => navigate(-1)}
+          onClose={() => navigate("/raetsel/wortwelle/lobby", { replace: true })}
         />
       )}
 

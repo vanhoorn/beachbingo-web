@@ -88,8 +88,9 @@ export default function MahjongBoard({
   const containerRef        = useRef<HTMLDivElement>(null);
   const activePointers      = useRef<Map<number, { x: number; y: number }>>(new Map());
 
-  // Reset zoom when layout changes
-  useEffect(() => { setZoom(metrics?.initialZoom ?? 1); setPanX(0); setPanY(0); }, [state.layoutId]);
+  // Reset zoom when layout changes; start at 1.8× fit-zoom for a closer initial view
+  const defaultZoom = Math.min(3, (metrics?.initialZoom ?? 1) * 1.8);
+  useEffect(() => { setZoom(defaultZoom); setPanX(0); setPanY(0); }, [state.layoutId]);
 
   const clampZoom = (z: number) => Math.min(3, Math.max(metrics?.initialZoom ?? 0.25, z));
 
@@ -186,10 +187,10 @@ export default function MahjongBoard({
       <div style={{
         position: "absolute", bottom: 6, right: 8, zIndex: 10,
         fontSize: 10, color: "var(--text-muted)", pointerEvents: "none",
-        background: zoom !== (metrics?.initialZoom ?? 1) ? "var(--surface2)" : undefined,
-        borderRadius: 4, padding: zoom !== (metrics?.initialZoom ?? 1) ? "2px 6px" : undefined,
+        background: Math.abs(zoom - defaultZoom) > 0.05 ? "var(--surface2)" : undefined,
+        borderRadius: 4, padding: Math.abs(zoom - defaultZoom) > 0.05 ? "2px 6px" : undefined,
       }}>
-        {zoom !== (metrics?.initialZoom ?? 1) ? `${Math.round(zoom * 100)}%` : "Pinch / Scroll zum Zoomen"}
+        {Math.abs(zoom - defaultZoom) > 0.05 ? `${Math.round(zoom * 100)}%` : "Pinch / Scroll zum Zoomen"}
       </div>
 
       {/* Board canvas */}

@@ -9,6 +9,7 @@ import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 
 const ROWS = 6;
 const COLS = 7;
@@ -199,6 +200,21 @@ export default function VierGameScreen() {
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localRef = useRef(local);
   useEffect(() => { localRef.current = local; }, [local]);
+
+  useEffect(() => {
+    const cb = () => {
+      const gs = localRef.current;
+      if (mode !== "ai" || gs.winner !== null || gs.draw) return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "vier", difficulty: aiDifficulty ?? "SNIPER",
+        gameState: JSON.stringify({ board: gs.board, currentPlayer: gs.currentPlayer, myDrinkId, aiDrinkId }),
+        displayLabel: `KI · ${gs.board.filter(x => x !== 0).length} Steine`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
 
   useEffect(() => {
     audioManager.startMusic("vier");

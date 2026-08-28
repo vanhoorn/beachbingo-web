@@ -8,6 +8,7 @@ import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 
 // ── Canvas dimensions ─────────────────────────────────────────────────────────
 const CW = 400;
@@ -231,6 +232,22 @@ export default function PiratesGameScreen() {
   const [showQuitDialog, setShowQuitDialog] = useState(false);
   const [showRules, setShowRules]            = useState(false);
 
+  // Auto-save on tab close / page reload
+  useEffect(() => {
+    const cb = () => {
+      const gs = gsRef.current;
+      if (gs.phase === "game_over") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "pirates", difficulty,
+        gameState: buildPiratesState(gs),
+        displayLabel: `Score: ${gs.score} · Welle: ${gs.wave}`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, [difficulty]);
+
   // Keep pausedRef in sync (game loop reads ref, not state)
   function setPausedSync(val: boolean) {
     pausedRef.current = val;
@@ -263,8 +280,25 @@ export default function PiratesGameScreen() {
     const save = getGameSave("pirates");
     if (!save) return;
     try {
-      const s = JSON.parse(save.gameState) as { score: number; lives: number; wave: number };
-      gsRef.current = initGS(waveDiff(s.wave), s.wave, s.lives, s.score);
+      const s = JSON.parse(save.gameState) as any;
+      const gs = initGS(waveDiff(s.wave), s.wave, s.lives, s.score);
+      if (s.playerX !== undefined) gs.playerX = s.playerX;
+      if (s.groupX !== undefined) gs.groupX = s.groupX;
+      if (s.groupDir !== undefined) gs.groupDir = s.groupDir;
+      if (s.moveTimer !== undefined) gs.moveTimer = s.moveTimer;
+      if (s.moveInterval !== undefined) gs.moveInterval = s.moveInterval;
+      if (Array.isArray(s.invaders)) {
+        for (const si of s.invaders as { col: number; row: number; alive: boolean; x: number; y: number }[]) {
+          const inv = gs.invaders.find(i => i.col === si.col && i.row === si.row);
+          if (inv) { inv.alive = si.alive; inv.x = si.x; inv.y = si.y; }
+        }
+      }
+      if (Array.isArray(s.shields)) {
+        (s.shields as boolean[][]).forEach((sb, i) => {
+          if (gs.shields[i] && Array.isArray(sb)) gs.shields[i].blocks = [...sb];
+        });
+      }
+      gsRef.current = gs;
       setUiScore(s.score);
       setUiLives(s.lives);
       setUiWave(s.wave);
@@ -566,6 +600,17 @@ export default function PiratesGameScreen() {
     if (next) audioManager.stopMusic();
     else audioManager.startMusic("pirates");
   }
+  function buildPiratesState(gs: GS): string {
+    return JSON.stringify({
+      score: gs.score, lives: gs.lives, wave: gs.wave,
+      playerX: gs.playerX,
+      groupX: gs.groupX, groupDir: gs.groupDir,
+      moveTimer: gs.moveTimer, moveInterval: gs.moveInterval,
+      invaders: gs.invaders.map(inv => ({ col: inv.col, row: inv.row, alive: inv.alive, x: inv.x, y: inv.y })),
+      shields: gs.shields.map(sh => sh.blocks),
+    });
+  }
+
   function handleQuitRequest() {
     setPausedSync(true);
     setShowQuitDialog(true);
@@ -580,8 +625,8 @@ export default function PiratesGameScreen() {
       id: generateGameSaveId(),
       gameType: "pirates",
       difficulty,
-      gameState: JSON.stringify({ score: gs.score, lives: gs.lives, wave: gs.wave }),
-      displayLabel: `Score: ${gs.score} · Wave: ${gs.wave} · Leben: ${gs.lives}`,
+      gameState: buildPiratesState(gs),
+      displayLabel: `Score: ${gs.score} · Welle: ${gs.wave} · Leben: ${gs.lives}`,
       savedAt: Date.now(),
     });
     navigate("/pirates/lobby", { replace: true });

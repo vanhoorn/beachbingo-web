@@ -218,7 +218,7 @@ export default function DuenenschattenGameScreen() {
                 <span style={{ color: "var(--success)", marginLeft: 8 }}>⭐ Neue Bestzeit!</span>
               )}
             </div>
-            <button onClick={() => navigate(-1)} style={{ ...controlBtnStyle("var(--primary)"), width: "100%", padding: "14px 0" }}>
+            <button onClick={() => navigate("/raetsel/duenenschatten/lobby", { replace: true })} style={{ ...controlBtnStyle("var(--primary)"), width: "100%", padding: "14px 0" }}>
               Zurück zur Lobby
             </button>
           </div>
@@ -234,8 +234,8 @@ export default function DuenenschattenGameScreen() {
         <GameSaveQuitDialog
           emoji="🏖️"
           onContinue={() => { setRunning(true); setShowQuit(false); }}
-          onSaveAndQuit={() => navigate(-1)}
-          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate(-1); }}
+          onSaveAndQuit={() => navigate("/raetsel/duenenschatten/lobby", { replace: true })}
+          onQuitWithoutSave={() => { deletePuzzleSave(saveIdRef.current); navigate("/raetsel/duenenschatten/lobby", { replace: true }); }}
         />
       )}
     </div>

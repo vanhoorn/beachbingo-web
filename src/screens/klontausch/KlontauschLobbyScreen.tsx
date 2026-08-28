@@ -263,6 +263,18 @@ export default function KlontauschLobbyScreen() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-outline btn-sm"
+            onClick={() => navigate("/klontausch/settings")}
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            title="Einstellungen">
+            ⚙️
+          </button>
+          <button className="btn btn-outline btn-sm"
+            onClick={() => navigate("/klontausch/gallery")}
+            style={{ width: 42, padding: 0, fontSize: 18, color: "rgba(255,255,255,0.8)", borderColor: "rgba(255,255,255,0.2)" }}
+            title="Figurengalerie">
+            🖼️
+          </button>
+          <button className="btn btn-outline btn-sm"
             onClick={toggleFavorite}
             style={{ width: 42, padding: 0, fontSize: 18, color: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.8)", borderColor: isFavorite ? "var(--accent)" : "rgba(255,255,255,0.2)" }}>
             {isFavorite ? "★" : "☆"}

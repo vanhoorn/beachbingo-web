@@ -208,7 +208,7 @@ export default function WortWelleLobbyScreen() {
                     onClick={() => resumeSave(save)}
                     style={{ padding: "8px 14px", background: ACCENT + "22", color: ACCENT, border: `1px solid ${ACCENT}55`, borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13 }}
                   >
-                    Weiter →
+                    Fortsetzen
                   </button>
                   <button
                     onClick={() => deletePuzzleSave(save.id)}

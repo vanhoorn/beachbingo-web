@@ -106,9 +106,16 @@ export default function JoinScreen() {
     if (qr?.data) {
       const scanned = qr.data.trim();
       stopCamera();
-      // The QR code may be a gameId directly or a URL containing the gameId
-      const match = scanned.match(/[A-Za-z0-9]{20,}/);
-      const gameId = match ? match[0] : scanned;
+      // Try to extract ?join= or ?code= from a URL, then fall back to long-ID match
+      let gameId = "";
+      try {
+        const url = new URL(scanned);
+        gameId = url.searchParams.get("join") ?? url.searchParams.get("code") ?? "";
+      } catch { /* not a URL */ }
+      if (!gameId) {
+        const match = scanned.match(/[A-Za-z0-9]{20,}/);
+        gameId = match ? match[0] : scanned;
+      }
       setCode(gameId);
       joinWithCode(gameId);
     } else {
@@ -131,7 +138,7 @@ export default function JoinScreen() {
     setErrorMsg("");
 
     // Try all collections in parallel
-    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap, strandraeuberSnap, kriegSnap] = await Promise.all([
+    const [bingoSnap, pongSnap, vierSnap, brandungSnap, meermauSnap, strandraeuberSnap, kriegSnap, klontauschSnap] = await Promise.all([
       getDoc(doc(db, "games",               rawCode)),
       getDoc(doc(db, "pongGames",           rawCode)),
       getDoc(doc(db, "vierGames",           rawCode)),
@@ -139,6 +146,7 @@ export default function JoinScreen() {
       getDoc(doc(db, "meermauGames",        rawCode)),
       getDoc(doc(db, "strandraeuberGames",  rawCode)),
       getDoc(doc(db, "kuestenkriegGames",   rawCode)),
+      getDoc(doc(db, "klontauschGames",     rawCode)),
     ]);
 
     try {
@@ -156,6 +164,8 @@ export default function JoinScreen() {
         await joinStrandraeuber(rawCode, { gameId: rawCode, ...strandraeuberSnap.data() } as SpOnlineGame, user);
       } else if (kriegSnap.exists()) {
         await joinKuestenkrieg(rawCode, { gameId: rawCode, ...kriegSnap.data() } as KriegOnlineGame, user);
+      } else if (klontauschSnap.exists()) {
+        await joinKlontausch(rawCode, klontauschSnap.data()!, user);
       } else {
         setErrorMsg("Kein Spiel mit diesem Code gefunden.");
         setScanState("error");
@@ -296,6 +306,18 @@ export default function JoinScreen() {
       status: "RUNNING",
     });
     navigate("/vier/game", { state: { mode: "online", gameId: code, myDrinkId } });
+  }
+
+  async function joinKlontausch(code: string, g: Record<string, unknown>, _user: User) {
+    const status = g.status as string;
+    const playerIds = (g.playerIds as string[]) ?? [];
+    if (status === "PLAYING" && !playerIds.includes(uid)) {
+      setErrorMsg("Das Spiel läuft bereits.");
+      setScanState("error");
+      return;
+    }
+    // Lobby-Screen handles the actual join & Firestore subscription via ?join= param
+    navigate("/klontausch/lobby?join=" + code);
   }
 
   const isLoading = scanState === "loading";
@@ -443,7 +465,7 @@ export default function JoinScreen() {
           <span style={{ fontSize: 20 }}>💡</span>
           <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
             Der Gastgeber findet den Einladungscode und QR-Code in der Spiellobby.
-            Du kannst an BeachBingo, BeachVolley, Vier4Bier, Strandräuber und Küstenkrieg beitreten.
+            Du kannst an BeachBingo, BeachVolley, Vier4Bier, Brandung, MeerMau, Strandräuber, Klontausch und Küstenkrieg beitreten.
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import {
 } from "./brandungLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
@@ -171,6 +172,21 @@ export default function BrandungGameScreen() {
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localRef = useRef(local);
   useEffect(() => { localRef.current = local; }, [local]);
+
+  useEffect(() => {
+    const cb = () => {
+      const gs = localRef.current;
+      if (mode !== "ai" || !gs || gs.phase !== "TURN") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "brandung", difficulty,
+        gameState: JSON.stringify({ ...gs, aiThinking: false }),
+        displayLabel: `Runde ${gs.round} · ${gs.players.length} Spieler · ${gs.players[0]?.lives ?? 0}♥`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
 
   useEffect(() => {
     audioManager.startMusic("brandung");

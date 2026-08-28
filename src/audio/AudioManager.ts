@@ -766,9 +766,36 @@ class AudioManager {
   private loopTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private currentTrack: TrackId | null = null;
+  private _visibilityTrack: TrackId | null = null;
 
   soundEnabled = true;
   musicEnabled = true;
+
+  constructor() {
+    if (typeof document !== "undefined") {
+      // Warm up AudioContext on first user gesture to reduce SFX latency.
+      const warm = () => {
+        const ctx = this.getCtx();
+        const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buf; src.connect(ctx.destination); src.start();
+      };
+      document.addEventListener("click", warm, { once: true });
+      document.addEventListener("touchstart", warm, { once: true });
+      document.addEventListener("keydown", warm, { once: true });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          this._visibilityTrack = this.currentTrack;
+          if (this.currentTrack) this.stopMusic();
+        } else {
+          const t = this._visibilityTrack;
+          this._visibilityTrack = null;
+          if (t && this.musicEnabled) this.startMusic(t);
+        }
+      });
+    }
+  }
 
   private getCtx(): AudioContext {
     if (!this.ctx) {
@@ -833,6 +860,7 @@ class AudioManager {
   }
 
   stopMusic() {
+    this._visibilityTrack = null;
     if (this.currentHowl) {
       this.currentHowl.unload();
       this.currentHowl = null;

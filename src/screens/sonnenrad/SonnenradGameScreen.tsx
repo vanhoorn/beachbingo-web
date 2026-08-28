@@ -293,6 +293,11 @@ export default function SonnenradGameScreen() {
   const climbRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  useEffect(() => {
+    audioManager.startMusic("sonnenrad");
+    return () => audioManager.stopMusic();
+  }, []);
+
   // Countdown timer (only in BONUS_READY when no bonus)
   useEffect(() => {
     if (phase !== "BONUS_READY" || isBonusRound) return;
@@ -575,7 +580,7 @@ export default function SonnenradGameScreen() {
         <QuitConfirmDialog
           emoji="☀️"
           message="Das Sonnenrad-Spiel wird beendet."
-          onConfirm={() => navigate(-1)}
+          onConfirm={() => navigate("/sonnenrad", { replace: true })}
           onDismiss={() => setShowQuit(false)}
         />
       )}

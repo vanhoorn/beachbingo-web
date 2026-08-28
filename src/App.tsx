@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { audioManager } from "./audio/AudioManager";
+import { runAllSaveCallbacks } from "./saveRegistry";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -80,6 +81,8 @@ import SonnenradGameScreen from "./screens/sonnenrad/SonnenradGameScreen";
 import KlontauschLobbyScreen from "./screens/klontausch/KlontauschLobbyScreen";
 import KlontauschGameScreen from "./screens/klontausch/KlontauschGameScreen";
 import KlontauschResultsScreen from "./screens/klontausch/KlontauschResultsScreen";
+import KlontauschGalleryScreen from "./screens/klontausch/KlontauschGalleryScreen";
+import KlontauschSettingsScreen from "./screens/klontausch/KlontauschSettingsScreen";
 
 // Wrapper: forces full remount when navigating to a new/retried level (key changes per instance)
 function PerlentaucherGameKey() {
@@ -90,6 +93,12 @@ function PerlentaucherGameKey() {
 
 function App() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const handler = () => runAllSaveCallbacks();
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
@@ -194,6 +203,8 @@ function App() {
         <Route path="/klontausch/lobby"    element={loggedIn ? <KlontauschLobbyScreen />   : <Navigate to="/login" />} />
         <Route path="/klontausch/game"     element={loggedIn ? <KlontauschGameScreen />    : <Navigate to="/login" />} />
         <Route path="/klontausch/results"  element={loggedIn ? <KlontauschResultsScreen /> : <Navigate to="/login" />} />
+        <Route path="/klontausch/gallery"   element={loggedIn ? <KlontauschGalleryScreen /> : <Navigate to="/login" />} />
+        <Route path="/klontausch/settings" element={loggedIn ? <KlontauschSettingsScreen /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={loggedIn ? "/home" : "/login"} />} />
       </Routes>
     </BrowserRouter>

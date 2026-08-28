@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, addDoc, collection } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
@@ -35,29 +35,44 @@ function countMarked(player: BingoPlayer, drawnNumbers: number[]): number {
   return player.card.grid.filter((n) => n !== 0 && drawnNumbers.includes(n)).length;
 }
 
+const BINGO_LETTER = (n: number) => n <= 15 ? "B" : n <= 30 ? "I" : n <= 45 ? "N" : n <= 60 ? "G" : "O";
+const ORBIT_DELAYS = [0, 0.6, 1.2, 1.8, 2.4];
+
 function DrumAnimation() {
   const [displayNum, setDisplayNum] = useState(() => Math.floor(Math.random() * 75) + 1);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const tick = useCallback(() => {
-    setDisplayNum(Math.floor(Math.random() * 75) + 1);
-  }, []);
+  const [dots, setDots] = useState(1);
 
   useEffect(() => {
-    intervalRef.current = setInterval(tick, 120);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [tick]);
+    const numId = setInterval(() => setDisplayNum(Math.floor(Math.random() * 75) + 1), 120);
+    const dotId = setInterval(() => setDots(d => d >= 3 ? 1 : d + 1), 450);
+    return () => { clearInterval(numId); clearInterval(dotId); };
+  }, []);
 
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>🥁 Ziehe…</div>
-      <div className="drum-wrapper">
-        <div className="drum-outer">
-          <div className="drum-stripe" />
-        </div>
-        <div className="drum-inner-ring" />
-        <div className="drum-ball">
-          <span className="drum-ball-number">{displayNum}</span>
+      <div className="drum-label">🥁 Lostrommel{"·".repeat(dots)}</div>
+      <div className="drum-scene">
+        {/* Orbiting mini-balls */}
+        {ORBIT_DELAYS.map((delay, i) => (
+          <div key={i} className="drum-mini-orbit" style={{ animationDelay: `-${delay}s` }}>
+            <div className="drum-mini-ball" />
+          </div>
+        ))}
+        <div className="drum-wrapper">
+          <div className="drum-outer">
+            <div className="drum-stripe" />
+            <div className="drum-spoke" />
+            <div className="drum-spoke drum-spoke-45" />
+            <div className="drum-spoke drum-spoke-90" />
+            <div className="drum-spoke drum-spoke-135" />
+          </div>
+          <div className="drum-inner-ring" />
+          <div className="drum-ball">
+            <div className="drum-ball-inner">
+              <span className="drum-ball-letter">{BINGO_LETTER(displayNum)}</span>
+              <span className="drum-ball-number">{displayNum}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

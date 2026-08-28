@@ -10,6 +10,7 @@ import {
 import type { SpDifficulty } from "./strandraeuberLogic";
 import { audioManager } from "../../audio/AudioManager";
 import { getGameSave, saveGame, deleteGameSave, generateGameSaveId } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 import { GameHudBar, GameSaveQuitDialog } from "../../components/GameHudBar";
 import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
@@ -297,6 +298,21 @@ export default function StrandraeuberGameScreen() {
   const [local, setLocal] = useState<SpGameStateLocal | null>(null);
   const localRef = useRef<SpGameStateLocal | null>(null);
   useEffect(() => { localRef.current = local; }, [local]);
+
+  useEffect(() => {
+    const cb = () => {
+      const gs = localRef.current;
+      if (mode !== "ai" || !gs || gs.phase !== "PLAYING") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "strandraeuber", difficulty,
+        gameState: JSON.stringify({ ...gs, pairRevealInfo: null }),
+        displayLabel: `Runde ${gs.roundNumber} · ${gs.players.length} Spieler`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
 
   // Online mode state
   const [online, setOnline] = useState<SpOnlineGame | null>(null);

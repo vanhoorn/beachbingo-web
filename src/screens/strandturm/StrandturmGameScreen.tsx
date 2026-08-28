@@ -7,6 +7,7 @@ import GameRulesModal from "../../components/GameRulesModal";
 import { GAME_RULES } from "../../gameRules";
 import { audioManager } from "../../audio/AudioManager";
 import { saveGame, deleteGameSave, generateGameSaveId, getGameSave } from "../../gameSave";
+import { registerSaveCallback, unregisterSaveCallback } from "../../saveRegistry";
 
 // ── Canvas ─────────────────────────────────────────────────────────────────────
 const CW = 400, CH = 580;
@@ -1359,8 +1360,38 @@ export default function StrandturmGameScreen() {
     const save = getGameSave("strandturm");
     if (!save) return;
     try {
-      const s = JSON.parse(save.gameState) as { score: number; lives: number; level: number };
-      gsRef.current = makeGS(s.level, s.lives, s.score);
+      const s = JSON.parse(save.gameState) as any;
+      const gs = makeGS(s.level, s.lives, s.score);
+      if (s.px !== undefined) gs.px = s.px;
+      if (s.py !== undefined) gs.py = s.py;
+      if (s.pvx !== undefined) gs.pvx = s.pvx;
+      if (s.pvy !== undefined) gs.pvy = s.pvy;
+      if (s.ponGround !== undefined) gs.ponGround = s.ponGround;
+      if (s.ponLadder !== undefined) gs.ponLadder = s.ponLadder;
+      if (s.pladderIdx !== undefined) gs.pladderIdx = s.pladderIdx;
+      if (s.pfacing !== undefined) gs.pfacing = s.pfacing;
+      if (s.pinvTimer !== undefined) gs.pinvTimer = s.pinvTimer;
+      if (s.bonusTimer !== undefined) gs.bonusTimer = s.bonusTimer;
+      if (s.hasHammer !== undefined) gs.hasHammer = s.hasHammer;
+      if (s.hammerTimer !== undefined) gs.hammerTimer = s.hammerTimer;
+      if (Array.isArray(s.hammerPickups)) gs.hammerPickups = [...s.hammerPickups];
+      if (Array.isArray(s.oktos)) {
+        (s.oktos as { x: number; vx: number }[]).forEach((so, i) => {
+          if (gs.oktos[i]) { gs.oktos[i].x = so.x; gs.oktos[i].vx = so.vx; }
+        });
+      }
+      if (Array.isArray(s.elevators)) {
+        (s.elevators as { y: number; vy: number }[]).forEach((se, i) => {
+          if (gs.elevators[i]) { gs.elevators[i].y = se.y; gs.elevators[i].vy = se.vy; }
+        });
+      }
+      if (Array.isArray(s.nieten)) {
+        (s.nieten as { collected: boolean }[]).forEach((sn, i) => {
+          if (gs.nieten[i]) gs.nieten[i].collected = sn.collected ?? false;
+        });
+      }
+      if (s.nietenCollected !== undefined) gs.nietenCollected = s.nietenCollected;
+      gsRef.current = gs;
       setScore(s.score);
       setLives(s.lives);
     } catch { /* ignore malformed save */ }
@@ -1387,10 +1418,42 @@ export default function StrandturmGameScreen() {
     return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-save on tab close / page reload
+  useEffect(() => {
+    const cb = () => {
+      const gs = gsRef.current;
+      if (gs.phase !== "PLAYING") return;
+      saveGame({
+        id: generateGameSaveId(), gameType: "strandturm", difficulty: "default",
+        gameState: buildStrandturmState(gs),
+        displayLabel: `Score: ${gs.score} · Level ${gs.level} · Leben: ${gs.lives}`,
+        savedAt: Date.now(),
+      });
+    };
+    registerSaveCallback(cb);
+    return () => unregisterSaveCallback(cb);
+  }, []);
+
   function togglePause() {
     const gs = gsRef.current;
     if (gs.phase !== "PLAYING") return;
     setPaused((p) => !p);
+  }
+
+  function buildStrandturmState(gs: GS): string {
+    return JSON.stringify({
+      score: gs.score, lives: gs.lives, level: gs.level,
+      px: gs.px, py: gs.py, pvx: gs.pvx, pvy: gs.pvy,
+      ponGround: gs.ponGround, ponLadder: gs.ponLadder, pladderIdx: gs.pladderIdx,
+      pfacing: gs.pfacing, pinvTimer: gs.pinvTimer,
+      bonusTimer: gs.bonusTimer,
+      hasHammer: gs.hasHammer, hammerTimer: gs.hammerTimer,
+      hammerPickups: [...gs.hammerPickups],
+      oktos: gs.oktos.map(o => ({ x: o.x, vx: o.vx })),
+      elevators: gs.elevators.map(e => ({ y: e.y, vy: e.vy })),
+      nieten: gs.nieten.map(n => ({ collected: n.collected })),
+      nietenCollected: gs.nietenCollected,
+    });
   }
 
   function handleSaveAndQuit() {
@@ -1399,7 +1462,7 @@ export default function StrandturmGameScreen() {
       id: generateGameSaveId(),
       gameType: "strandturm",
       difficulty: "default",
-      gameState: JSON.stringify({ score: gs.score, lives: gs.lives, level: gs.level }),
+      gameState: buildStrandturmState(gs),
       displayLabel: `Score: ${gs.score} · Level ${gs.level} · Leben: ${gs.lives}`,
       savedAt: Date.now(),
     });
