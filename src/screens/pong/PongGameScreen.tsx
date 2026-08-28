@@ -756,7 +756,7 @@ export default function PongGameScreen() {
           touchAction: "none", flexShrink: 0, cursor: "ns-resize",
         }}
       >
-        {humanCount >= 2 ? (
+        {humanCount >= 2 && !gameId ? (
           <>
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid #1a1a1a", gap: 8 }}>
               <div style={{ width: 3, height: 28, background: SIDE_COLOR.left, borderRadius: 2 }} />
