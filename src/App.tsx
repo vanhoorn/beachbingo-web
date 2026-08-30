@@ -5,6 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { audioManager } from "./audio/AudioManager";
 import { runAllSaveCallbacks } from "./saveRegistry";
+import { migrateLocalStorageFavorites } from "./favorites";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -104,7 +105,6 @@ function App() {
     return onAuthStateChanged(auth, (user) => {
       setLoggedIn(!!user);
       if (user) {
-        // Load audio preferences once on login
         getDoc(doc(db, "users", user.uid)).then((snap) => {
           if (snap.exists()) {
             const data = snap.data();
@@ -112,6 +112,7 @@ function App() {
             audioManager.setMusic(data.musicEnabled !== false);
           }
         });
+        migrateLocalStorageFavorites(user.uid);
       }
     });
   }, []);

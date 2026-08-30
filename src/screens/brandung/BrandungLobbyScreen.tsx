@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
+import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -62,7 +63,7 @@ export default function BrandungLobbyScreen() {
   const [aiCount, setAiCount] = useState(2);
   const [difficulty, setDifficulty] = useState<BrandungDifficulty>("SNIPER");
   const [settings, setSettings] = useState<BrandungSettings>({ newCardsOnAllPass: true, passingForbidden: false });
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("brandung");
   const [showRules, setShowRules] = useState(false);
   const [brandungSave, setBrandungSave] = useState(() => getGameSave("brandung"));
 
@@ -80,7 +81,6 @@ export default function BrandungLobbyScreen() {
       const u = snap.data() as User;
       if (u.brandungNewCardsOnAllPass !== undefined) setSettings(s => ({ ...s, newCardsOnAllPass: u.brandungNewCardsOnAllPass! }));
       if (u.brandungPassingForbidden !== undefined) setSettings(s => ({ ...s, passingForbidden: u.brandungPassingForbidden! }));
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("brandung"));
     });
     return () => { unsubRef.current?.(); };
   }, [uid]);
@@ -110,13 +110,6 @@ export default function BrandungLobbyScreen() {
     join();
   }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function toggleFavorite() {
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("brandung") : arrayRemove("brandung"),
-    });
-  }
 
   function startVsAi() {
     navigate("/brandung/game", { state: { mode: "ai", aiCount, difficulty, settings } });
@@ -252,7 +245,7 @@ export default function BrandungLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>
         ‹ Spielauswahl
       </button>
 

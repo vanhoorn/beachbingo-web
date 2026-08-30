@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFavorite } from "../../../favorites";
 import { useNavigate } from "react-router-dom";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
 import type { HitoriDifficulty } from "./duenenschattenLogic";
@@ -15,17 +16,7 @@ export default function DuenenschattenLobbyScreen() {
   const saves = getPuzzleSaves().filter(s => s.gameType === "duenenschatten");
   const [showStats, setShowStats] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("duenenschatten"); }
-    catch { return false; }
-  });
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "duenenschatten"])] : favs.filter(f => f !== "duenenschatten")));
-    } catch { }
-  }
+  const [isFavorite, toggleFavorite] = useFavorite("duenenschatten");
 
   const startNew = () => {
     navigate("/raetsel/duenenschatten/game", {

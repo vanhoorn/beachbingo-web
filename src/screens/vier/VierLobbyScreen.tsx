@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, deleteDoc } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -28,7 +29,7 @@ export default function VierLobbyScreen() {
   const [creating, setCreating] = useState(false);
   const [waitingGame, setWaitingGame] = useState<VierGame | null>(null);
   const [error, setError] = useState("");
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("vier");
   const [showRules, setShowRules] = useState(false);
   const [vierSave, setVierSave] = useState(() => getGameSave("vier"));
   const navigate = useNavigate();
@@ -61,18 +62,9 @@ export default function VierLobbyScreen() {
         if (u.preferredVierDrinkId) setMyDrinkId(u.preferredVierDrinkId);
         if (u.preferredVierDifficulty) setAiDifficulty(u.preferredVierDifficulty);
       }
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("vier"));
     });
   }, [uid]);
 
-  async function toggleFavorite() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("vier") : arrayRemove("vier"),
-    });
-  }
 
   // Handle ?join= deep-link (QR scan)
   useEffect(() => {
@@ -136,7 +128,7 @@ export default function VierLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>
         ‹ Spielauswahl
       </button>
 

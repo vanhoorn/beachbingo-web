@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { User } from "../../types";
@@ -16,7 +17,7 @@ export default function StrandturmLobbyScreen() {
   const [highScore, setHighScore] = useState(0);
   const [bestLevel, setBestLevel] = useState(0);
   const [startLevel, setStartLevel] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("strandturm");
   const [showRules, setShowRules] = useState(false);
   const [loading, setLoading] = useState(true);
   const [turmSave, setTurmSave] = useState(() => getGameSave("strandturm"));
@@ -32,22 +33,11 @@ export default function StrandturmLobbyScreen() {
         setHighScore(u.strandturmHighScore ?? 0);
         setBestLevel(u.strandturmBestLevel ?? 0);
         setStartLevel((u as any).strandturmStartLevel ?? 1);
-        setIsFavorite(
-          ((u as unknown as Record<string, string[]>).favoriteGames ?? []).includes("strandturm")
-        );
       }
       setLoading(false);
     });
   }, [uid]);
 
-  async function toggleFavorite() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("strandturm") : arrayRemove("strandturm"),
-    });
-  }
 
   if (loading) {
     return (
@@ -59,7 +49,7 @@ export default function StrandturmLobbyScreen() {
 
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>‹ Zurück</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>‹ Zurück</button>
       {/* Header */}
       <div className="flex items-center" style={{ gap: 12 }}>
         <h2 style={{ fontSize: 20 }}>Strandturm</h2>

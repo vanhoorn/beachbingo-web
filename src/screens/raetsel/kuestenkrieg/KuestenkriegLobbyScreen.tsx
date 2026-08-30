@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, query, where, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "../../../firebase";
+import { useFavorite } from "../../../favorites";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
 import type { KriegDifficulty } from "./kuestenkriegLogic";
 import GameRulesModal from "../../../components/GameRulesModal";
@@ -96,17 +97,7 @@ export default function KuestenkriegLobbyScreen() {
   const [showRules, setShowRules] = useState(false);
   const saves = getPuzzleSaves().filter(s => s.gameType === "kuestenkrieg");
   const kiSaves = getPuzzleSaves().filter(s => s.gameType === "kuestenkrieg_ki");
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("kuestenkrieg"); }
-    catch { return false; }
-  });
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "kuestenkrieg"])] : favs.filter(f => f !== "kuestenkrieg")));
-    } catch { }
-  }
+  const [isFavorite, toggleFavorite] = useFavorite("kuestenkrieg");
 
   useEffect(() => {
     if (!uid) return;

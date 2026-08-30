@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -48,7 +49,7 @@ export default function KlontauschLobbyScreen() {
   const [mode, setMode]           = useState<Mode>("ai");
   const [aiCount, setAiCount]     = useState(2);
   const [difficulty, setDifficulty] = useState("SNIPER");
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("klontausch");
   const [showRules, setShowRules] = useState(false);
   const [klonSave, setKlonSave]   = useState(() => getGameSave("klontausch"));
 
@@ -68,21 +69,12 @@ export default function KlontauschLobbyScreen() {
       const u = snap.data() as User;
       setMyName(u.displayName ?? "Du");
       setMyAvatar(u.avatarUrl ?? "👤");
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("klontausch"));
     });
     const code = new URLSearchParams(window.location.search).get("join");
     if (code) joinExistingGame(code.toUpperCase());
     return () => { unsubRef.current?.(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
-
-  async function toggleFavorite() {
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("klontausch") : arrayRemove("klontausch"),
-    });
-  }
 
   function startVsAi() {
     sessionStorage.setItem("klontauschGame", JSON.stringify({

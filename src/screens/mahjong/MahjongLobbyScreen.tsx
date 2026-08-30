@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny } from "../../puzzleSave";
 import type { MahjongDifficulty } from "./MahjongLogic";
 import { LAYOUT_ORDER, LAYOUTS } from "./MahjongLayouts";
@@ -38,22 +39,10 @@ export default function MahjongLobbyScreen() {
   }, []);
   const [showRules, setShowRules]   = useState(false);
   const [showStats, setShowStats]   = useState(false);
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("mahjong"); }
-    catch { return false; }
-  });
+  const [isFavorite, toggleFavorite] = useFavorite("mahjong");
 
   const saves = getPuzzleSaves().filter((s) => s.gameType === "mahjong");
 
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(
-        next ? [...new Set([...favs, "mahjong"])] : favs.filter((f) => f !== "mahjong"),
-      ));
-    } catch { /* ignore */ }
-  }
 
   function startNew() {
     navigate("/mahjong/game", { state: { difficulty, layout, seed: Date.now() } });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
+import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -78,7 +79,7 @@ export default function StrandraeuberLobbyScreen() {
   const [aiCount, setAiCount]     = useState(2);
   const [difficulty, setDifficulty] = useState<SpDifficulty>("SNIPER");
   const [totalRounds, setTotalRounds] = useState(3);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("strandraeuber");
   const [showRules, setShowRules]  = useState(false);
   const [spSave, setSpSave] = useState(() => getGameSave("strandraeuber"));
 
@@ -100,18 +101,10 @@ export default function StrandraeuberLobbyScreen() {
       setMyAvatar(u.avatarUrl ?? "👤");
       if (u.preferredStrandraeuberDifficulty) setDifficulty(u.preferredStrandraeuberDifficulty as SpDifficulty);
       if (u.preferredStrandraeuberRounds)     setTotalRounds(u.preferredStrandraeuberRounds);
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("strandraeuber"));
     });
     return () => { unsubRef.current?.(); };
   }, [uid]);
 
-  async function toggleFavorite() {
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("strandraeuber") : arrayRemove("strandraeuber"),
-    });
-  }
 
   function startVsAi() {
     sessionStorage.setItem("spGame", JSON.stringify({
@@ -265,7 +258,7 @@ export default function StrandraeuberLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>
         ‹ Spielauswahl
       </button>
 

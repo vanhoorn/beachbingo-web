@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, onSnapshot, query, where, addDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, query, where, addDoc, deleteDoc } from "firebase/firestore";
+import { useFavorite } from "../favorites";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import type { BingoGame, User } from "../types";
@@ -44,7 +45,7 @@ export default function LobbyScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<BingoGame[]>([]);
   const [creating, setCreating] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("bingo");
   const [showRules, setShowRules] = useState(false);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
@@ -53,18 +54,9 @@ export default function LobbyScreen() {
     if (!uid) return;
     getDoc(doc(db, "users", uid)).then((snap) => {
       if (snap.exists()) setUser(snap.data() as User);
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("bingo"));
     });
   }, [uid]);
 
-  async function toggleFavorite() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("bingo") : arrayRemove("bingo"),
-    });
-  }
 
   useEffect(() => {
     if (!uid) return;
@@ -124,7 +116,7 @@ export default function LobbyScreen() {
       <button
         className="btn btn-outline btn-sm"
         style={{ alignSelf: "flex-start" }}
-        onClick={() => navigate("/home")}
+        onClick={() => navigate("/home", { replace: true })}
       >
         ‹ Spielauswahl
       </button>

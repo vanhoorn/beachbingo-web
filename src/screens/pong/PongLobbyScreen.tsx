@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useFavorite } from "../../favorites";
 import {
-  collection, doc, getDoc, onSnapshot, addDoc, updateDoc,
-  arrayUnion, arrayRemove, query, where, deleteDoc, runTransaction,
+  collection, doc, getDoc, onSnapshot, addDoc,
+  arrayUnion, query, where, deleteDoc, runTransaction,
 } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -33,7 +34,7 @@ export default function PongLobbyScreen() {
   const [humanCount,   setHumanCount]   = useState(1);
   const [difficulty,   setDifficulty]   = useState<PongDifficulty>("ROOKIE");
   const [scoreLimit,   setScoreLimit]   = useState(7);
-  const [isFavorite,   setIsFavorite]   = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("pong");
   const [showRules, setShowRules] = useState(false);
   const [saveTick, setSaveTick] = useState(0);
 
@@ -50,18 +51,9 @@ export default function PongLobbyScreen() {
     if (!uid) return;
     getDoc(doc(db, "users", uid)).then((snap) => {
       if (snap.exists()) setUser(snap.data() as User);
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("pong"));
     });
   }, [uid]);
 
-  async function toggleFavorite() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("pong") : arrayRemove("pong"),
-    });
-  }
 
   // Handle ?join= deep-link (QR scan / invitation link)
   const joinIdRef = useRef(new URLSearchParams(window.location.search).get("join"));
@@ -171,7 +163,7 @@ export default function PongLobbyScreen() {
 
   return (
     <div className="screen" style={{ gap: 0, paddingTop: 0 }}>
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start", marginTop: 16 }} onClick={() => navigate("/home")}>‹ Spielauswahl</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start", marginTop: 16 }} onClick={() => navigate("/home", { replace: true })}>‹ Spielauswahl</button>
 
       {/* Hero */}
       <div style={{

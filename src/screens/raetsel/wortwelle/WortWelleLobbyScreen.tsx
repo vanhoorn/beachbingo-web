@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useFavorite } from "../../../favorites";
 import {
   DIFFICULTIES, DIFFICULTY_CONFIG, getDailyWord, hasDailyBeenPlayed,
   getStats, initWwWordLists, isWwReady, type WortWelleDifficulty,
@@ -27,17 +28,7 @@ export default function WortWelleLobbyScreen() {
   const [showStats, setShowStats] = useState(false);
   const [wordBankReady, setWordBankReady] = useState(isWwReady);
   const saves = getPuzzleSaves().filter(s => s.gameType === "wortwelle");
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("wortwelle"); }
-    catch { return false; }
-  });
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "wortwelle"])] : favs.filter(f => f !== "wortwelle")));
-    } catch { }
-  }
+  const [isFavorite, toggleFavorite] = useFavorite("wortwelle");
 
   useEffect(() => {
     if (!isWwReady()) {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
+import { doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { auth, db } from "../../firebase";
@@ -62,7 +63,7 @@ export default function MeermauLobbyScreen() {
   const [aiCount, setAiCount] = useState(2);
   const [difficulty, setDifficulty] = useState<MeerMauDifficulty>("SNIPER");
   const [settings, setSettings] = useState<MeerMauSettings>(DEFAULT_MM_SETTINGS);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("meermau");
   const [showRules, setShowRules] = useState(false);
   const [meermauSave, setMeermauSave] = useState(() => getGameSave("meermau"));
 
@@ -81,7 +82,6 @@ export default function MeermauLobbyScreen() {
       if (u.meermauReverseOn9 !== undefined) setSettings(s => ({ ...s, reverseOn9: u.meermauReverseOn9! }));
       if (u.meermauStopperOn8 !== undefined) setSettings(s => ({ ...s, stopperOn8: u.meermauStopperOn8! }));
       if (u.meermauWildOn10 !== undefined) setSettings(s => ({ ...s, wildOn10: u.meermauWildOn10! }));
-      setIsFavorite((snap.data()?.favoriteGames as string[] ?? []).includes("meermau"));
     });
     return () => { unsubRef.current?.(); };
   }, [uid]);
@@ -111,13 +111,6 @@ export default function MeermauLobbyScreen() {
     join();
   }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function toggleFavorite() {
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("meermau") : arrayRemove("meermau"),
-    });
-  }
 
   function startVsAi() {
     navigate("/meermau/game", { state: { mode: "ai", aiCount, difficulty, settings } });
@@ -273,7 +266,7 @@ export default function MeermauLobbyScreen() {
 
   return (
     <div className="screen">
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>
         ‹ Spielauswahl
       </button>
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useFavorite } from "../../../favorites";
 import { useNavigate } from "react-router-dom";
 import { generateLevel } from "./perlentaucherLogic";
 import {
@@ -22,10 +23,7 @@ export default function PerlentaucherLobbyScreen() {
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [saves, setSaves] = useState(() => getPuzzleSaves().filter(s => s.gameType === "perlentaucher"));
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("perlentaucher"); }
-    catch { return false; }
-  });
+  const [isFavorite, toggleFavorite] = useFavorite("perlentaucher");
 
   const config = useMemo(() => generateLevel(selectedLevel), [selectedLevel]);
   const bestScore = useMemo(() => getBestPerlentaucherScore(selectedLevel), [selectedLevel, showStats]);
@@ -45,13 +43,6 @@ export default function PerlentaucherLobbyScreen() {
     return { entries, starCounts, total: entries.length };
   }, [showStats]);
 
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "perlentaucher"])] : favs.filter(f => f !== "perlentaucher")));
-    } catch { }
-  }
 
   function startNew() {
     navigate("/raetsel/perlentaucher/game", { state: { level: selectedLevel, _instance: Date.now() } });

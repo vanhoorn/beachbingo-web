@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useFavorite } from "../../favorites";
 import { GAME_RULES } from "../../gameRules";
 import GameRulesModal from "../../components/GameRulesModal";
 import {
@@ -17,11 +18,7 @@ export default function SonnenradLobbyScreen() {
   const lifetimePoints                  = getLifetimePoints();
   const countdownRef                    = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [isFavorite, setIsFavorite]     = useState(() => {
-    try {
-      return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("sonnenrad");
-    } catch { return false; }
-  });
+  const [isFavorite, toggleFavorite] = useFavorite("sonnenrad");
   const [showStats, setShowStats]       = useState(false);
   const [showRules, setShowRules]       = useState(false);
 
@@ -39,17 +36,6 @@ export default function SonnenradLobbyScreen() {
     return () => clearInterval(countdownRef.current!);
   }, [bonusAvail]);
 
-  function toggleFavorite() {
-    const next = !isFavorite;
-    setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem(
-        "favoriteGames",
-        JSON.stringify(next ? [...new Set([...favs, "sonnenrad"])] : favs.filter((f) => f !== "sonnenrad")),
-      );
-    } catch { /* ignore */ }
-  }
 
   const bonusBorder = bonusAvail ? `1.5px solid ${GOLD}99` : "1.5px solid var(--border)";
   const bonusBg     = bonusAvail ? `${GOLD}18` : "var(--surface)";

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { useFavorite } from "../../favorites";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase";
 import type { WormDifficulty, User } from "../../types";
@@ -46,7 +47,7 @@ export default function WormLobbyScreen() {
   const [difficulty, setDifficulty] = useState<WormDifficulty>("ROOKIE");
   const [controlMode, setControlMode] = useState<"BUTTONS" | "SWIPE">("BUTTONS");
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, toggleFavorite] = useFavorite("worm");
   const [showRules, setShowRules] = useState(false);
   const [wormSave, setWormSave] = useState(() => getGameSave("worm"));
   const navigate = useNavigate();
@@ -59,20 +60,11 @@ export default function WormLobbyScreen() {
         const u = snap.data() as User;
         setDifficulty(u.preferredWormDifficulty ?? "ROOKIE");
         setControlMode(u.preferredWormControlMode ?? "BUTTONS");
-        setIsFavorite((u as unknown as Record<string, string[]>).favoriteGames?.includes("worm") ?? false);
       }
       setLoading(false);
     });
   }, [uid]);
 
-  async function toggleFavorite() {
-    if (!uid) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
-    await updateDoc(doc(db, "users", uid), {
-      favoriteGames: next ? arrayUnion("worm") : arrayRemove("worm"),
-    });
-  }
 
   if (loading) {
     return (
@@ -84,7 +76,7 @@ export default function WormLobbyScreen() {
 
   return (
     <div className="screen" style={{ gap: 20, paddingTop: 16 }}>
-      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home")}>‹ Zurück</button>
+      <button className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/home", { replace: true })}>‹ Zurück</button>
       {/* Header */}
       <div className="flex items-center" style={{ gap: 12 }}>
         <h2 style={{ fontSize: 20 }}>Wattwurm</h2>

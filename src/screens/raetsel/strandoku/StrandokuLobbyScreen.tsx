@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFavorite } from "../../../favorites";
 import { useNavigate } from "react-router-dom";
 import { getPuzzleSaves, deletePuzzleSave, formatElapsed, getBestTimeAny, PUZZLE_DIFFICULTY_LABELS } from "../../../puzzleSave";
 import { VARIANT_LABELS, VARIANT_DESCRIPTIONS, type StrandokuVariant, type StrandokuDifficulty } from "./strandokuLogic";
@@ -16,17 +17,7 @@ export default function StrandokuLobbyScreen() {
   const saves = getPuzzleSaves().filter(s => s.gameType === "strandoku");
   const [showStats, setShowStats] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[]).includes("strandoku"); }
-    catch { return false; }
-  });
-  function toggleFavorite() {
-    const next = !isFavorite; setIsFavorite(next);
-    try {
-      const favs = JSON.parse(localStorage.getItem("favoriteGames") ?? "[]") as string[];
-      localStorage.setItem("favoriteGames", JSON.stringify(next ? [...new Set([...favs, "strandoku"])] : favs.filter(f => f !== "strandoku")));
-    } catch { }
-  }
+  const [isFavorite, toggleFavorite] = useFavorite("strandoku");
 
   const startNew = () => navigate("/raetsel/strandoku/game", { state: { variant, difficulty, seed: Date.now() } });
   const resumeSave = (save: ReturnType<typeof getPuzzleSaves>[number]) => {
