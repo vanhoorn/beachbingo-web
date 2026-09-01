@@ -24,7 +24,7 @@ export default function LoginScreen() {
         email = snap.data().email as string;
       }
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg === "Anzeigename nicht gefunden")

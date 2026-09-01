@@ -46,7 +46,7 @@ export default function CategoryScreen() {
         display: "flex", alignItems: "center", gap: 14,
       }}>
         <button
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/home", { replace: true })}
           style={{
             background: "var(--surface2)", border: "1px solid var(--border)",
             borderRadius: 12, width: 40, height: 40, fontSize: 18, cursor: "pointer",

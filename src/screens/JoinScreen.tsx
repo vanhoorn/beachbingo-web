@@ -332,7 +332,7 @@ export default function JoinScreen() {
         display: "flex", alignItems: "center", gap: 14,
       }}>
         <button
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/home", { replace: true })}
           style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 15, fontWeight: 700, cursor: "pointer", padding: 0 }}
         >
           ‹ Zurück

@@ -9,6 +9,7 @@ import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTi
 import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
+import { audioManager } from "../../../audio/AudioManager";
 
 interface LocationState {
   difficulty: KakuroDifficulty;
@@ -43,6 +44,11 @@ export default function WellensummeGameScreen() {
   const [showQuit, setShowQuit] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const bestTime = getBestTime("wellensumme", "standard", difficulty);
+
+  useEffect(() => {
+    audioManager.startMusic("raetsel");
+    return () => audioManager.stopMusic();
+  }, []);
 
   useEffect(() => {
     if (!running || gs.solved) return;

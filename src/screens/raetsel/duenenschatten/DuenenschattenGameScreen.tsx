@@ -9,6 +9,7 @@ import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTi
 import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
+import { audioManager } from "../../../audio/AudioManager";
 
 interface LocationState {
   difficulty: HitoriDifficulty;
@@ -46,6 +47,11 @@ export default function DuenenschattenGameScreen() {
   const [showHelp, setShowHelp] = useState(false);
   const [hintCell, setHintCell] = useState<[number, number] | null>(null);
   const bestTime = getBestTime("duenenschatten", "standard", difficulty);
+
+  useEffect(() => {
+    audioManager.startMusic("raetsel");
+    return () => audioManager.stopMusic();
+  }, []);
 
   // Timer
   useEffect(() => {

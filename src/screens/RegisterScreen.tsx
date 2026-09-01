@@ -34,7 +34,7 @@ export default function RegisterScreen() {
       await setDoc(doc(db, "usernames", displayName.trim().toLowerCase()), {
         email: email.trim(),
       });
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (e: unknown) {
       const msg = (e as { code?: string })?.code;
       if (msg === "auth/email-already-in-use") setError("E-Mail bereits registriert.");

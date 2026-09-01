@@ -10,6 +10,7 @@ import { savePuzzle, generateSaveId, deletePuzzleSave, getBestTime, recordBestTi
 import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
+import { audioManager } from "../../../audio/AudioManager";
 
 interface LocationState {
   variant: StrandokuVariant;
@@ -42,6 +43,11 @@ export default function StrandokuGameScreen() {
   const [gs, setGs] = useState<StrandokuState | null>(null);
   const [elapsed, setElapsed] = useState(locState.elapsedSeconds ?? 0);
   const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    audioManager.startMusic("raetsel");
+    return () => audioManager.stopMusic();
+  }, []);
 
   useEffect(() => {
     const p = generateStrandoku(variant, difficulty, seed);

@@ -11,6 +11,7 @@ import { GameHudBar, GameSaveQuitDialog } from "../../../components/GameHudBar";
 import GameRulesModal from "../../../components/GameRulesModal";
 import { GAME_RULES } from "../../../gameRules";
 import { ALL_GAMES } from "../../../gameMetadata";
+import { audioManager } from "../../../audio/AudioManager";
 
 const ACCENT = "#06b6d4";
 const GAME_EMOJI = ALL_GAMES.find(g => g.id === "wortwelle")?.emoji ?? "💬";
@@ -58,6 +59,11 @@ export default function WortWelleGameScreen() {
     if (isWwReady()) return getRandomWord(difficulty);
     return "";
   });
+
+  useEffect(() => {
+    audioManager.startMusic("raetsel");
+    return () => audioManager.stopMusic();
+  }, []);
 
   // Safety-init: falls direkt zur GameScreen navigiert ohne Lobby-Init
   useEffect(() => {
